@@ -1,0 +1,347 @@
+# Speckit Configuration & Project Context
+# This file serves as the entry point for Speckit and AI agents working with this project
+
+## Speckit Status
+✅ **Active** — Project uses Speckit 0.4.5.dev0 for AI agent context management
+📍 **Location:** `.specify/` directory (git-ignored, local development only)
+🤖 **AI Engine:** Claude (configured in `.specify/init-options.json`)
+
+## Constitution Reference
+🎯 **Primary AI Context:** `.specify/memory/constitution.md` (372 lines)
+
+The constitution contains everything an AI agent needs to know:
+- Project identity & tech stack
+- Critical architecture decisions (dual schemas, pessimistic locking, payment workflow)
+- Hardcoded client contracts (header names, API signatures, SDK versions)
+- File navigation & code patterns
+- Common failure modes & troubleshooting
+- Deployment & testing procedures
+
+## Quick Project Overview
+
+### What This Project Does
+Multi-service Quarkus-based cinema booking system with:
+- iOS client (SwiftUI) + Web UI (AngularJS)
+- 4 backend microservices (dalogin, mbook, mbooks, simple-service-webapp)
+- MySQL database (dual schemas: login_ + book)
+- Kubernetes infrastructure (Minikube locally)
+- Braintree payment integration
+- Real-time availability tracking with WebSocket
+
+### Tech Stack at a Glance
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| Java | 17 | Backend runtime |
+| Quarkus | 3.19.4 | Microservice framework |
+| MySQL | 8 | Primary datastore |
+| Kafka/Zookeeper | 3.x | Messaging |
+| Kubernetes | Minikube | Orchestration |
+| Prometheus/Grafana | 2.x / 10.x | Observability |
+| Tempo | Latest | Trace collection |
+| Apache | 2.4 | Reverse proxy + SSL |
+| Appium | 3.x | iOS UI testing |
+| Braintree | 3.36.0 (Java) | Payments |
+
+## Critical Files (Read These First)
+
+### Architecture & Design
+- `.specify/memory/constitution.md` — **PRIMARY: Complete system context**
+- `.github/instructions/instructions.md` — Copilot-specific guidance
+- `k8infra/README-k8s-local.md` — Local deployment runbook
+
+### Backend Code Entry Points
+- `dalogin-quarkus/` — Authentication gateway (port 8080)
+- `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` — Payment flow (1170 lines)
+- `mbooks-quarkus/src/main/java/com/jeet/db/DAO.java` — Database access (pessimistic locking)
+- `simple-service-webapp-quarkus/src/main/java/com/jeet/rest/ImageResource.java` — Image serving
+
+### Web UI
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/app.js` — AngularJS (683 lines, HMAC interceptor)
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/index.html` — SPA shell with Braintree SDK
+
+### iOS Client
+- `SwiftCinemas/SwiftLoginScreen/Networking/APIClient.swift` — HTTP transport (async/await)
+- `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift` — Service layer
+- `SwiftCinemas/SwiftLoginScreen/Networking/HeaderProvider.swift` — Auth header implementations
+
+### Database
+- `mysql_8/login.sql` — User/session schema
+- `mysql_8/book.sql` — Cinema/booking schema
+
+### Testing
+- `appium/src/test/java/` — iOS UI tests (Appium + TestNG)
+- `k8infra/` — Python API smoke tests
+
+### Infrastructure
+- `k8infra/quarkus-backend.yaml` — Kubernetes manifests
+- `k8infra/settings-local.xml` — Maven proxy configuration
+
+## Hardcoded Client-Server Contracts (DO NOT CHANGE)
+
+### HTTP Headers
+```
+X-Token          → Session token (dalogin → all services)
+X-HMAC-HASH      → HMAC-SHA512(body + secret)
+X-Device         → Device identifier (iOS client → mbooks)
+Ciphertext       → Encrypted body (iOS → dalogin, mbooks)
+uuid             → Device UUID (client → dalogin)
+TIME_            → Timestamp (HMAC calculation)
+XSRF-TOKEN       → CSRF protection (dalogin)
+```
+
+### Payment Checkout Flow
+```
+POST /login/CheckOut with {
+  payment_method_nonce: "...",
+  orderId: "...",
+  seatsToBeReserved: "A1-B2-C3-"  // seat numbers, NOT IDs
+}
+```
+
+### API Endpoints
+```
+POST   /login/HelloWorld                    → HMAC login
+GET/POST /login/CheckOut                    → Payment gateway
+GET    /mbooks-1/rest/book/movies           → Movie listing
+GET    /mbooks-1/rest/book/payment/clientToken
+POST   /mbooks-1/rest/book/payment/fullcheckout2
+WS     /mbooks-1/ws                         → Real-time seat updates
+GET    /simple-service-webapp/rest/images/* → Image serving
+```
+
+### Braintree SDK Versions (Sandbox)
+```
+JavaScript: 1.44.1
+iOS:        5.26.0
+Java:       3.36.0
+Merchant:   j3ndqpzrhy4gp2p7
+```
+
+## Key Architectural Patterns
+
+### 1. Dual Database Schemas
+- **login_** — User credentials, devices, sessions, vouchers (dalogin primary)
+- **book** — Movies, venues, screens, seats, tickets, purchases (mbooks direct access)
+
+### 2. Pessimistic Locking for Seats
+```
+SELECT seats FOR UPDATE (pessimistic write lock)
+  ↓
+Verify availability (seat.isReserved == "0")
+  ↓
+Create tickets + purchase
+  ↓
+Braintree transaction
+  ↓ (failure) → ROLLBACK: delete tickets+purchase, free seats
+  ↓ (success) → COMMIT: mark seats reserved
+```
+
+### 3. Microservice Header Injection
+- dalogin acts as auth gateway
+- ServiceClient injects pre-authenticated headers to downstream services
+- All services read X-Token from request (no re-auth needed)
+
+### 4. iOS Service Layer Refactoring
+- Modern async/await + centralized APIClient
+- Endpoint descriptor pattern (path, method, query, body, cache key)
+- HeaderProvider protocol with multiple auth implementations
+- Service injection via AppDelegate → UIViewController extensions
+
+## Common Tasks & Their Locations
+
+### Adding a Payment Feature
+→ Start: `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` (line 600–1170)
+→ Braintree: `service/PaymentService.java`
+→ Lock logic: `db/DAO.java` (`bookTickets()` method)
+
+### Fixing Web UI Payment
+→ Start: `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/`
+→ Interceptor: `app.js` (HMAC calculation)
+→ Template: `checkout.html`
+→ Note: Check header names haven't changed (X-HMAC-HASH, etc.)
+
+### Fixing iOS Service Call
+→ Start: `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+→ Endpoint: `Endpoint.swift`
+→ Headers: `HeaderProvider.swift` (SessionHeaderProvider, HMACLoginHeaderProvider, etc.)
+→ URL config: `URLManager.swift`
+
+### Adding iOS UI Test
+→ Start: `appium/src/test/java/qa/ios/test/TestNavigations.java`
+→ Pages: `appium/src/test/java/qa/ios/pages/`
+→ Run: `.run/appium - mvn test`
+
+### Deploying to Kubernetes
+→ Build: `./mvnw -s k8infra/settings-local.xml package -DskipTests`
+→ Images: `docker build -t servicename:local ./servicename-quarkus`
+→ Deploy: `kubectl apply -f k8infra/quarkus-backend.yaml`
+→ Tunnel: `sudo minikube tunnel`
+
+## Common Issues & Solutions
+
+### Payment fails on Web but works on iOS
+- [ ] Check `POST /login/CheckOut` parameter format (seatsToBeReserved)
+- [ ] Verify HMAC interceptor includes correct headers
+- [ ] Compare Braintree SDK version (JS 1.44.1)
+- [ ] Check Apache ProxyPass preserves Content-Type
+
+### WebSocket disconnects
+- [ ] Verify `sudo minikube tunnel` is running
+- [ ] Check WebSocket ProxyPass **comes before** HTTP routes in Apache
+- [ ] Confirm Sec-WebSocket-Key header in browser dev tools
+- [ ] Check Quarkus WebSocket registration (mbook-quarkus pom.xml)
+
+### Session not found
+- [ ] Verify CookieFilter registered in web.xml (before AuthFilter)
+- [ ] Check cookie domain (localhost vs 127.0.0.1)
+- [ ] Confirm ActiveVoucherFilter runs after CookieFilter
+- [ ] Validate session in MySQL `session_login` table
+
+### Stale seat availability
+- [ ] Confirm DAO.getSeatsForScreening() NOT using query cache
+- [ ] Verify L2 cache evicted after mutation (`cache.evictRegion("ticket")`)
+- [ ] Check FetchType.EAGER on bidirectional relationships
+
+### Images not loading on iOS
+- [ ] Verify simple-service-webapp running on port 8085
+- [ ] Check URLManager.swift resolves absolute paths
+- [ ] Confirm Apache ProxyPass includes /simple-service-webapp
+- [ ] Verify PVC mounted (k8infra/quarkus-backend.yaml)
+
+## Development Workflow
+
+### One-Time Setup
+```bash
+# 1. Review constitution
+cat .specify/memory/constitution.md
+
+# 2. Build backend services
+./mvnw -s k8infra/settings-local.xml package -DskipTests
+
+# 3. Deploy to Minikube (in separate terminal)
+eval $(minikube docker-env)
+docker build -t dalogin:local ./dalogin-quarkus
+# ... build other images ...
+eval $(minikube docker-env --unset)
+kubectl apply -f k8infra/quarkus-backend.yaml
+
+# 4. Keep tunnel running (separate terminal)
+sudo minikube tunnel
+```
+
+### Edit → Test → Deploy
+```bash
+# Edit code in IDE
+# Run test config from .run/ directory
+# OR manually: mvn test -f service-name/pom.xml -s k8infra/settings-local.xml
+
+# Rebuild & redeploy
+./mvnw -s k8infra/settings-local.xml package -DskipTests
+docker build -t servicename:local ./servicename-quarkus
+kubectl rollout restart deployment/servicename
+```
+
+### Run Test Suites
+```bash
+# iOS UI tests
+mvn test -f appium/pom.xml -s k8infra/settings-local.xml
+
+# Python API tests
+python k8infra/test-login.py
+
+# Direct TestNG
+cd appium && java -cp target/test-classes:target/classes:...libs/* org.testng.TestNG testng.xml
+```
+
+## IntelliJ Run Configurations
+
+All `.run/` configs are pre-configured:
+- `dalogin - package` — Build dalogin JAR
+- `mbooks - quarkus:dev` — Dev mode with live reload
+- `appium - mvn test` — iOS UI tests via Surefire
+- `appium - java direct (testng)` — Direct TestNG
+- `appium - CreateXml GUI` — Swing test suite builder
+- `ALL - package (skip tests)` — Build all 4 services
+- `k8s - test-login.py` — Python API smoke tests
+
+**Note:** Maven configs use `myGeneralSettings` → `k8infra/settings-local.xml` for proxy bypass.
+
+## Observability
+
+### Prometheus
+- Endpoint: All services expose `/metrics` (Quarkus default)
+- Scrape: Configured in `k8infra/quarkus-backend.yaml`
+- Key metrics: `http_requests_total`, `jvm_memory_used_bytes`, `db_connection_pool_active`
+- Retention: 15 days
+
+### Grafana
+- **Service Health:** HTTP rate, p95 latency, 5xx errors (per service)
+- **JVM:** Heap memory, threads, GC pause times (per service)
+- **Database:** Connection pool, slow queries, replication lag
+- Data source: `http://prometheus:9090`
+
+### Tempo
+- Trace collection: OpenTelemetry exports to Tempo
+- Query UI: Grafana Tempo plugin (`https://localhost:3000/explore`)
+- Service graph: Auto-generated from trace metadata
+- Retention: 48 hours
+
+## Git & Version Control
+
+### Speckit Files (Local Only)
+```
+.specify/                           → git-ignored (local development)
+  init-options.json
+  integration.json
+  memory/constitution.md             ← AI context
+  integrations/
+  scripts/
+  templates/
+```
+
+### Tracked Files
+- `.github/instructions/instructions.md` — Copilot guidance
+- `.github/agents/AGENTS.md` — (planned) Architecture reference
+- All source code & configs under service directories
+
+### Commit Convention
+```
+feat: add [feature name]
+fix: resolve [issue]
+docs: update [documentation]
+chore: [maintenance]
+refactor: [code cleanup]
+
+Examples:
+- feat: add Speckit constitution for AI agent context
+- fix: correct pessimistic lock timeout in DAO
+- docs: update payment workflow in constitution
+```
+
+## Related Documentation
+
+| Document | Purpose | Location |
+|----------|---------|----------|
+| Constitution | AI agent context | `.specify/memory/constitution.md` |
+| Instructions | Copilot guidance | `.github/instructions/instructions.md` |
+| AGENTS.md | Architecture reference | `.github/agents/AGENTS.md` (planned) |
+| K8s Runbook | Local deployment | `k8infra/README-k8s-local.md` |
+| System Docs | API reference | `k8infra/system-documentation.html` |
+| Appium Docs | UI test guide | `appium/README.md` |
+| iOS Docs | Client reference | `SwiftCinemas/swiftcinemas-documentation.html` |
+
+## When You're Stuck
+
+1. **"What does this service do?"** → Read constitution → File Navigation Map section
+2. **"How do I add a new endpoint?"** → Constitution → Key Code Patterns → Adding a REST Endpoint
+3. **"Payment is broken"** → Constitution → Common Failure Modes → Payment fails on Web...
+4. **"Need to deploy"** → Constitution → Deployment Quick Reference
+5. **"How do I run tests?"** → Constitution → Run Test Suites OR this file → Run Test Suites
+
+---
+
+**Status:** ✅ Production-ready in Minikube
+**Last Updated:** April 2, 2026
+**Maintained By:** Development Team
+**AI Context Engine:** Speckit + Claude
+
