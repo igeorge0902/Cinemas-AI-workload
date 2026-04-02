@@ -23,6 +23,7 @@ This is a **multi-service Quarkus-based cinema booking system** with an iOS clie
 | `simple-service-webapp` | 8085 | `/simple-service-webapp` | N/A | `ImageResource.java` |
 
 ### Documentation (Reference Before Editing)
+- **Speckit Constitution:** `.specify/memory/constitution.md` (AI agent project context - **primary reference**)
 - **Architecture & Design:** `.github/agents/AGENTS.md` (comprehensive system overview)
 - **Local Deployment:** `k8infra/README-k8s-local.md` (step-by-step runbook)
 - **System HTML Docs:** `docs/system-documentation.html`, `docs/appium-test-documentation.html`
@@ -199,7 +200,24 @@ curl -sk --http1.1 -o /dev/null -w "%{http_code}\n" \
 4. **Tests failing?** → Run `appium - mvn test` or `k8s - test-login.py` configs; check MySQL is seeded
 5. **Session not found?** → Verify `AuthFilter` + `ActiveVoucherFilter` are registered in `web.xml`
 
+## Speckit AI Agent Setup
+
+This project uses **Speckit** (`.specify/` directory) to provide AI coding agents with project context via a structured constitution file.
+
+- **Constitution Location:** `.specify/memory/constitution.md`
+- **AI Engine:** Claude (configured in `.specify/init-options.json`)
+- **Configuration:** `.specify/integration.json` (custom integrations)
+- **Status:** Ready — Speckit will auto-load constitution for all AI assistance requests
+
+The constitution contains:
+- Project identity & tech stack overview
+- Critical architecture decisions (dual schemas, pessimistic locking, payment workflow)
+- Hardcoded client contracts (header names, API endpoint signatures, Braintree SDK versions)
+- File navigation map & key code patterns
+- Common failure modes & troubleshooting
+- Quick deployment & testing commands
+
 ---
 
-**Always reference AGENTS.md before editing architecture/entity relationships.** If in doubt, ask or read the system-documentation.html.
+**Always reference Speckit constitution (`.specify/memory/constitution.md`) or AGENTS.md before editing architecture/entity relationships.** If in doubt, ask or read the system-documentation.html.
 
