@@ -1,0 +1,67 @@
+2026-03-23 00:00:35,328 INFO o.a.j.u.JMeterUtils: Setting Locale to en_EN
+2026-03-23 00:00:35,341 INFO o.a.j.JMeter: Loading user properties from: /opt/homebrew/Cellar/jmeter/5.6.3/libexec/bin/user.properties
+2026-03-23 00:00:35,341 INFO o.a.j.JMeter: Loading system properties from: /opt/homebrew/Cellar/jmeter/5.6.3/libexec/bin/system.properties
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: Copyright (c) 1998-2024 The Apache Software Foundation
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: Version 5.6.3
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: java.version=21.0.10
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: java.vm.name=OpenJDK 64-Bit Server VM
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: os.name=Mac OS X
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: os.arch=aarch64
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: os.version=26.3.1
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: file.encoding=UTF-8
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: java.awt.headless=true
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: Max memory     =1073741824
+2026-03-23 00:00:35,344 INFO o.a.j.JMeter: Available Processors =11
+2026-03-23 00:00:35,350 INFO o.a.j.JMeter: Default Locale=English (EN)
+2026-03-23 00:00:35,350 INFO o.a.j.JMeter: JMeter  Locale=English (EN)
+2026-03-23 00:00:35,350 INFO o.a.j.JMeter: JMeterHome=/opt/homebrew/Cellar/jmeter/5.6.3/libexec
+2026-03-23 00:00:35,350 INFO o.a.j.JMeter: user.dir  =/Users/gyorgy.gaspar/work/cinemas/cinemas
+2026-03-23 00:00:35,350 INFO o.a.j.JMeter: PWD       =/Users/gyorgy.gaspar/work/cinemas/cinemas
+2026-03-23 00:00:35,375 INFO o.a.j.JMeter: IP: 192.168.0.103 Name: LSYH-U758899M1 FullName: mac
+2026-03-23 00:00:35,383 INFO o.a.j.s.FileServer: Default base='/Users/gyorgy.gaspar/work/cinemas/cinemas'
+2026-03-23 00:00:35,385 INFO o.a.j.s.FileServer: Set new base='/Users/gyorgy.gaspar/work/cinemas/cinemas'
+2026-03-23 00:00:35,472 INFO o.a.j.s.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2
+2026-03-23 00:00:35,494 INFO o.a.j.s.SaveService: Using SaveService properties version 5.0
+2026-03-23 00:00:35,496 INFO o.a.j.s.SaveService: Using SaveService properties file encoding UTF-8
+2026-03-23 00:00:35,498 INFO o.a.j.s.SaveService: Loading file: API2.jmx
+2026-03-23 00:00:35,521 INFO o.a.j.p.h.c.CookieManager: Settings: Delete null: true Check: true Allow variable: true Save: false Prefix: COOKIE_
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/html is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xhtml+xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser
+2026-03-23 00:00:35,531 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/css is org.apache.jmeter.protocol.http.parser.CssParser
+2026-03-23 00:00:35,575 INFO o.a.j.JMeter: Creating summariser <summary>
+2026-03-23 00:00:35,581 INFO o.a.j.e.StandardJMeterEngine: Running the test!
+2026-03-23 00:00:35,582 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-03-23 00:00:35,582 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-03-23 00:00:35,583 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must contain the string: '.functions.'
+2026-03-23 00:00:35,584 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must not contain the string: '.gui.'
+2026-03-23 00:00:35,608 INFO o.a.j.r.ClassFinder: Will scan jar /opt/homebrew/Cellar/jmeter/5.6.3/libexec/lib/ext/jmeter-plugins-manager-1.9.jar with filter ExtendsClassFilter [parents=[interface org.apache.jmeter.functions.Function], inner=false, contains=null, notContains=null]. Consider exposing JMeter plugins via META-INF/services, and add JMeter-Skip-Class-Scanning=true manifest attribute so JMeter can skip classfile scanning
+2026-03-23 00:00:35,648 INFO o.a.j.r.ClassFinder: Will scan jar /opt/homebrew/Cellar/jmeter/5.6.3/libexec/lib/ext/jmeter-plugins-graphs-basic-2.0.jar with filter ExtendsClassFilter [parents=[interface org.apache.jmeter.functions.Function], inner=false, contains=null, notContains=null]. Consider exposing JMeter plugins via META-INF/services, and add JMeter-Skip-Class-Scanning=true manifest attribute so JMeter can skip classfile scanning
+2026-03-23 00:00:35,650 INFO o.a.j.r.ClassFinder: Will scan jar /opt/homebrew/Cellar/jmeter/5.6.3/libexec/lib/ext/jmeter-plugins-tst-2.6.jar with filter ExtendsClassFilter [parents=[interface org.apache.jmeter.functions.Function], inner=false, contains=null, notContains=null]. Consider exposing JMeter plugins via META-INF/services, and add JMeter-Skip-Class-Scanning=true manifest attribute so JMeter can skip classfile scanning
+2026-03-23 00:00:35,651 INFO o.a.j.r.ClassFinder: Will scan jar /opt/homebrew/Cellar/jmeter/5.6.3/libexec/lib/ext/jmeter-plugins-casutg-3.1.1.jar with filter ExtendsClassFilter [parents=[interface org.apache.jmeter.functions.Function], inner=false, contains=null, notContains=null]. Consider exposing JMeter plugins via META-INF/services, and add JMeter-Skip-Class-Scanning=true manifest attribute so JMeter can skip classfile scanning
+2026-03-23 00:00:35,704 INFO o.a.j.JMeter: Running test (1774220435704)
+2026-03-23 00:00:35,713 INFO o.a.j.e.StandardJMeterEngine: Starting ThreadGroup: 1 : Thread Group
+2026-03-23 00:00:35,713 INFO o.a.j.e.StandardJMeterEngine: Starting 1 threads for group Thread Group.
+2026-03-23 00:00:35,713 INFO o.a.j.e.StandardJMeterEngine: Thread will continue on error
+2026-03-23 00:00:35,713 INFO o.a.j.t.ThreadGroup: Starting thread group... number=1 threads=1 ramp-up=1 delayedStart=false
+2026-03-23 00:00:35,718 INFO o.a.j.t.ThreadGroup: Started thread group number 1
+2026-03-23 00:00:35,718 INFO o.a.j.e.StandardJMeterEngine: All thread groups have been started
+2026-03-23 00:00:35,719 INFO o.a.j.t.JMeterThread: Thread started: Thread Group 1-1
+2026-03-23 00:00:36,519 INFO o.a.j.p.h.s.HTTPHCAbstractImpl: Local host = LSYH-U758899M1
+2026-03-23 00:00:36,521 INFO o.a.j.p.h.s.HTTPHC4Impl: HTTP request retry count = 0
+2026-03-23 00:00:36,522 INFO o.a.j.s.SampleResult: Note: Sample TimeStamps are START times
+2026-03-23 00:00:36,522 INFO o.a.j.s.SampleResult: sampleresult.default.encoding is set to UTF-8
+2026-03-23 00:00:36,522 INFO o.a.j.s.SampleResult: sampleresult.useNanoTime=true
+2026-03-23 00:00:36,522 INFO o.a.j.s.SampleResult: sampleresult.nanoThreadSleep=5000
+2026-03-23 00:00:37,286 INFO o.a.j.p.h.s.h.LazyLayeredConnectionSocketFactory: Setting up HTTPS TrustAll Socket Factory
+2026-03-23 00:00:37,288 INFO o.a.j.u.JsseSSLManager: Using default SSL protocol: TLS
+2026-03-23 00:00:37,288 INFO o.a.j.u.JsseSSLManager: SSL session context: per-thread
+2026-03-23 00:00:37,309 INFO o.a.j.u.SSLManager: JmeterKeyStore Location:  type JKS
+2026-03-23 00:00:37,311 INFO o.a.j.u.SSLManager: KeyStore created OK
+2026-03-23 00:00:37,311 WARN o.a.j.u.SSLManager: Keystore file not found, loading empty keystore
+2026-03-23 00:00:39,924 INFO o.a.j.t.JMeterThread: Thread is done: Thread Group 1-1
+2026-03-23 00:00:39,925 INFO o.a.j.t.JMeterThread: Thread finished: Thread Group 1-1
+2026-03-23 00:00:39,930 INFO o.a.j.e.StandardJMeterEngine: Notifying test listeners of end of test
+2026-03-23 00:00:39,931 INFO o.a.j.r.Summariser: summary =      3 in 00:00:04 =    0.7/s Avg:   597 Min:    25 Max:  1494 Err:     0 (0.00%)

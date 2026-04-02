@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="appium - java direct (inspect)" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="#!/bin/bash&#10;set -e&#10;# Run Appium InspectUI tests directly with java, bypassing exec-maven-plugin.&#10;# Prereq: run 'appium - compile' first (or: mvn -s ../k8infra/settings-local.xml compile test-compile)&#10;# Working directory is already set to appium/ by the run config.&#10;&#10;CP=$(mvn -s ../k8infra/settings-local.xml dependency:build-classpath -Dmdep.outputFile=/dev/stdout -q 2&gt;/dev/null)&#10;CP=&quot;target/classes:target/test-classes:${CP}&quot;&#10;&#10;exec java -cp &quot;${CP}&quot; \&#10;  -Dsim.device=&quot;iPhone 16 Pro&quot; \&#10;  -Dsim.version=26.1 \&#10;  -Dappium.host=127.0.0.1 \&#10;  -Dappium.port=4723 \&#10;  -Dappium.basePath=/ \&#10;  org.testng.TestNG testng-inspect.xml" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/appium" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+    <option name="INTERPRETER_PATH" value="/bin/bash" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <method v="2" />
+  </configuration>
+</component>
+
