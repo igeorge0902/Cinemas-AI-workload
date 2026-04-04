@@ -215,6 +215,9 @@ So that I can secure my account
 - mbooks-quarkus/README.md
 - mbook-quarkus/README.md
 - simple-service-webapp-quarkus/README.md
+- Canonical film-review route format: `#/...` (plain hash), not `#!/...`
+- Canonical URL example: `https://milo.crabdance.com/login/film-review/#/venues-list`
+- Legacy login/register scripts are loaded from `/login/film-review/jsR/...`
 
 ---
 
