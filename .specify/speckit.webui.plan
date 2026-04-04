@@ -1,0 +1,165 @@
+# 🎬 AngularJS Web App Fix Plan (dalogin-quarkus)
+
+## 🎯 Objective
+
+Stabilize and fix the existing AngularJS (1.x) web application to fully support the end-to-end cinema booking flow:
+- fix and enhance Film-Review-Movie-Database into kubernetes
+
+* Login
+* Password change
+* Browse movies
+* Select movie
+* Select venue
+* Select date
+* Select seats
+* Book ticket
+
+This is a **refactoring and fixing effort**, not a rewrite.
+
+---
+
+# 🧱 1. Target Architecture
+
+## 1.1 Angular Modules
+
+* dalogin-quarkus/src/main/resources/META-INF/resources
+
+---
+
+## 1.2 Folder Structure
+
+```
+dalogin-quarkus/src/main/resources/META-INF/resources (can be refactored)
+
+    index.html
+    main.html
+    register.html
+    venues.html
+    venues.html
+    left-sidebar.html
+    right-sidebar.html
+
+```
+
+---
+
+# 🧭 2. Routing (CRITICAL)
+
+Define proper navigation using `$routeProvider`:
+
+- dalogin-quarkus/README.md
+- mbooks-quarkus/README.md
+- mbook-quarkus/README.md
+
+Ensure:
+
+* Default route → `/login`
+* No broken routes
+* Parameters always passed correctly
+
+---
+
+# 🔄 3. Application Flow
+
+```
+Login
+  ↓
+Movies
+  ↓
+Venues (by movie)
+  ↓
+Date (by venue)
+  ↓
+Seats (by date)
+  ↓
+Booking
+```
+
+---
+
+# 🔌 4. Services Layer
+
+- dalogin-quarkus/README.md
+- mbooks-quarkus/README.md
+- mbook-quarkus/README.md
+
+## 4.4 StateService (NEW)
+
+Stores for Basket:
+
+* selectedSeats
+
+---
+
+# 🧠 5. Controllers Responsibilities
+
+## LoginController
+
+* handle login
+* redirect to landing page
+
+## MoviesController
+
+* load movies
+* select movie → route to venues
+
+## VenueController
+
+* load venues
+* select venue → route to seats
+
+## BookingController
+
+* load seats
+* manage seat selection
+* confirm booking
+
+## ImageController
+
+* load movie posters
+* handle image errors
+
+---
+
+# 🎨 6. UI Templates
+
+Film-Review-Movie-Database
+
+The current satet is capable to lead the user through the booking flow, but the UI needs improvement. We need to:
+
+- make design consistent across pages
+- ensure all necessary elements are present
+- fix any broken UI components into kubernetes
+
+## login.html
+
+* username/password inputs
+* login button
+* change password link
+
+## movies.html
+
+* movie list/grid
+* poster + title
+
+## venues.html
+
+* list of venues
+* show name, address, times
+* select date from drop down → navigate to seats
+
+## seats.html
+
+* seat grid
+* selectable seats:
+
+  * available
+  * selected
+  * taken
+
+## booking.html
+
+* summary view
+* confirm booking button
+
+---
