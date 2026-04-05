@@ -461,6 +461,20 @@ curl -sk --http1.1 -o /dev/null -w "%{http_code}\n" \
 ```
 The `--http1.1` flag is required — HTTP/2 strips `Connection: Upgrade` headers.
 
+## AI Agent Context Files
+
+All of the following files are designed to guide AI coding agents. They are version-controlled and auto-loaded by AI assistants:
+
+| File | Purpose | Audience |
+|------|---------|----------|
+| **`.github/agents/AGENTS.md`** | Comprehensive system architecture (this file) — entity relationships, payment workflows, refactoring roadmap, L2 caching deep-dive | Architecture decisions, entity-level changes |
+| **`.github/agents/agents-role.yaml`** | Agent role definitions (backend-dev, devops, ios-dev) for specialised task routing | AI agent orchestration |
+| **`.github/instructions/instructions.md`** | Workflow guide with critical file locations, common mistakes, hardcoded contracts, run configurations | Day-to-day development |
+| **`.github/docs/QUICKSTART.md`** | 5-minute local setup, deploy steps, troubleshooting commands | New developers, quick onboarding |
+| **`.github/docs/system-documentation.html`** | Inline SVG diagrams (architecture, auth flow, booking flow, entity relationships), Hibernate caching deep-dive | Visual learners, architecture review |
+| **`.specify/memory/constitution.md`** | Speckit AI context — project identity, tech stack, critical decisions, hardcoded contracts, debugging patterns (primary reference for AI agents) | AI agents (loaded first) |
+| **`.specify/features/`** | Feature tracking & migration specs (e.g., `SwiftUI_migration/`, `System/`, `WebUI/`) | Feature planning, migration tracking |
+
 ## Where to start editing
 - Auth/session bugs: `dalogin-quarkus/src/main/java/com/dalogin/filters/` and `.../servlets/`.
 - Booking/payment rules: `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java`, then `service/`, `booking/`, and `db/`.
@@ -472,3 +486,4 @@ The `--http1.1` flag is required — HTTP/2 strips `Connection: Upgrade` headers
 - Entity relationships & fetch strategies: `mbooks-quarkus/src/main/java/com/jeet/api/` — see the entity relationship table above before changing any `FetchType` or `CascadeType`.
 - Hibernate & caching config: `mbooks-quarkus/src/main/resources/hibernate.cfg.xml` and `infinispan-configs-local.xml`.
 - System documentation: `docs/system-documentation.html` — comprehensive HTML with inline SVG diagrams.
+- **AI context:** Always check `.github/agents/AGENTS.md`, `.github/instructions/instructions.md`, or `.specify/memory/constitution.md` before making architecture/entity/contract changes.
