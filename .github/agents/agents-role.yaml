@@ -1,0 +1,9 @@
+agents:
+  - name: backend-dev
+    scope: quarkus
+
+  - name: devops
+    scope: kubernetes
+
+  - name: ios-dev
+    scope: swift
