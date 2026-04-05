@@ -1,19 +1,7 @@
 # 🎯 Feature Spec: Cinema Booking Flow (AngularJS Web App)
 # based on dalogin-quarkus
 # based on Film Review Template App
-- Film-Review-Movie-Database
-- load https://milo.crabdance.com/login/film-review the index.html
-- remove the old templates and assets
-- remove any unused code related to the old templates
-- remove any unused files related to the old templates
-- load the new templates and assets from src/main/resources/META-INF/resources/film-review
- - place all the js files in the same folder for simplicity
- - remove any unused js files
-- adjust the API calls to match the new backend services
-- dalogin-quarkus/README.md
-- mbooks-quarkus/README.md
-- mbook-quarkus/README.md
-- simple-service-webapp-quarkus/README.md
+
 
 ## 1. Feature Overview
 
@@ -215,9 +203,17 @@ So that I can secure my account
 - mbooks-quarkus/README.md
 - mbook-quarkus/README.md
 - simple-service-webapp-quarkus/README.md
+- load the new templates and assets from src/main/resources/META-INF/resources/film-review
+- load https://milo.crabdance.com/login/film-review the index.html
 - Canonical film-review route format: `#/...` (plain hash), not `#!/...`
 - Canonical URL example: `https://milo.crabdance.com/login/film-review/#/venues-list`
 - Legacy login/register scripts are loaded from `/login/film-review/jsR/...`
+- remove the old templates and assets
+- remove any unused code related to the old templates
+- remove any unused files related to the old templates
+ - place all the js files in the same folder for simplicity
+ - remove any unused js files
+- adjust the API calls to match the new backend services
 
 ---
 
