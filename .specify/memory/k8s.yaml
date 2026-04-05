@@ -1,0 +1,531 @@
+# Kubernetes Configuration Reference
+# Local Minikube setup for Cinemas project
+# Last Updated: April 5, 2026
+
+cluster:
+  name: "minikube"
+  driver: "docker"
+  version: "latest"
+  addons:
+    - ingress
+    - metrics-server
+  setup_commands:
+    - "minikube start --driver=docker --cpus=4 --memory=8192"
+    - "minikube addons enable ingress"
+    - "sudo minikube tunnel &  # Keep running for iOS simulator networking"
+
+namespace:
+  name: "default (single namespace, no multi-tenancy)"
+  note: "All workloads run in default namespace; consider namespace isolation for production"
+
+---
+
+# Core Services
+
+services:
+
+  dalogin:
+    deployment_name: "dalogin"
+    replicas: 1
+    image: "dalogin:local"
+    port: 8080
+    service_port: 80
+    target_port: 8080
+    env_variables:
+      WILDFLY_URL: "http://apache:80"
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8080"
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:mysql://mysql:3306/login_"
+      QUARKUS_DATASOURCE_USERNAME: "sqluser"
+      QUARKUS_DATASOURCE_PASSWORD: "sqlpw123"
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4318"
+    liveness_probe: null
+    readiness_probe: null
+    depends_on:
+      - mysql
+      - kafka
+
+  mbook:
+    deployment_name: "mbook"
+    replicas: 1
+    image: "mbook:local"
+    port: 8888
+    service_port: 8888
+    target_port: 8888
+    env_variables:
+      WILDFLY_URL: "http://apache:80"
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8888"
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:mysql://mysql:3306/login_"
+      QUARKUS_DATASOURCE_USERNAME: "sqluser"
+      QUARKUS_DATASOURCE_PASSWORD: "sqlpw123"
+      BOOTSTRAP_URL: "kafka:9092"
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4317"
+      QUARKUS_OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+    depends_on:
+      - mysql
+      - kafka
+
+  mbooks:
+    deployment_name: "mbooks"
+    replicas: 1
+    image: "mbooks:local"
+    port: 8080
+    service_port: 8080
+    target_port: 8080
+    env_variables:
+      WILDFLY_URL: "http://apache:80"
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8080"
+      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:mysql://mysql:3306/book"
+      QUARKUS_DATASOURCE_USERNAME: "sqluser"
+      QUARKUS_DATASOURCE_PASSWORD: "sqlpw123"
+      BOOTSTRAP_URL: "kafka:9092"
+      QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4317"
+      QUARKUS_OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+    depends_on:
+      - mysql
+      - kafka
+      - braintree
+
+  simple_service_webapp:
+    deployment_name: "simple-service-webapp"
+    replicas: 1
+    image: "simple-service-webapp:local"
+    port: 8085
+    service_port: 8085
+    target_port: 8085
+    env_variables:
+      QUARKUS_HTTP_HOST: "0.0.0.0"
+      QUARKUS_HTTP_PORT: "8085"
+    mounts:
+      - name: "pictures-pvc"
+        mountPath: "/pictures"
+    depends_on:
+      - pictures-pvc
+
+---
+
+# Infrastructure Services
+
+infrastructure:
+
+  mysql:
+    statefulset_name: "mysql"
+    replicas: 1
+    image: "mysql:8.0"
+    port: 3306
+    env:
+      MYSQL_ROOT_PASSWORD: "rootpw"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_USER: "sqluser"
+      MYSQL_PASSWORD: "sqlpw123"
+    storage:
+      type: "emptyDir (lost on pod restart)"
+      size: "5Gi"
+    init_script: |
+      CREATE DATABASE login_;
+      CREATE DATABASE book;
+      GRANT ALL ON login_.* TO 'sqluser'@'%';
+      GRANT ALL ON book.* TO 'sqluser'@'%';
+      FLUSH PRIVILEGES;
+    post_deploy: |
+      kubectl exec -n default mysql-0 -- mysql -uroot -prootpw < mysql_8/login.sql
+      kubectl exec -n default mysql-0 -- mysql -uroot -prootpw < mysql_8/book.sql
+    notes: "Use external master dump for persistent storage (see k8infra/README-k8s-local.md)"
+
+  kafka:
+    statefulset_name: "kafka"
+    replicas: 1
+    image: "apache/kafka:3.9.0"
+    port: 9092
+    bootstrap_servers: "kafka:9092"
+    topics:
+      - name: "ios-movies-notifications2"
+        partitions: 1
+        replication_factor: 1
+      - name: "user-updates"
+        partitions: 1
+        replication_factor: 1
+    env:
+      BROKER_ID: "1"
+      ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+
+  zookeeper:
+    statefulset_name: "zookeeper"
+    replicas: 1
+    image: "zookeeper:3.9"
+    port: 2181
+    used_by: "Kafka coordination"
+
+  apache:
+    deployment_name: "apache"
+    replicas: 1
+    image: "httpd:2.4-alpine"
+    port: 80
+    service_port: 80
+    config: |
+      ConfigMap: apache-config
+      File: proxy.conf
+      Modules: mod_proxy, mod_proxy_http, mod_proxy_wstunnel, mod_headers
+      ProxyPass directives (ORDER MATTERS):
+        1. /mbook-1/ws → ws://mbook:8888/ws (WebSocket, MUST be first)
+        2. /mbooks-1/ws → ws://mbooks:8080/ws (WebSocket, MUST be before HTTP)
+        3. /mbook-1 → http://mbook:8888/mbook-1
+        4. /mbooks-1 → http://mbooks:8080/mbooks-1
+        5. /login → http://dalogin:8080/login
+        6. /simple-service-webapp → http://simple-service-webapp:8085/simple-service-webapp
+      SSL: Disabled locally (HTTPS at NGINX ingress level)
+      Headers: HSTS, X-Frame-Options, X-Content-Type-Options, CSP, CORS
+    mounted_configs:
+      - name: "proxy-config"
+        path: "/usr/local/apache2/conf/proxy.conf"
+
+  prometheus:
+    deployment_name: "prometheus"
+    replicas: 1
+    image: "prom/prometheus:v3.2.1"
+    port: 9090
+    service_port: 9090
+    config: |
+      ConfigMap: prometheus-config
+      Scrape targets:
+        - dalogin:8080/q/metrics (15s interval)
+        - mbook:8888/q/metrics
+        - mbooks:8080/q/metrics
+        - simple-service-webapp:8085/q/metrics
+        - mysql-exporter:9104/metrics
+      Retention: 7 days
+    storage:
+      type: "emptyDir"
+      size: "2Gi"
+
+  tempo:
+    deployment_name: "tempo"
+    replicas: 1
+    image: "grafana/tempo:2.7.2"
+    port: 3200
+    ports_open:
+      - 4317 (OTLP gRPC)
+      - 4318 (OTLP HTTP)
+    config: |
+      ConfigMap: tempo-config
+      Retention: 48 hours
+      Receivers: OTLP (gRPC + HTTP)
+    readiness_probe:
+      path: "/ready"
+      port: 3200
+      initial_delay: 10
+      period: 10
+
+  grafana:
+    deployment_name: "grafana"
+    replicas: 1
+    image: "grafana/grafana:11.6.0"
+    port: 3000
+    service_port: 3000
+    ingress_path: "/grafana/"
+    env:
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+      GF_PATHS_PROVISIONING: "/etc/grafana/provisioning"
+    datasources:
+      - name: "Prometheus"
+        url: "http://prometheus:9090"
+        type: "prometheus"
+      - name: "Tempo"
+        url: "http://tempo:3200"
+        type: "tempo"
+    dashboards:
+      - name: "Cinemas — Overview"
+        panels:
+          - HTTP request rate (per service)
+          - p95 latency (per service)
+          - 5xx errors (per service)
+          - JVM heap memory (per service)
+          - JVM thread count (per service)
+          - JVM GC pause time (per service)
+          - MySQL queries/s
+          - MySQL connection pool
+          - MySQL slow queries
+          - MySQL uptime
+          - InnoDB buffer pool hit rate
+          - Open tables
+    readiness_probe:
+      path: "/grafana/api/health"
+      port: 3000
+      initial_delay: 5
+      period: 10
+
+  nginx_ingress:
+    controller_image: "ingress-nginx/controller:v1.11.0"
+    class: "nginx"
+    rules:
+      - host: "milo.crabdance.com"
+        paths:
+          - path: "/"
+            backend: "apache:80"
+          - path: "/grafana/"
+            backend: "grafana:3000"
+    tls:
+      certificate: "self-signed (minikube)"
+      secret: "ingress-tls"
+      domain: "milo.crabdance.com"
+    external_ip: "127.0.0.1 (via sudo minikube tunnel)"
+
+  mysqld_exporter:
+    container_type: "sidecar (in mysql pod)"
+    image: "prom/mysqld-exporter:v0.16.0"
+    port: 9104
+    env:
+      DATA_SOURCE_NAME: "root:rootpw@(localhost:3306)/"
+    metrics_exposed:
+      - Global status
+      - Connection count
+      - Query performance
+      - InnoDB metrics
+
+---
+
+# Persistent Storage
+
+storage:
+
+  pictures_pvc:
+    name: "pictures-pvc"
+    size: "500Mi"
+    access_mode: "ReadWriteOnce"
+    mount_point: "/pictures"
+    used_by: "simple-service-webapp"
+    initialization: |
+      kubectl create pvc pictures-pvc
+      tar cf - -C pictures . | kubectl exec -i mysql-0 -- tar xf - -C /pictures/
+    content:
+      - pictures/movies/ (movie posters)
+      - pictures/venues/ (venue photos)
+      - pictures/profiles/ (user profile pictures)
+
+---
+
+# ConfigMaps & Secrets
+
+configs:
+
+  apache_config:
+    name: "apache-config"
+    file: "proxy.conf"
+    content: |
+      ServerName apache
+      Listen 80
+      
+      LoadModule proxy_module modules/mod_proxy.so
+      LoadModule proxy_http_module modules/mod_proxy_http.so
+      LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so
+      LoadModule headers_module modules/mod_headers.so
+      
+      # WebSocket ProxyPass (MUST come first)
+      ProxyPass /mbook-1/ws ws://mbook:8888/ws
+      ProxyPass /mbooks-1/ws ws://mbooks:8080/ws
+      ProxyPassReverse /mbook-1/ws ws://mbook:8888/ws
+      ProxyPassReverse /mbooks-1/ws ws://mbooks:8080/ws
+      
+      # HTTP ProxyPass
+      ProxyPass /mbook-1 http://mbook:8888/mbook-1
+      ProxyPass /mbooks-1 http://mbooks:8080/mbooks-1
+      ProxyPass /login http://dalogin:8080/login
+      ProxyPass /simple-service-webapp http://simple-service-webapp:8085/simple-service-webapp
+      
+      # Headers
+      <IfModule mod_headers.c>
+        Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-XSS-Protection "1; mode=block"
+        Header always set Content-Security-Policy "..."
+        Header always set Access-Control-Allow-Origin "https://milo.crabdance.com"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Expose-Headers "X-Token, APIKEY"
+      </IfModule>
+
+  prometheus_config:
+    name: "prometheus-config"
+    file: "prometheus.yml"
+    scrape_configs:
+      - job_name: 'quarkus-services'
+        scrape_interval: 15s
+        static_configs:
+          - targets: ['dalogin:8080', 'mbook:8888', 'mbooks:8080', 'simple-service-webapp:8085']
+            metrics_path: '/q/metrics'
+      - job_name: 'mysql'
+        scrape_interval: 15s
+        static_configs:
+          - targets: ['mysql-exporter:9104']
+
+  tempo_config:
+    name: "tempo-config"
+    file: "tempo.yml"
+    retention: "48h"
+    receivers:
+      - otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+
+  mysql_init:
+    name: "mysql-init"
+    mount_point: "/docker-entrypoint-initdb.d/"
+    files:
+      - init.sql (creates databases, grants permissions)
+
+secrets:
+  braintree:
+    name: "braintree-credentials"
+    merchant_id: "j3ndqpzrhy4gp2p7"
+    public_key: "(from Braintree dashboard)"
+    private_key: "(from Braintree dashboard)"
+    note: "Currently hardcoded in source; should be migrated to secrets"
+
+  tls:
+    name: "ingress-tls"
+    certificate: "self-signed for milo.crabdance.com"
+    key: "private key"
+    note: "Generated on first Minikube startup"
+
+---
+
+# Network Policies
+
+networking:
+
+  ingress:
+    type: "NGINX Ingress Controller"
+    host: "milo.crabdance.com"
+    tls: "Required (self-signed)"
+    backend_service: "apache:80"
+
+  internal_services:
+    apache_to_quarkus: "Allowed (internal cluster network)"
+    quarkus_to_mysql: "Allowed"
+    quarkus_to_kafka: "Allowed"
+    quarkus_to_tempo: "Allowed"
+    quarkus_to_prometheus: "Allowed (metrics scrape)"
+
+  external_connections:
+    client_to_ingress: "HTTPS (TLS)"
+    ingress_to_apache: "HTTP (internal)"
+    quarkus_to_braintree: "HTTPS (external)"
+    quarkus_to_paypal: "HTTPS (external)"
+
+---
+
+# Deployment Commands
+
+deployment:
+
+  build_images:
+    option_a_minikube_docker: |
+      eval $(minikube docker-env)
+      docker build -t dalogin:local ./dalogin-quarkus
+      docker build -t mbook:local ./mbook-quarkus
+      docker build -t mbooks:local ./mbooks-quarkus
+      docker build -t simple-service-webapp:local ./simple-service-webapp-quarkus
+      eval $(minikube docker-env --unset)
+
+    option_b_podman: |
+      podman build -t localhost/dalogin:local ./dalogin-quarkus
+      podman build -t localhost/mbook:local ./mbook-quarkus
+      podman build -t localhost/mbooks:local ./mbooks-quarkus
+      podman build -t localhost/simple-service-webapp:local ./simple-service-webapp-quarkus
+      podman save localhost/dalogin:local | minikube image load --daemon=false -
+      podman save localhost/mbook:local | minikube image load --daemon=false -
+      podman save localhost/mbooks:local | minikube image load --daemon=false -
+      podman save localhost/simple-service-webapp:local | minikube image load --daemon=false -
+
+  apply_manifests: |
+    kubectl apply -f k8infra/quarkus-backend.yaml
+
+  seed_databases: |
+    kubectl exec -n default mysql-0 -- mysql -uroot -prootpw < mysql_8/login.sql
+    kubectl exec -n default mysql-0 -- mysql -uroot -prootpw < mysql_8/book.sql
+
+  setup_networking: |
+    # 1. Add /etc/hosts entry
+    echo "127.0.0.1 milo.crabdance.com" | sudo tee -a /etc/hosts
+    
+    # 2. Start tunnel (keep running)
+    sudo minikube tunnel &
+
+  verify_deployment: |
+    kubectl get pods
+    kubectl get svc
+    kubectl get ingress
+    curl -k https://milo.crabdance.com/login/
+    curl -sk --http1.1 -H 'Upgrade: websocket' ... https://milo.crabdance.com/mbook-1/ws
+
+---
+
+# Troubleshooting
+
+troubleshooting:
+
+  pods_not_starting:
+    - "Check image names match deployment spec (e.g., dalogin:local)"
+    - "Verify mysql is running before dependent services"
+    - "kubectl describe pod <pod-name> for detailed error messages"
+    - "kubectl logs <pod-name> for application logs"
+
+  ingress_not_accessible:
+    - "Verify 'sudo minikube tunnel' is running"
+    - "Check /etc/hosts has '127.0.0.1 milo.crabdance.com'"
+    - "curl -k https://milo.crabdance.com/ should return Apache 404 (no root path)"
+
+  websocket_connection_fails:
+    - "Check ProxyPass ordering in Apache config (ws routes BEFORE http routes)"
+    - "Verify both /mbook-1/ws and /mbooks-1/ws routes present"
+    - "curl --http1.1 -H 'Upgrade: websocket' ... should return 101"
+
+  database_not_seeded:
+    - "Manually run seed scripts post-deployment"
+    - "Or use initdb ConfigMap to auto-seed on startup"
+
+  images_not_accessible:
+    - "Verify pictures-pvc is mounted on simple-service-webapp pod"
+    - "Check pictures/* files are copied to /pictures/ in the pod"
+    - "kubectl exec <pod> -- ls /pictures/"
+
+---
+
+# Performance Tuning
+
+performance:
+
+  jvm_args: |
+    Service: dalogin, mbook, mbooks
+    Flags:
+      -Xms256m -Xmx512m (heap)
+      -XX:+UseG1GC (garbage collection)
+      -XX:+ParallelRefProcEnabled
+    Note: Adjust based on Minikube memory availability
+
+  mysql_tuning: |
+    max_connections: 100
+    innodb_buffer_pool_size: 256MB
+    table_open_cache: 512
+
+  kafka_tuning: |
+    num_network_threads: 2
+    num_io_threads: 2
+    socket_send_buffer_bytes: 102400
+    socket_receive_buffer_bytes: 102400
+
+---
+
+# References
+
+references:
+  deployment_manifest: "k8infra/quarkus-backend.yaml"
+  deployment_guide: "k8infra/README-k8s-local.md"
+  database_schemas: "mysql_8/login.sql, mysql_8/book.sql"
+  observability_dashboards: "Grafana UI at https://milo.crabdance.com/grafana/"
+

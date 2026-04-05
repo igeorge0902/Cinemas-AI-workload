@@ -1,0 +1,432 @@
+# API Reference: Cinemas Microservices
+# Quick lookup for all endpoints, parameters, and contracts
+# Last Updated: April 5, 2026
+
+services:
+  dalogin:
+    name: "dalogin-quarkus (Login Gateway)"
+    port: 8080
+    root_path: "/login"
+    database: "login_"
+    primary_role: "Session management, HMAC authentication, proxy servlet gateway"
+
+    endpoints:
+      - path: "/HelloWorld"
+        method: POST
+        description: "HMAC login with password hash"
+        auth: "HMAC-SHA512"
+        parameters:
+          username: "string (email or user ID)"
+          password: "string (SHA3-512 hashed)"
+          deviceId: "string (browser fingerprint)"
+        response:
+          token: "string (X-Token session token)"
+          uuid: "string (user UUID)"
+          status: "string ('OK' or error message)"
+        notes: "Same flow as iOS client; stores session in MySQL session_login table"
+
+      - path: "/CheckOut"
+        method: "GET, POST"
+        description: "Braintree payment gateway proxy"
+        auth: "Session (X-Token cookie)"
+        get_response: "Redirects to mbooks clientToken endpoint"
+        post_parameters:
+          payment_method_nonce: "string (from Braintree Drop-in)"
+          orderId: "number (timestamp in millis)"
+          seatsToBeReserved: "JSON ({seatsToBeReserved:[{screeningDateId:string, seat:string}]})"
+        post_response:
+          status: "string (SUCCESS/FAILURE)"
+          tickets: "array of ticket objects"
+          seatMap: "object (updated seat availability)"
+          transactionId: "string (Braintree transaction ID)"
+        notes: "seat format: 'A1-B2-C3-' (numbers, NOT IDs; trailing dash ignored)"
+
+      - path: "/GetAllPurchases"
+        method: GET
+        description: "Get all purchases for logged-in user"
+        auth: "Session (X-Token cookie)"
+        response:
+          purchases: "array of {purchaseId, orderId, date, totalAmount, totalTax, ticketCount}"
+        cache: "None (fresh on every call)"
+
+      - path: "/ManagePurchases"
+        method: "GET, POST"
+        description: "View/cancel/delete tickets for a purchase"
+        auth: "Session (X-Token cookie)"
+        get_parameters:
+          purchaseId: "number"
+        get_response:
+          tickets: "array of {ticketId, price, tax, seats_seatNumber, seats_seatRow, movie_name, venue_name, screening_date}"
+        post_parameters:
+          purchaseId: "number"
+          ticketsToBeCancelled: "JSON optional ({ticketIds:[...]}); if absent = delete whole purchase"
+        post_response:
+          status: "string (SUCCESS/FAILURE)"
+          refundAmount: "number"
+        notes: "If ticketsToBeCancelled absent: delete entire purchase. Otherwise: cancel only those tickets."
+
+      - path: "/logout"
+        method: GET
+        description: "Destroy session"
+        auth: "Session (X-Token cookie)"
+        response:
+          status: "string (OK)"
+        side_effects: "Removes from MySQL session_login table, clears cookies"
+
+      - path: "/admin"
+        method: GET
+        description: "Get active sessions and connected devices"
+        auth: "Session (X-Token cookie, admin role required)"
+        response:
+          sessions: "array of {creationTime, id, sessionId, user, deviceId}"
+          devices: "array of {deviceId, userAgent, ipAddress}"
+        notes: "Requires session stored in context listener; populates from request attributes"
+
+  mbooks:
+    name: "mbooks-quarkus (Movies, Booking, Payment)"
+    port: 8080
+    root_path: "/mbooks-1/rest/book"
+    database: "book"
+    primary_role: "Movie catalog, venue/seat data, booking, Braintree integration"
+
+    endpoints:
+      - path: "/movies"
+        method: GET
+        description: "List all movies (paginated)"
+        auth: "Public (no auth required)"
+        parameters:
+          paging: "number (page number, optional)"
+        response:
+          movies: "array of {movieId, name, category, picture, rating}"
+        cache: "Yes (movies region, read-write strategy)"
+        notes: "Public endpoint; no HMAC required"
+
+      - path: "/locations"
+        method: GET
+        description: "List all cinema locations"
+        auth: "Public"
+        response:
+          locations: "array of {locationId, name, city, coordinates}"
+        cache: "Yes (location region)"
+
+      - path: "/venue/v2/:movieId"
+        method: GET
+        description: "Get venues screening a movie"
+        auth: "HMAC-SHA512 (can also use session token)"
+        parameters:
+          movieId: "number (path param)"
+        response:
+          venues: "array of {venueId, name, location, screenCount, picture}"
+        notes: "Requires X-HMAC-HASH header or X-Token session cookie"
+
+      - path: "/venue/movies"
+        method: GET
+        description: "Get movies screening at a venue"
+        auth: "Public"
+        parameters:
+          locationId: "number (query param)"
+        response:
+          movies: "array of {movieId, name, picture, screeningCount}"
+
+      - path: "/dates/:locationId/:movieId"
+        method: GET
+        description: "Get screening dates for movie + venue combo"
+        auth: "HMAC-SHA512"
+        response:
+          screeningDates: "array of {screeningDateId, date, time, screenNumber}"
+        cache: "No (freshness required for availability)"
+
+      - path: "/seats/:screeningDateId"
+        method: GET
+        description: "Get seat map for a screening date"
+        auth: "HMAC-SHA512 or Session"
+        response:
+          seats: "array of {seatId, seatNumber, seatRow, isReserved}"
+          screeningDate: "{screeningDateId, movie_name, venue_name, capacity}"
+        cache: "No (must be fresh)"
+        notes: "isReserved: '0' = available, '1' = booked; always query fresh from DB"
+
+      - path: "/payment/clientToken"
+        method: GET
+        description: "Get Braintree client token for Drop-in initialization"
+        auth: "Session (X-Token cookie)"
+        response:
+          clientToken: "string (JWT from Braintree gateway)"
+          APIKEY: "string (session token for web UI caching)"
+        headers_set:
+          APIKEY: "string (response header for web UI to cache)"
+        notes: "Web UI stores APIKEY in localStorage; must be included in all subsequent HMAC requests"
+
+      - path: "/payment/fullcheckout2"
+        method: POST
+        description: "Execute payment + reserve seats"
+        auth: "Session (X-Token cookie) + HMAC validation by RequestFilter"
+        parameters:
+          payment_method_nonce: "string (from Braintree JavaScript SDK)"
+          orderId: "number (timestamp in millis)"
+          seatsToBeReserved: "JSON string ({seatsToBeReserved:[{screeningDateId:string, seat:string}]})"
+        response:
+          status: "string (SUCCESS or error)"
+          authCode: "string (Braintree transaction ID)"
+          amount: "number (total charged)"
+          tax: "number (tax amount)"
+          tickets: "array of created ticket objects"
+          seatsforscreen: "updated seat map"
+        error_scenarios:
+          - "Seat already reserved: returns 400, seats are freed if partially booked"
+          - "Braintree declined: returns 400, seats freed, no Purchase created"
+          - "Missing parameters: returns 400"
+        notes: |
+          - Pessimistic lock acquired on Seat rows BEFORE availability check
+          - If ANY seat unavailable: entire transaction rolled back (all-or-nothing)
+          - Seats are marked isReserved='1' on success
+          - Ticket cache region is evicted after success
+
+      - path: "/purchases"
+        method: GET
+        description: "Get all purchases for user (via session)"
+        auth: "Session (X-Token cookie)"
+        response:
+          purchases: "array of {purchaseId, orderId, totalAmount, totalTax, ticketCount, created}"
+        cache: "No (fresh query)"
+
+      - path: "/purchases/tickets"
+        method: GET
+        description: "Get tickets for a specific purchase"
+        auth: "Session"
+        parameters:
+          purchaseId: "number (query param)"
+        response:
+          tickets: "array of {ticketId, seatNumber, seatRow, movie_name, venue_name, screening_date, price, tax}"
+
+      - path: "/managepurchases"
+        method: POST
+        description: "Cancel specific tickets in a purchase"
+        auth: "Session"
+        parameters:
+          purchaseId: "number (form param)"
+          ticketIds: "JSON array (form param, [{ticketIds:[1,2,3]}])"
+        response:
+          status: "string (SUCCESS)"
+          remainingTickets: "number"
+          refundAmount: "number"
+        notes: "Partial refund calculated per-ticket"
+
+      - path: "/deletepurchases"
+        method: POST
+        description: "Delete entire purchase"
+        auth: "Session"
+        parameters:
+          purchaseId: "number (form param)"
+        response:
+          status: "string (SUCCESS)"
+          refundAmount: "number (full refund)"
+        notes: "All tickets deleted; full refund issued"
+
+      - path: "/ws"
+        method: WebSocket (Upgrade)
+        description: "Real-time seat availability updates"
+        auth: "Session (X-Token cookie via Apache proxy)"
+        path_proxied: "Apache ProxyPass /mbooks-1/ws"
+        behavior: |
+          - Client sends PING frame every 30 seconds (iOS)
+          - Server broadcasts seat updates via Kafka → WebSocket
+          - maxIdleTimeout: 0 (no idle disconnect)
+        notes: "ProxyPass rule MUST come before HTTP /mbooks-1 route in Apache config"
+
+  mbook:
+    name: "mbook-quarkus (Users, Devices, Sessions)"
+    port: 8888
+    root_path: "/mbook-1"
+    database: "login_"
+    primary_role: "User profile, device management, session tracking"
+
+    endpoints:
+      - path: "/rest/user/profile"
+        method: GET
+        description: "Get logged-in user profile"
+        auth: "HMAC-SHA512 (X-Token header via dalogin proxy)"
+        response:
+          userId: "number"
+          username: "string"
+          email: "string"
+          picture: "string (URL or base64)"
+
+      - path: "/rest/device/list"
+        method: GET
+        description: "List devices for user"
+        auth: "HMAC-SHA512"
+        response:
+          devices: "array of {deviceId, userAgent, ipAddress, lastSeen}"
+
+      - path: "/ws"
+        method: WebSocket
+        description: "Real-time user session updates"
+        auth: "Session cookie"
+        behavior: "Broadcasts active session count per user"
+
+  simple_service_webapp:
+    name: "simple-service-webapp-quarkus (Image Serving)"
+    port: 8085
+    root_path: "/simple-service-webapp"
+    database: "N/A (serves files from PVC)"
+    primary_role: "Serve movie posters, venue photos, profile pictures"
+
+    endpoints:
+      - path: "/rest/images/movie/:movieId"
+        method: GET
+        description: "Get movie poster image"
+        auth: "Public"
+        response: "Binary image data (JPEG/PNG)"
+        headers_set:
+          Content-Type: "image/jpeg or image/png"
+          Cache-Control: "public, max-age=3600"
+
+      - path: "/rest/images/venue/:venueId"
+        method: GET
+        description: "Get venue photo"
+        auth: "Public"
+        response: "Binary image data"
+
+      - path: "/rest/images/*"
+        method: GET
+        description: "Generic image serving (catch-all)"
+        auth: "Public"
+        response: "Binary data or 404"
+        storage: "PersistentVolume at /pictures/ (mapped by k8infra/quarkus-backend.yaml)"
+
+---
+
+# HTTP Headers Reference
+
+headers:
+  authentication:
+    X-Token:
+      description: "Session token"
+      set_by: "dalogin"
+      required_for: "All authenticated requests"
+      format: "UUID string (40+ chars)"
+
+    X-HMAC-HASH:
+      description: "HMAC-SHA512 signature"
+      set_by: "Client (iOS or web)"
+      required_for: "HMAC-authenticated requests"
+      format: "base64(hmac_sha512_bytes)"
+
+    X-Device:
+      description: "Device identifier"
+      set_by: "Client"
+      used_by: "mbooks (for seat lock attribution)"
+      format: "UUID or fingerprint string"
+
+    X-Micro-Time:
+      description: "Client timestamp"
+      set_by: "Client"
+      used_in: "HMAC calculation"
+      format: "milliseconds (number)"
+
+    uuid:
+      description: "User UUID"
+      set_by: "Client (from login)"
+      used_by: "mbooks (for purchase tracking)"
+      format: "UUID string"
+
+    XSRF-TOKEN:
+      description: "CSRF protection"
+      set_by: "dalogin CheckOut GET"
+      required_for: "CheckOut POST"
+      format: "AES-encrypted string"
+
+  response_headers:
+    APIKEY:
+      description: "Session token for caching (web UI)"
+      set_by: "mbooks /payment/clientToken"
+      read_by: "Web UI (localStorage)"
+      format: "Token string"
+
+    X-Token:
+      description: "Session token (also response header)"
+      set_by: "dalogin /HelloWorld"
+      read_by: "Client (for Authorization header)"
+      format: "UUID string"
+
+---
+
+# Authentication Flows
+
+authentication:
+
+  hmac_login:
+    endpoint: "POST /login/HelloWorld"
+    flow: |
+      1. Client SHA3-512 hashes password → passHash
+      2. Client calculates secret = HmacSHA512(username, encodeURIComponent(passHash))
+      3. Client calculates X-HMAC-HASH = base64(HmacSHA512(body, secret))
+      4. POST body: username=X&password=passHash&deviceId=fingerprint
+      5. Request headers: X-HMAC-HASH, X-Micro-Time (timestamp), uuid (device UUID)
+      6. Response: { token: "X-Token", uuid: "user-UUID" }
+      7. Client stores X-Token in cookies/localStorage
+
+  session_requests:
+    flow: |
+      1. Client includes X-Token in Authorization or Cookie header
+      2. dalogin CookieFilter extracts X-Token
+      3. Validates against MySQL session_login table
+      4. Sets request attributes: uuid, token2, TIME_
+      5. ServiceClient forwards headers to downstream services
+
+  hmac_requests:
+    flow: |
+      1. Client calculates X-HMAC-HASH from request body + secret
+      2. Includes X-Micro-Time, X-Device, uuid headers
+      3. dalogin RequestFilter validates X-HMAC-HASH
+      4. ServiceClient re-signs for downstream services
+
+---
+
+# Content Security Policy
+
+csp: |
+  Directive: connect-src
+  Allowed:
+    - 'self'
+    - https://milo.crabdance.com
+    - wss://milo.crabdance.com
+    - https://api.sandbox.braintreegateway.com
+    - https://api.braintreegateway.com
+    - https://client-analytics.braintreegateway.com
+    - https://payments.sandbox.braintree-api.com
+    - https://payments.braintree-api.com
+    - https://origin-analytics-sand.sandbox.braintree-api.com
+    - https://www.paypal.com/xoplatform/logger/api/logger
+  
+  Directive: style-src
+  Allowed:
+    - 'self'
+    - 'unsafe-inline' (required by Braintree Drop-in)
+    - https://fonts.googleapis.com
+    - https://cdnjs.cloudflare.com
+    - https://assets.braintreegateway.com
+  
+  Directive: script-src
+  Allowed:
+    - 'self'
+    - https://js.braintreegateway.com
+    - https://www.paypalobjects.com
+    - https://apis.google.com
+
+---
+
+# Error Codes
+
+error_codes:
+  SEAT_UNAVAILABLE: "Seat already booked or in process"
+  PAYMENT_DECLINED: "Braintree transaction failed (insufficient funds, card invalid, etc.)"
+  INVALID_HMAC: "HMAC signature mismatch or missing"
+  SESSION_EXPIRED: "X-Token no longer valid or expired"
+  INSUFFICIENT_PARAMS: "Required parameters missing from request"
+  NOT_FOUND: "Resource (movie, venue, seat) not found"
+  UNAUTHORIZED: "Missing or invalid authentication"
+  INTERNAL_ERROR: "Server error"
+  VALIDATION_ERROR: "Data validation failed"
+
