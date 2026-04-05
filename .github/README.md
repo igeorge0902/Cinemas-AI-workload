@@ -24,7 +24,7 @@ This `.github` folder contains comprehensive guides for AI coding assistants wor
 | File | Lines | Purpose | Audience |
 |------|-------|---------|----------|
 | `instructions.md` | 187 | Primary workflow guide, critical file locations, common mistakes | All developers & AI agents |
-| `skills.md` | 527 | 16 practical patterns, code examples, best practices, review checklist | Backend/frontend/test/infra developers |
+| `skills.md` | 614 | 16 practical patterns with copy-paste code examples (REST, HMAC, booking/payment, WebSocket, SPA routes, iOS async/await, Appium, Python tests, Prometheus, MySQL procedures, deployment, review checklist) | Backend/frontend/test/infra developers |
 | `docs/QUICKSTART.md` | 191 | 5-minute local setup, deploy steps, common tasks, troubleshooting | New developers, quick onboarding |
 | `references/REFERENCE.md` | 470 | Complete API reference, database schemas, entity relationships, debugging | Reference documentation |
 | `agents/AGENTS.md` | 457 | Comprehensive system architecture, entity relationships, refactoring roadmap | Architecture review, entity decisions |

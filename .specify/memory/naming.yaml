@@ -427,6 +427,7 @@ service_contracts:
 references:
   api_reference: ".specify/memory/api.yaml"
   k8s_reference: ".specify/memory/k8s.yaml"
+  code_patterns: ".github/skills/skills.md (16 copy-paste patterns)"
   git_repos: "https://github.com/igeorge0902/{service}.git"
   braintree_docs: "https://developer.braintreegateway.com/"
 

@@ -358,6 +358,7 @@ All `.run/` configs are pre-configured and ready to use:
 | Topic | File | Lines |
 |-------|------|-------|
 | System architecture | `.github/instructions/instructions.md` | All |
+| **Copy-paste code patterns** | **`.github/skills/skills.md`** | **All (16 patterns)** |
 | Entity relationships | `.github/agents/AGENTS.md` | (todo) |
 | Kubernetes setup | `k8infra/README-k8s-local.md` | All |
 | Appium test guide | `appium/README.md` | All |

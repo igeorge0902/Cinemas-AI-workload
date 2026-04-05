@@ -472,6 +472,7 @@ All of the following files are designed to guide AI coding agents. They are vers
 | **`.github/agents/AGENTS.md`** | Comprehensive system architecture (this file) — entity relationships, payment workflows, refactoring roadmap, L2 caching deep-dive | Architecture decisions, entity-level changes |
 | **`.github/agents/agents-role.yaml`** | Agent role definitions (backend-dev, devops, ios-dev) for specialised task routing | AI agent orchestration |
 | **`.github/instructions/instructions.md`** | Workflow guide with critical file locations, common mistakes, hardcoded contracts, run configurations | Day-to-day development |
+| **`.github/skills/skills.md`** | 16 copy-paste-ready code patterns: REST endpoints, Hibernate entities, HMAC auth, booking/payment flow, WebSocket, Quarkus config, Film-Review SPA routes, iOS async/await services, Appium page objects, Python API tests, Prometheus metrics, MySQL procedures, deployment steps, code review checklist | Any developer needing a working code example fast |
 | **`.github/docs/QUICKSTART.md`** | 5-minute local setup, deploy steps, troubleshooting commands | New developers, quick onboarding |
 | **`.github/docs/system-documentation.html`** | Inline SVG diagrams (architecture, auth flow, booking flow, entity relationships), Hibernate caching deep-dive | Visual learners, architecture review |
 | **`.specify/memory/constitution.md`** | Speckit AI context — project identity, tech stack, critical decisions, hardcoded contracts, debugging patterns (primary reference for AI agents) | AI agents (loaded first) |

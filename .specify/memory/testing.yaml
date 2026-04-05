@@ -583,6 +583,7 @@ troubleshooting:
 
 references:
   unit_test_docs: "dalogin-quarkus/src/test/java/ (code examples)"
+  code_patterns: ".github/skills/skills.md (skills 9–12: Quarkus tests, Appium page objects, iOS async/await, Python API tests)"
   appium_docs: "appium/README.md"
   appium_test_guide: "docs/appium-test-documentation.html"
   system_docs: "docs/system-documentation.html"
