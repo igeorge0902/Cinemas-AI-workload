@@ -1,0 +1,235 @@
+Feature: Standardise Alert Controllers & Handle WebSocket Messages App-Wide
+
+🧠 Overview
+
+Two related gaps exist in the current iOS codebase:
+
+1. Alert Controllers (UIKit-wide)
+   - `presentAlert(withTitle:message:)` and `presentAlertWithFunction(withTitle:message:function:)`
+     are defined as `UIViewController` extension methods in `HomeVC.swift`.
+   - They are called across `BasketVC`, `MenuVC`, `PurchasesVC`, `SignupVC` —
+     any VC that inherits `UIViewController` picks them up — but:
+     - The definition lives in a file named after a specific VC (`HomeVC.swift`),
+       making it hard to find and maintain.
+     - There is no SwiftUI equivalent — any future SwiftUI view that needs
+       to show an alert must reinvent the pattern.
+     - `presentAlertWithFunction` hardcodes `"sendEmail"` as a magic string
+       and mixes presentation logic with business logic (triggering activation).
+     - No `.destructive` or multi-action alert pattern exists yet.
+
+2. WebSocket Incoming Messages (no UI handling)
+   - `WebSocketManager.receiveMessage()` receives server-sent messages and only
+     calls `print()` — the message content is discarded.
+   - The backend broadcasts seat-availability updates via Kafka → WebSocket
+     after a booking completes (see `mbooks-quarkus` `WebSocketServer.broadcast()`).
+   - No VC or view currently observes these messages to refresh the seat map
+     or notify the user.
+
+This feature:
+- Extracts alert helpers into a dedicated, reusable file (`AlertPresenter.swift`)
+- Defines a typed `AlertMessage` model instead of loose title/message strings
+- Provides a SwiftUI-compatible `AlertItem` binding pattern
+- Wires `WebSocketManager` to publish incoming messages via `Combine` / `@Published`
+  so any observing view can react (refresh seat map, show alert)
+
+───────────────────────────────────────────────────
+🔁 Current State (as-found in codebase)
+───────────────────────────────────────────────────
+
+Alert usage sites:
+
+| File | Call site | Alert title |
+|------|-----------|-------------|
+| BasketVC.swift:221 | `book()` — empty basket | "Warning!" |
+| BasketVC.swift:316 | `postNonceToServer()` — payment success | "Payment info:" |
+| BasketVC.swift:337 | `postNonceToServer()` — booking failed | "Booking failed with payment info:" |
+| BasketVC.swift:343 | `postNonceToServer()` — payment error | "Booking failed with payment info:" |
+| MenuVC.swift:149 | `viewDidLoad` — activation required | "Warning!" via presentAlertWithFunction |
+| MenuVC.swift:154 | `viewDidLoad` — session error | "No valid session!" |
+| MenuVC.swift:157 | `viewDidLoad` — network error | "Error!" |
+| MenuVC.swift:169 | `logoutTapped` — logout success | "Logout Successful" |
+| MenuVC.swift:172 | `logoutTapped` — logout failed | "Logout Failed" |
+| PurchasesVC.swift:234 | delete purchase success | "Info" |
+| PurchasesVC.swift:275 | error handler | "Error" |
+| SignupVC.swift:131,134,137,152,185,188,272 | various signup errors | multiple |
+
+Alert definitions (HomeVC.swift lines 224–266):
+
+```swift
+// UIViewController extension — currently embedded in HomeVC.swift
+extension UIViewController {
+    func presentAlert(withTitle title: String, message: String)
+    func presentAlertWithFunction(withTitle title: String, message: String, function: String)
+}
+```
+
+WebSocket current state (Websocket.swift):
+
+```swift
+case .string(let text):
+    print("Received: \(text)")   // ← message is dropped, no observer
+case .data(let data):
+    print("Received binary data: \(data)")   // ← dropped
+```
+
+───────────────────────────────────────────────────
+🎯 Goals
+───────────────────────────────────────────────────
+
+Alert Controllers:
+- Move alert helpers out of HomeVC.swift into a dedicated AlertPresenter.swift
+- Replace magic-string function parameter with a typed Action enum
+- Add SwiftUI .alert() binding pattern via AlertItem struct
+- Preserve all existing call sites — no behaviour change
+
+WebSocket Incoming Messages:
+- Publish incoming string messages via Combine @Published / PassthroughSubject
+- Define typed WebSocketMessage enum (seatUpdate, genericNotification, unknown)
+- Parse server JSON payload into structured model
+- Allow any VC or SwiftUI View to subscribe and react
+- Show seat-availability alert or trigger seat map refresh on seatUpdate event
+
+───────────────────────────────────────────────────
+❗ Functional Requirements
+───────────────────────────────────────────────────
+
+## Alert Controllers
+
+REQ-ALERT-1: Move presentAlert and presentAlertWithFunction out of HomeVC.swift
+  into a new file: SwiftLoginScreen/Alerts/AlertPresenter.swift
+
+REQ-ALERT-2: Replace the "function" string parameter with a typed enum:
+  enum AlertAction {
+      case none
+      case resendActivation   // replaces "sendEmail"
+      case custom(() -> Void)
+  }
+
+REQ-ALERT-3: New signature (backward compatible via default parameter):
+  func presentAlert(withTitle title: String, message: String, action: AlertAction = .none)
+
+REQ-ALERT-4: Provide SwiftUI-compatible AlertItem for use with .alert(item:):
+  struct AlertItem: Identifiable {
+      var id = UUID()
+      var title: String
+      var message: String
+      var action: AlertAction = .none
+  }
+
+REQ-ALERT-5: All existing call sites MUST compile unchanged
+  (presentAlert(withTitle:message:) signature is preserved)
+
+REQ-ALERT-6: presentAlertWithFunction call sites in MenuVC MUST be updated
+  to use the new AlertAction.resendActivation case
+
+REQ-ALERT-7: No new third-party dependencies — use UIKit UIAlertController only
+
+## WebSocket Incoming Messages
+
+REQ-WS-1: WebSocketManager MUST expose a Combine publisher for incoming messages:
+  var messagePublisher: AnyPublisher<WebSocketMessage, Never>
+
+REQ-WS-2: Define WebSocketMessage enum:
+  enum WebSocketMessage {
+      case seatUpdate(screeningDateId: String, seats: [SeatUpdate])
+      case genericNotification(text: String)
+      case unknown(raw: String)
+  }
+
+REQ-WS-3: WebSocketManager.receiveMessage() MUST parse incoming JSON and
+  publish a typed WebSocketMessage instead of only printing
+
+REQ-WS-4: Expected server JSON payload format (from mbooks WebSocketServer):
+  { "type": "SEAT_UPDATE", "screeningDateId": "5", "seats": [...] }
+  Fall back to genericNotification for any non-JSON or unrecognised format
+
+REQ-WS-5: SeatsVC (or its ViewModel) MUST subscribe to messagePublisher and
+  refresh the seat map when a seatUpdate message arrives for the current screeningDateId
+
+REQ-WS-6: A received seatUpdate MUST show a non-blocking toast or inline
+  indicator ("Seat map updated") — NOT a modal UIAlertController
+  (to avoid interrupting the user mid-selection)
+
+REQ-WS-7: A received genericNotification SHOULD show a presentAlert with
+  title "Notification" and the message text
+
+REQ-WS-8: Reconnect logic MUST be preserved unchanged (3-second backoff)
+
+REQ-WS-9: MUST remain compatible with URLSessionWebSocketTask (no new WS library)
+
+───────────────────────────────────────────────────
+🔗 Architecture Constraints
+───────────────────────────────────────────────────
+
+Alert:
+- AlertPresenter.swift lives in SwiftLoginScreen/Alerts/ (new folder)
+- UIViewController extension is the delivery mechanism for UIKit VCs
+- SwiftUI views use @State var alertItem: AlertItem? + .alert(item: $alertItem)
+- AppDelegate / AppServices do NOT need changes
+
+WebSocket:
+- WebSocketManager is a class (not actor) — use DispatchQueue.main for UI publishes
+- Use PassthroughSubject<WebSocketMessage, Never> internally,
+  expose as AnyPublisher via .eraseToAnyPublisher()
+- SeatUpdate model: { seatId, seatNumber, seatRow, isReserved }
+  (matches mbooks DAO.getSeatsForScreening response shape)
+- WebSocketManager is held by AppDelegate / AppServices — inject into VCs
+  via HasAppServices protocol (existing pattern)
+- No new singleton — pass via dependency injection
+
+───────────────────────────────────────────────────
+📁 Files to Create / Modify
+───────────────────────────────────────────────────
+
+New:
+- SwiftLoginScreen/Alerts/AlertPresenter.swift
+    - UIViewController extension (presentAlert, presentAlertWithFunction removed)
+    - AlertItem struct
+    - AlertAction enum
+
+Modified:
+- SwiftLoginScreen/HomeVC.swift
+    - Remove UIViewController extension (move to AlertPresenter.swift)
+
+- SwiftLoginScreen/MenuVC.swift
+    - Update presentAlertWithFunction call → presentAlert(action: .resendActivation)
+
+- SwiftLoginScreen/BroadCasting/Websocket.swift
+    - Add PassthroughSubject<WebSocketMessage, Never>
+    - Add WebSocketMessage enum
+    - Add SeatUpdate model
+    - Replace print() in receiveMessage() with subject.send(parsed)
+
+- SwiftLoginScreen/SeatsVC.swift (or SeatMapViewModel if already extracted)
+    - Subscribe to WebSocketManager.messagePublisher
+    - On seatUpdate matching current screeningDateId: refresh seat list
+    - Show inline "Seat map updated" indicator (not modal alert)
+    - On genericNotification: presentAlert
+
+- SwiftLoginScreen/AppServices.swift (or AppDelegate.swift)
+    - Ensure WebSocketManager instance is accessible via HasAppServices
+
+───────────────────────────────────────────────────
+📊 Success Criteria
+───────────────────────────────────────────────────
+
+Alerts:
+- [ ] AlertPresenter.swift exists; UIViewController extension is NOT in HomeVC.swift
+- [ ] All 20 existing presentAlert call sites compile unchanged
+- [ ] MenuVC resendActivation path uses AlertAction.resendActivation (no magic string)
+- [ ] AlertItem can be used in any SwiftUI view with .alert(item:)
+- [ ] No UIAlertView usage exists anywhere in the codebase
+
+WebSocket:
+- [ ] WebSocketManager publishes typed WebSocketMessage (not just print)
+- [ ] SeatsVC refreshes seat map on receiving seatUpdate for current screeningDateId
+- [ ] No modal alert interrupts seat selection for seatUpdate events
+- [ ] genericNotification shows a modal alert
+- [ ] Reconnect behavior is unchanged
+- [ ] Existing ping/pong timer is unaffected
+
+General:
+- [ ] No regression in BasketVC checkout, MenuVC logout, PurchasesVC delete,
+      SignupVC flows
+- [ ] No new third-party dependencies introduced
+
