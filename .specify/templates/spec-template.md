@@ -5,6 +5,21 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+## Contract IDs *(mandatory)*
+
+- **CID-XXX**: [Existing or new contract ID from `.github/references/CONTRACTS_INDEX.md`]
+- **CID-YYY**: [If multiple endpoints/contracts are impacted]
+
+## Definition of Done *(mandatory)*
+
+- [ ] Feature has a spec.
+- [ ] Implementation matches spec intent and acceptance criteria.
+- [ ] Implementation is tested and test evidence is recorded.
+- [ ] `@testing-engineer` gate completed.
+- [ ] `@security-specialist` gate completed.
+- [ ] `@performance-engineer` gate completed.
+- [ ] Contract IDs are up to date in `.github/references/CONTRACTS_INDEX.md`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

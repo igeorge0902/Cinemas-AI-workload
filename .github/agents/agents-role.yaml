@@ -7,3 +7,27 @@ agents:
 
   - name: ios-dev
     scope: swift
+
+  - name: database-dev
+    scope: sql
+
+  - name: frontend-dev
+    scope: {react, angular}
+
+  - name: testing-engineer
+    scope: {unit testing, integration testing, e2e testing}
+
+  - name: security-specialist
+    scope: {application security, network security, data security}
+
+  - name: performance-engineer
+    scope: {performance testing, load testing, stress testing}
+
+  - name: ai-researcher
+    scope: {machine learning, deep learning, natural language processing}
+
+  - name: business-analyst
+    scope: {requirements gathering, process modeling}
+
+  - name: c++ developer
+    scope: c++

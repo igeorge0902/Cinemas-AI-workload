@@ -167,89 +167,13 @@ Modern async/await + centralized networking layer replaced callback-based implem
 | **TestNG direct** | `appium/src/test/java/` | `.run/appium - java direct (testng)` | Run via IDE test runner |
 | **Python API tests** | `k8infra/` | `.run/k8s - test-login.py` | `python test-login.py` |
 
-### Infrastructure as Code
-- `k8infra/quarkus-backend.yaml` — Kubernetes manifests (services, deployments, configmaps, statefulsets)
-- `k8infra/settings-local.xml` — Maven proxy settings (bypass external repos)
-- `k8infra/README-k8s-local.md` — Deployment runbook (Minikube setup, tunnel, verification)
-
 ## Key Code Patterns
 
-### Adding a New REST Endpoint
-```java
-@Path("/resource")
-@Produces(MediaType.APPLICATION_JSON)
-public class ResourceResource {
-
-  @GET
-  public Response getResource(@Context HttpServletRequest request) {
-    // 1. Extract session if authenticated
-    String sessionUUID = RequestFilter.getSessionUUID(request);
-    if (sessionUUID == null) return Response.status(401).build();
-
-    // 2. Perform business logic
-    List<Object> result = dao.fetchResource();
-
-    // 3. Return JSON
-    return Response.ok(result).build();
-  }
-}
-```
-
-### Modifying Seat Availability
-```java
-// In DAO.java (synchronized method)
-public synchronized void bookTickets(String screeningDateId, List<String> seats) {
-  session.beginTransaction();
-  try {
-    // 1. Lock seats for update
-    Query query = session.createQuery("FROM Seat WHERE screeningDateId = :id")
-      .setLockMode(LockModeType.PESSIMISTIC_WRITE);
-    List<Seat> lockedSeats = query.getResultList();
-
-    // 2. Verify availability (NEVER use == for string comparison)
-    for (Seat seat : lockedSeats) {
-      if (!seat.getIsReserved().equals("0")) throw new Exception("Seat unavailable");
-    }
-
-    // 3. Create tickets + purchase
-    // ... ticket creation logic ...
-
-    // 4. Cache invalidation
-    sessionFactory.getCache().evictRegion("ticket");
-
-    session.getTransaction().commit();
-  } catch (Exception e) {
-    session.getTransaction().rollback();
-    throw e;
-  }
-}
-```
-
-### iOS Async Service Call
-```swift
-// In BackendServices.swift
-func getMovies(pageNumber: Int) async throws -> [Movie] {
-  let endpoint = Endpoint(
-    path: "/mbooks-1/rest/book/movies",
-    method: .get,
-    query: ["paging": String(pageNumber)],
-    headerProvider: SessionHeaderProvider()
-  )
-
-  let response: [Movie] = try await apiClient.request(endpoint)
-  return response
-}
-```
-
-### HMAC Calculation (Web/iOS)
-```javascript
-// In web UI app.js
-function calculateHMAC(body, secret) {
-  const combined = body + secret;
-  const hash = CryptoJS.SHA512(combined);
-  return btoa(hash.toString(CryptoJS.enc.Base64));
-}
-```
+Implementation templates and copy-paste snippets are intentionally **not duplicated** in this constitution.
+Use these canonical sources instead:
+- `.github/skills/skills.md` — reusable coding patterns (REST, auth, payment, WebSocket, tests, deployment helpers)
+- `.github/instructions/instructions.md` — operational routing (where to edit, quick checks, gotchas)
+- `.github/agents/AGENTS.md` — architecture deep-dive and immutable service contracts
 
 ## Common Failure Modes
 
@@ -282,76 +206,14 @@ function calculateHMAC(body, secret) {
 3. ✅ Confirm Apache `ProxyPass` includes `/simple-service-webapp` route
 4. ✅ Verify PVC for image storage is mounted (check `k8infra/quarkus-backend.yaml`)
 
-## Observability Setup
+## Observability, deployment, and IDE execution
 
-### Prometheus Metrics
-- Scrape endpoint: All services expose `/metrics` (Quarkus default)
-- Targets: `k8infra/quarkus-backend.yaml` configures StatefulSet for auto-discovery
-- Key metrics: `http_requests_total`, `jvm_memory_used_bytes`, `db_connection_pool_active`
-- Retention: 15 days (configurable in `prometheus.yaml`)
-
-### Grafana Dashboards
-- **Service Health:** HTTP request rate, p95 latency, 5xx errors (per service)
-- **JVM Metrics:** Heap memory, thread count, GC pause times (per service)
-- **Database:** Connection pool, slow query log, replication lag
-- Data source: Prometheus (http://prometheus:9090)
-
-### Tempo Trace Collection
-- Collector endpoint: `/metrics` exports traces to Tempo
-- Query UI: Grafana Tempo plugin (https://localhost:3000/explore)
-- Service graph: Automatically generated from trace metadata
-- Retention: 48 hours (configurable in `values.yaml`)
-
-## Deployment Quick Reference
-
-### Build All Services
-```bash
-./mvnw -s k8infra/settings-local.xml package -DskipTests
-```
-
-### Deploy to Minikube
-```bash
-eval $(minikube docker-env)
-docker build -t dalogin:local ./dalogin-quarkus
-docker build -t mbook:local ./mbook-quarkus
-docker build -t mbooks:local ./mbooks-quarkus
-docker build -t simple-service-webapp:local ./simple-service-webapp-quarkus
-eval $(minikube docker-env --unset)
-
-kubectl apply -f k8infra/quarkus-backend.yaml
-sudo minikube tunnel
-```
-
-### Verify Deployment
-```bash
-# Check pods
-kubectl get pods -n default
-
-# Check services
-kubectl get svc
-
-# Port forward for testing
-kubectl port-forward svc/dalogin 8080:8080
-```
-
-### Run Test Suites
-```bash
-# API tests
-python k8infra/test-login.py
-
-# iOS UI tests
-mvn test -f appium/pom.xml -s k8infra/settings-local.xml
-
-# Direct TestNG (bypass Maven exec plugin)
-cd appium && java -cp target/test-classes:target/classes:...libs/* org.testng.TestNG testng.xml
-```
-
-## IntelliJ Run Configurations
-
-All `.run/` configs are pre-configured and ready to use:
-- Maven configs use `myGeneralSettings` profile → `k8infra/settings-local.xml`
-- Shell configs use bash on macOS
-- Configs are NOT synced to Git; keep local
+This constitution intentionally keeps only durable system principles.
+For operational procedures and command catalogs, use:
+- `k8infra/README-k8s-local.md` — deployment, image build/load, TLS, tunnel, verification
+- `k8infra/quarkus-backend.yaml` — canonical observability stack wiring (Prometheus, Tempo, Grafana)
+- `.github/instructions/instructions.md` — day-to-day quick reminders
+- `.run/` + `.github/agents/AGENTS.md` — run configuration inventory
 
 ## References for Further Reading
 

@@ -1,0 +1,49 @@
+Phase 1 — Command contract and scaffold (`@platform-engineer` + `@backend-dev`)
+- [x] Add orchestrator entrypoint under `k8infra`.
+- [x] Implement CLI contract: `up`, `status`, `restart <service>`, `down`.
+- [x] Add consistent output format (step banner, pass/fail, next action).
+Completion check
+- [x] Command help/usage shows all supported modes and exits with correct codes.
+
+Phase 2 — Prerequisites and cluster controls (`@platform-engineer` + `@devops`)
+- [x] Add checks for `colima`, `minikube`, `kubectl` availability.
+- [x] Add cluster/ingress readiness checks before deployment steps.
+- [x] Add deterministic fail-fast handling for missing prerequisites.
+Completion check
+- [x] Broken prerequisite scenario exits non-zero and points to the failing prerequisite.
+
+Phase 3 — Dependency-aware startup (`@platform-engineer` + `@backend-dev`)
+- [x] Apply `k8infra/quarkus-backend.yaml` in namespace `cinemas`.
+- [x] Gate service startup/readiness in order: `mysql` -> `dalogin` -> `mbook` -> `mbooks` -> `simple-service-webapp`.
+- [x] Add readiness wait/retry logic per service with timeout.
+Completion check
+- [x] `up` blocks on unhealthy dependency and reports precise failing step/service.
+
+Phase 4 — Seed hooks and status endpoint checks (`@backend-dev` + `@testing-engineer`)
+- [x] Add optional seed hooks for `mysql_8/login.sql` and `mysql_8/book.sql`.
+- [x] Implement `status` mode for pod/service/ingress health snapshot.
+- [x] Add endpoint reachability checks for login, mbooks locations, simple-service health.
+Completion check
+- [x] `status` reports service readiness and endpoint results in one run.
+
+Phase 5 — Targeted restart and controlled shutdown (`@platform-engineer` + `@devops`)
+- [x] Implement `restart <service>` path using existing runbook service/image/deployment naming.
+- [x] Ensure restart path is scoped to one service and does not restart the full stack.
+- [x] Implement `down` to stop stack components without deleting PVCs by default.
+Completion check
+- [ ] Restart of one service leaves other deployments untouched; PVCs persist after `down`.
+
+Phase 6 — Documentation and validation (`@testing-engineer` + `@security-specialist` + `@performance-engineer`)
+- [x] Update `k8infra/README-k8s-local.md` with orchestrator usage examples and fallback manual commands.
+- [ ] Run startup validation against required URLs from spec acceptance criteria.
+- [ ] Review command output/logging for sensitive data leakage.
+- [ ] Record startup timing baseline and retry behavior notes.
+Completion check
+- [ ] Docs and validation evidence are captured and match `speckit.system.k8s-startup-orchestrator.specify`.
+
+Definition of Done sign-off
+- [ ] Spec + implementation + tested evidence present.
+- [ ] `@testing-engineer` verification completed.
+- [ ] `@security-specialist` verification completed.
+- [ ] `@performance-engineer` verification completed.
+

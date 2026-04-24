@@ -2,6 +2,8 @@
 
 Complete reference of key files, APIs, database schemas, and decision trees for development.
 
+Canonical endpoint contract IDs are maintained in `.github/references/CONTRACTS_INDEX.md`.
+
 ## Architecture at a Glance
 
 ```

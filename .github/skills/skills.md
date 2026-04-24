@@ -1,5 +1,11 @@
 # Skills & Common Tasks for Cinemas Project
 
+## Document scope
+- This file contains **implementation patterns and copy-paste snippets only**.
+- Keep architecture, contracts, and system boundaries in `.github/agents/AGENTS.md`.
+- Keep task routing and "where to edit" navigation in `.github/instructions/instructions.md`.
+- Keep immutable project principles in `.specify/memory/constitution.md`.
+
 ## AI Assistant Proficiencies
 
 This guide documents repeatable patterns and common tasks that AI assistants should handle efficiently in this codebase.
@@ -590,24 +596,7 @@ When reviewing Cinemas code changes:
 - ✅ **iOS service calls** — use `BackendServices` classes, proper `HeaderProvider`, async/await pattern
 - ✅ **Response caching** — GET requests set `cacheKey` if Realm caching needed
 
-## Quick Lookups
-
-**"Where is X?"**
-- Auth logic: `dalogin-quarkus/src/main/java/com/dalogin/filters/` + `servlets/`
-- Booking logic: `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` + `service/` + `booking/` + `db/`
-- User profile: `mbook-quarkus/src/main/java/com/jeet/rest/UserController.java`
-- Image serving: `simple-service-webapp-quarkus/src/main/java/com/jeet/ImageResource.java`
-- Web UI: `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/app.js`
-- iOS client: `SwiftCinemas/` folder
-- iOS networking: `SwiftCinemas/SwiftLoginScreen/Networking/` (APIClient, BackendServices, Endpoint, HeaderProvider, URLManager, AppError)
-- Tests: `appium/src/test/java/`, `k8infra/test-*.py`
-- Infrastructure: `k8infra/quarkus-backend.yaml`, `k8infra/kubernetes.yaml` (legacy)
-
-**"How do I...?"**
-- Add an endpoint: Start in `BookController.java` or create new `*Resource.java`
-- Add a filter: `dalogin-quarkus/src/main/java/com/dalogin/filters/` + register in `web.xml`
-- Invalidate cache: Use `cache.evict(region)` from Infinispan in DAO
-- Check entity fetch strategy: Read AGENTS.md "Hibernate entity relationships" table
-- Fix a payment issue: Check `BookController.fullcheckout2()` → `TicketService` → `DAO.bookTickets()` → rollback logic
-- Test WebSocket: `curl -sk --http1.1 ... -H 'Upgrade: websocket' ... https://milo.crabdance.com/mbook-1/ws`
-
+## References (for navigation, not patterns)
+- "Where is X?" and "How do I...?" quick lookup lists live in `.github/instructions/instructions.md`.
+- Deep architecture and contract details live in `.github/agents/AGENTS.md`.
+- Speckit constitutional rules live in `.specify/memory/constitution.md`.

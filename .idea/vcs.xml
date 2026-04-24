@@ -8,6 +8,7 @@
     <mapping directory="$PROJECT_DIR$/k8infra" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/mbook-quarkus" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/mbooks-quarkus" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/openCV" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/simple-service-webapp-quarkus" vcs="Git" />
   </component>
 </project>

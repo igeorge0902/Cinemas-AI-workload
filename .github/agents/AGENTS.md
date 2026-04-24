@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Document scope
+- This file is the **architecture + contract source of truth** (service boundaries, data flow, immutable header/payload contracts, entity relationships, and cross-service behavior).
+- Keep implementation snippets, step-by-step coding templates, and copy-paste recipes in `.github/skills/skills.md`.
+- Keep day-to-day task routing, run/test workflow reminders, and quick "where to edit" guidance in `.github/instructions/instructions.md`.
+- Keep Speckit agent memory and constitutional rules in `.specify/memory/constitution.md`.
+
 ## Technology versions
 - **Java 17** — all backend services and the Appium test suite.
 - **Quarkus 3.19.4** — all four backend services (`quarkus-bom` version in each `pom.xml`).
@@ -263,7 +269,7 @@ The method is `synchronized` (JVM-level) and uses `PESSIMISTIC_WRITE` (database-
    - Creates new `Venues` entity → associates with Location + a new `Screen`.
    - Creates new `ScreeningDates` entity → associates with Venues.
    - Creates new `Screen` entity → associates with Movie + ScreeningDates.
-   - Batch-generates `Seats` (row×column loop, `session.save()` each). Batch size 20.
+   - Batch-generates `Seats` (row×column, `session.save()` each). Batch size 20.
    - `CascadeType.ALL` on `Venues.screen` and `ScreeningDates.venues` propagates saves.
    - After commit: `movies` and `venues` L2 cache regions are invalidated for affected entities.
    - Publishes Kafka event via `KafkaMessageProducer` on background executor.
@@ -428,7 +434,7 @@ Each service is a separate Git repository under the `igeorge0902` organisation:
 - WebSocket servers are exposed at `@ServerEndpoint("/ws")`; Apache proxies `/mbook-1/ws` and `/mbooks-1/ws`.
 - iOS currently assumes production hostnames via `URLManager.baseHost` (`milo.crabdance.com`); the WebSocket URL (`wss://milo.crabdance.com/mbook-1/ws`) is built from `URLManager.webSocketURL`. To point the app at a local backend, change `baseHost` in `URLManager.swift`.
 - A `pictures-pvc` PersistentVolumeClaim (500 Mi) is defined in the manifest and **wired** to the `simple-service-webapp` deployment. Pictures persist across pod restarts. After first deployment, copy pictures once with `tar cf - -C pictures . | kubectl exec -n cinemas -i <pod> -- tar xf - -C /pictures/`.
-- MySQL uses `emptyDir: {}` by default — data is lost on pod restart; re-import from `mysql_8/*.sql` or from an external master dump. See `k8infra/README-k8s-local.md` step 4a for the full restore-from-master workflow (dump → import → re-grant → restart services to clear L2 cache).
+- MySQL now uses `mysql-pvc` by default in `quarkus-backend.yaml` (2 Gi, `ReadWriteOnce`), so `login_` and `book` data persist across pod restarts and rollouts. To reset to a clean state, delete/recreate `mysql-pvc` and re-import `mysql_8/*.sql`.
 - There are committed credentials/secrets in repo files; do not copy them into new docs or code when env/config overrides will do.
 
 ### Apache security headers

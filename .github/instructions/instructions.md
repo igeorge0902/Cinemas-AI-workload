@@ -1,5 +1,11 @@
 # Copilot Instructions for Cinemas Project
 
+## Document scope
+- This file is the **operational playbook**: where to edit, what to check first, and common pitfalls.
+- Keep architecture and immutable contracts in `.github/agents/AGENTS.md`.
+- Keep copy-paste coding templates in `.github/skills/skills.md`.
+- Keep Speckit constitutional rules in `.specify/memory/constitution.md`.
+
 ## Overview
 This is a **multi-service Quarkus-based cinema booking system** with an iOS client, web UI, and Kubernetes infrastructure. The project consists of four backend services, a MySQL database, and a comprehensive test suite using Appium for iOS automation.
 
@@ -25,6 +31,7 @@ This is a **multi-service Quarkus-based cinema booking system** with an iOS clie
 ### Documentation (Reference Before Editing)
 - **Speckit Constitution:** `.specify/memory/constitution.md` (AI agent project context - **primary reference**)
 - **Architecture & Design:** `.github/agents/AGENTS.md` (comprehensive system overview)
+- **Implementation Patterns:** `.github/skills/skills.md` (copy-paste templates for backend/frontend/iOS/testing)
 - **Local Deployment:** `k8infra/README-k8s-local.md` (step-by-step runbook)
 - **System HTML Docs:** `docs/system-documentation.html`, `docs/appium-test-documentation.html`
 - **iOS Client Docs:** `SwiftCinemas/swiftcinemas-documentation.html`
@@ -166,30 +173,23 @@ Edit `k8infra/quarkus-backend.yaml` for local K8s manifests:
 
 ## Quick Deploy Commands
 
+Use `k8infra/README-k8s-local.md` as the canonical deployment/runbook source.
+Keep this file lightweight and avoid duplicating the full command catalog.
+
+Minimal reminder flow:
+
 ```bash
-# Build all backend services
+# 1) Build modules
 ./mvnw -s k8infra/settings-local.xml package -DskipTests
 
-# Build Docker images into Minikube
-eval $(minikube docker-env)
-docker build -t dalogin:local ./dalogin-quarkus
-docker build -t mbook:local ./mbook-quarkus
-docker build -t mbooks:local ./mbooks-quarkus
-docker build -t simple-service-webapp:local ./simple-service-webapp-quarkus
-eval $(minikube docker-env --unset)
+# 2) Build/load images (choose docker-env or podman workflow)
+# See: k8infra/README-k8s-local.md
 
-# Deploy to Minikube
+# 3) Apply manifests
 kubectl apply -f k8infra/quarkus-backend.yaml
 
-# Tunnel for iOS simulator (keep running)
+# 4) Keep ingress reachable for iOS/web
 sudo minikube tunnel
-
-# Verify WebSocket
-curl -sk --http1.1 -o /dev/null -w "%{http_code}\n" \
-  -H 'Upgrade: websocket' -H 'Connection: Upgrade' \
-  -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
-  -H 'Sec-WebSocket-Version: 13' \
-  https://milo.crabdance.com/mbook-1/ws
 ```
 
 ## When You're Stuck
@@ -220,4 +220,3 @@ The constitution contains:
 ---
 
 **Always reference Speckit constitution (`.specify/memory/constitution.md`) or AGENTS.md before editing architecture/entity relationships.** If in doubt, ask or read the system-documentation.html.
-

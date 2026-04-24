@@ -1,0 +1,79 @@
+Feature Plan: Timeline Feed backend endpoint
+
+Objective
+- Add a backend timeline feed endpoint for infinite scrolling consumption by Web and iOS clients.
+- Keep scope backend-only: database model + API contract + service wiring (no UI planning).
+- Store feed items in a new table inside the booking database (`mbooks`).
+
+Role ownership
+- Primary API implementation: `@backend-dev`
+- Database schema/query design: `@database-dev`
+- Deployment/rollout verification: `@devops`
+- Consumer contract validation (Angular): `@frontend-dev`
+- Consumer contract validation (Swift): `@ios-dev`
+- Test strategy and smoke/integration verification: `@testing-engineer`
+- Cursor/input hardening and data exposure review: `@security-specialist`
+- Pagination/query performance validation: `@performance-engineer`
+- Scope slicing and acceptance criteria alignment: `@business-analyst`
+
+Baseline (as-found)
+- Existing booking APIs are exposed under `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` (`/rest/book/...`).
+- Current data model has movies, tickets, purchases, venues, seats, but no timeline/news entity.
+- Web and iOS already consume `/mbooks-1/rest/book/...` endpoints and require stable JSON contracts.
+
+Proposed endpoint
+- Method: `GET`
+- Path: `/rest/book/timeline-feed`
+- Query params:
+  - `limit` optional, default `20`, min `1`, max `50`
+  - `cursor` optional opaque token for next page
+  - `kind` optional filter (`all`, `movie`, `actor`), default `all`
+- Response:
+  - `items` array ordered newest-first
+  - `nextCursor` token for subsequent page
+  - deterministic keyset pagination behavior
+
+High-level implementation sequence
+1. Add new timeline table/entity in booking DB and Java model mapping.
+2. Add DAO keyset query (order by publish timestamp desc, id desc).
+3. Add service mapping in `BookingHandlerImpl` to API DTOs.
+4. Add `BookController` endpoint for `/rest/book/timeline-feed`.
+5. Add validation for `limit`, `kind`, and malformed cursor.
+6. Add tests for first page, next page, empty page, and invalid cursor.
+7. Document endpoint contract in `mbooks-quarkus/README.md`.
+
+Data model plan (booking DB)
+- New table: `timeline_content`
+- Core columns:
+  - `id` (PK)
+  - `kind` (`movie` | `actor`)
+  - `title`
+  - `summary`
+  - `body`
+  - `movie_id` nullable (for movie-linked news)
+  - `actor_name` nullable (for actor-linked news)
+  - `image_url` nullable
+  - `featured` boolean (for highlighted content)
+  - `publish_at` timestamp
+  - `expire_at` timestamp nullable
+  - `is_active` boolean default true
+  - `created_at`, `updated_at`
+- Indexes:
+  - `(is_active, publish_at desc, id desc)`
+  - `(kind, is_active, publish_at desc, id desc)`
+
+Cursor strategy
+- Keyset cursor payload from last row: `(publish_at, id)`.
+- Cursor should be opaque to clients (base64 JSON tuple).
+- Page query uses strict less-than semantics to avoid duplicates.
+
+Observability
+- Add request metrics: count/latency for `/timeline-feed`.
+- Add structured log fields: `limit`, `kind`, `cursorPresent`, `resultCount`.
+
+Definition of done
+- Endpoint returns deterministic, cursor-based pages for movie/actor news.
+- New timeline table exists with indexes in booking DB migration.
+- Contract is documented and validated for both Web and iOS consumers.
+- Tests cover pagination edges and malformed input handling.
+

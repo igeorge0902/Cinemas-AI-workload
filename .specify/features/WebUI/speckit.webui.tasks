@@ -4,11 +4,15 @@
 
 ### Routing
 
+Owner: `@frontend-dev`
+
 * [ ] Maintain routing configuration during fixing
 * [ ] Ensure all routes work
 * [ ] Handle route parameters correctly
 
 ### UI Improvements
+
+Owner: `@frontend-dev`
 
 * [ ] Improve styling
 * [ ] Ensure assets are available for the styling
@@ -17,17 +21,23 @@
 
 ### Performance
 
+Owners: `@frontend-dev`, `@backend-dev`
+
 * [ ] Cache movie list
 * [ ] Optimize API calls
 * [ ] Reduce unnecessary re-renders
 
 ### Login
 
+Owners: `@frontend-dev`, `@backend-dev`
+
 * [ ] Imporve login experience while maintaining the working auth service API calls
 * [ ] Redirect after login
 * [ ] Handle login errors
 
 ### Movies
+
+Owners: `@frontend-dev`, `@backend-dev`
 
 * [ ] Load movies from API
 * [ ] Fix display issues with categories
@@ -36,6 +46,8 @@
 
 ### Dates
 
+Owners: `@frontend-dev`, `@backend-dev`
+
 * [ ] Select date for venues
 * [ ] Show available dates
 * [ ] Handle date selection
@@ -43,11 +55,15 @@
 
 ### Seats
 
+Owners: `@frontend-dev`, `@backend-dev`
+
 * [ ] Implement seat grid UI
 * [ ] Fix seat selection logic
 * [ ] Prevent selecting taken seats
 
 ### Booking
+
+Owners: `@frontend-dev`, `@backend-dev`, `@database-dev`
 
 * [ ] Fix booking API call
 * [ ] Show confirmation
@@ -58,6 +74,8 @@
 ## 🟠 MEDIUM PRIORITY
 
 ### State Management
+
+Owner: `@frontend-dev`
 
 * [ ] Remove `$rootScope` usage
 * [ ] Introduce `StateService`
@@ -73,10 +91,14 @@
 
 ### Error Handling
 
+Owners: `@frontend-dev`, `@backend-dev`
+
 * [ ] Add API error messages
 * [ ] Add loading indicators
 
 ### UI Consistency
+
+Owner: `@frontend-dev`
 
 * [ ] Align layouts across pages
 * [ ] Improve navigation UX
@@ -87,21 +109,31 @@
 
 ## Step 1
 
+Owner: `@frontend-dev`
+
 * Fix routing
 
 ## Step 2
+
+Owners: `@frontend-dev`, `@backend-dev`
 
 * Extract services
 
 ## Step 3
 
+Owner: `@frontend-dev`
+
 * Refactor controllers
 
 ## Step 4
 
+Owner: `@frontend-dev`
+
 * Fix templates
 
 ## Step 5
+
+Owners: `@frontend-dev`, `@backend-dev`, `@database-dev`
 
 * Remove globals
 

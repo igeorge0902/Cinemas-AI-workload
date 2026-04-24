@@ -8,6 +8,18 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
+**Contract IDs (required)**: Must reference `.github/references/CONTRACTS_INDEX.md` IDs impacted by this feature.
+
+## Definition of Done Gates *(mandatory)*
+
+- [ ] Spec exists and is current.
+- [ ] Implementation is complete and aligned to spec.
+- [ ] Tests executed and evidence captured.
+- [ ] `@testing-engineer` verification done.
+- [ ] `@security-specialist` verification done.
+- [ ] `@performance-engineer` verification done.
+- [ ] Module README and contract index updated.
+
 **Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.

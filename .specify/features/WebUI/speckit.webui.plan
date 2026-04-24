@@ -16,6 +16,14 @@ Stabilize and fix the existing AngularJS (1.x) web application to fully support 
 
 This is a **refactoring and fixing effort**, not a rewrite.
 
+## 👥 Role Ownership
+
+* WebUI flow, Angular routes, templates, and API wiring: `@frontend-dev`
+* Backend API contract support for WebUI calls: `@backend-dev`
+* SQL/data-related endpoint behavior checks: `@database-dev`
+* Kubernetes runtime checks and rollout validation: `@devops`
+* iOS parity checks when shared endpoint contracts change: `@ios-dev`
+
 ---
 
 # 🧱 1. Target Architecture

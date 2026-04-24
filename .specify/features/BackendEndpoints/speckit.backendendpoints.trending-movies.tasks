@@ -1,0 +1,41 @@
+Phase 1 — Contract and DTO (`@backend-dev`)
+
+- [ ] Add endpoint contract to `BookController` for `GET /rest/book/trending-movies`.
+- [ ] Define response DTO/model for a trending movie row (movie metadata + bookedTickets + lastBookingTime).
+- [ ] Add query param parsing with defaults (`days=30`, `limit=10`).
+- [ ] Add validation guard (`days: 1..365`, `limit: 1..50`) and `400` JSON response.
+
+Phase 2 — DAO aggregation (`@database-dev` + `@backend-dev`)
+
+- [ ] Add DAO method to aggregate booked tickets by movie over the `days` window.
+- [ ] Implement stable ordering: bookedTickets desc, name asc, movieId asc.
+- [ ] Return only top `limit` rows.
+- [ ] Ensure session/transaction handling follows existing read-only DAO pattern.
+
+Phase 3 — Service wiring (`@backend-dev`)
+
+- [ ] Add `BookingHandlerImpl` method to call DAO and map records into response DTOs.
+- [ ] Keep controller thin by moving transformation logic to service layer.
+
+Phase 4 — API response assembly (`@backend-dev`)
+
+- [ ] Return JSON root key `trendingMovies` from `BookController`.
+- [ ] Include empty array when no bookings are found.
+- [ ] Ensure content type matches existing JSON endpoints.
+
+Phase 5 — Tests (`@backend-dev`)
+
+- [ ] Add/extend backend endpoint tests for:
+  - [ ] default params
+  - [ ] custom `days` and `limit`
+  - [ ] invalid `days`/`limit` -> `400`
+  - [ ] empty result -> `trendingMovies: []`
+  - [ ] deterministic tie ordering
+
+Phase 6 — Observability and docs (`@backend-dev` + `@devops`)
+
+- [ ] Add endpoint metric/log fields (`days`, `limit`, resultCount).
+- [ ] Document endpoint in `mbooks-quarkus/README.md`.
+- [ ] Add curl examples for default and custom query values.
+
+

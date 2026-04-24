@@ -9,9 +9,11 @@ This `.github` folder contains comprehensive guides for AI coding assistants wor
 - **Need system overview?** Read [`.github/agents/AGENTS.md`](agents/AGENTS.md) (comprehensive architecture)
 
 ### 📋 Working on Features
-- **Step-by-step instructions:** [`.github/instructions.md`](instructions/instructions.md)
-- **Practical code patterns:** [`.github/skills.md`](skills/skills.md)
+- **Step-by-step instructions:** [`.github/instructions/instructions.md`](instructions/instructions.md)
+- **Practical code patterns:** [`.github/skills/skills.md`](skills/skills.md)
 - **API reference & contracts:** [`.github/references/REFERENCE.md`](references/REFERENCE.md)
+- **Canonical contract IDs:** [`.github/references/CONTRACTS_INDEX.md`](references/CONTRACTS_INDEX.md)
+- **Governance (DoD, smoke matrix, naming):** [`.github/docs/governance/README.md`](docs/governance/README.md)
 
 ### 🐛 Debugging & Review
 - **Troubleshooting:** See `instructions.md` → "Gotchas & Common Mistakes" or `references/REFERENCE.md` → "Debugging Checklist"
@@ -23,11 +25,11 @@ This `.github` folder contains comprehensive guides for AI coding assistants wor
 
 | File | Lines | Purpose | Audience |
 |------|-------|---------|----------|
-| `instructions.md` | 187 | Primary workflow guide, critical file locations, common mistakes | All developers & AI agents |
-| `skills.md` | 614 | 16 practical patterns with copy-paste code examples (REST, HMAC, booking/payment, WebSocket, SPA routes, iOS async/await, Appium, Python tests, Prometheus, MySQL procedures, deployment, review checklist) | Backend/frontend/test/infra developers |
+| `instructions.md` | 222 | Primary workflow guide, critical file locations, common mistakes | All developers & AI agents |
+| `skills.md` | 602 | 16 practical patterns with copy-paste code examples (REST, HMAC, booking/payment, WebSocket, SPA routes, iOS async/await, Appium, Python tests, Prometheus, MySQL procedures, deployment, review checklist) | Backend/frontend/test/infra developers |
 | `docs/QUICKSTART.md` | 191 | 5-minute local setup, deploy steps, common tasks, troubleshooting | New developers, quick onboarding |
 | `references/REFERENCE.md` | 470 | Complete API reference, database schemas, entity relationships, debugging | Reference documentation |
-| `agents/AGENTS.md` | 457 | Comprehensive system architecture, entity relationships, refactoring roadmap | Architecture review, entity decisions |
+| `agents/AGENTS.md` | 498 | Comprehensive system architecture, entity relationships, refactoring roadmap | Architecture review, entity decisions |
 
 ---
 
@@ -139,7 +141,7 @@ See: `references/REFERENCE.md` → "Backend Services Reference" for full details
 | iOS tests | `appium/src/test/java/` |
 | System docs | `docs/system-documentation.html` |
 
-See: `instructions.md` → "Critical Files & Directories" or `skills.md` → "Quick Lookups"
+See: `instructions.md` → "Critical Files & Directories" (canonical file-location map)
 
 ---
 
@@ -185,7 +187,8 @@ When adding new features or patterns:
 1. **Bug fix?** Update `instructions.md` → "Gotchas" section if it's a recurring issue
 2. **New pattern?** Add to `skills.md` with code example + "Files to check" section
 3. **API change?** Update `references/REFERENCE.md` + `agents/AGENTS.md` if architectural
-4. **Deploy procedure change?** Update `docs/QUICKSTART.md` + `k8infra/README-k8s-local.md`
+4. **New endpoint?** Add/refresh `references/CONTRACTS_INDEX.md`, update module `README.md`, and reference CID in `.specify` spec/tasks
+5. **Deploy procedure change?** Update `docs/QUICKSTART.md` + `k8infra/README-k8s-local.md`
 
 ---
 
@@ -193,7 +196,7 @@ When adding new features or patterns:
 
 - **Created:** April 1, 2026
 - **Tech Stack:** Java 17, Quarkus 3.19.4, iOS 26.1, Appium 3.2.2
-- **Last Verified:** April 1, 2026 (against AGENTS.md 457 lines)
+- **Last Verified:** April 5, 2026 (against current docs in `.github/`)
 
 ---
 
