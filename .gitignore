@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+# Allow directories (needed so Git can traverse them)
+!*/
+
+# Allow specific files or folders
+!.github
+!.claude
+!.specify
