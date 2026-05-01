@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HomeVC Trending Movies Prototype (UIKit)</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f1115;
+      color: #e6e6e6;
+    }
+    .wrap {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p  { margin: 0 0 16px; color: #b8bec9; }
+    .card {
+      background: #171b22;
+      border: 1px solid #2b3240;
+      border-radius: 12px;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .legend {
+      font-size: 13px;
+      color: #9aa5b5;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <h1>HomeVC Trending Movies (UIKit) — Review Prototype</h1>
+      <p>State A: default carousel (top 5). State B: swipe-down transform to list with description clamped to 3 lines.</p>
+    </div>
+
+    <div class="card">
+      <svg width="100%" viewBox="0 0 1040 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HomeVC carousel and list prototype states">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#1f2530"/>
+            <stop offset="100%" stop-color="#12161f"/>
+          </linearGradient>
+        </defs>
+
+        <!-- State A: Carousel -->
+        <rect x="20" y="20" rx="12" ry="12" width="470" height="320" fill="url(#bg)" stroke="#3b4558"/>
+        <text x="40" y="52" fill="#dce3ef" font-size="16" font-weight="700">State A - HomeVC Carousel (default)</text>
+        <text x="40" y="76" fill="#9fb0c8" font-size="12">GET /mbooks-1/rest/book/trending-movies?limit=5</text>
+
+        <rect x="40" y="95" rx="8" ry="8" width="78" height="130" fill="#2f3b52"/>
+        <rect x="130" y="95" rx="8" ry="8" width="78" height="130" fill="#2f3b52"/>
+        <rect x="220" y="95" rx="8" ry="8" width="78" height="130" fill="#2f3b52"/>
+        <rect x="310" y="95" rx="8" ry="8" width="78" height="130" fill="#2f3b52"/>
+        <rect x="400" y="95" rx="8" ry="8" width="78" height="130" fill="#2f3b52"/>
+
+        <text x="40" y="250" fill="#cad5e6" font-size="12">Top 5 cards, horizontal scroll</text>
+        <text x="40" y="268" fill="#9fb0c8" font-size="11">Poster + title, backend order preserved</text>
+
+        <text x="170" y="310" fill="#76d1ff" font-size="12" font-weight="700">Swipe down on trending section</text>
+        <path d="M245,278 L245,298" stroke="#76d1ff" stroke-width="2"/>
+        <path d="M240,294 L245,300 L250,294" fill="none" stroke="#76d1ff" stroke-width="2"/>
+
+        <!-- Arrow between states -->
+        <path d="M515,180 L575,180" stroke="#5b6984" stroke-width="2"/>
+        <path d="M567,173 L575,180 L567,187" fill="none" stroke="#5b6984" stroke-width="2"/>
+
+        <!-- State B: List -->
+        <rect x="590" y="20" rx="12" ry="12" width="430" height="320" fill="url(#bg)" stroke="#3b4558"/>
+        <text x="610" y="52" fill="#dce3ef" font-size="16" font-weight="700">State B - List mode (after swipe down)</text>
+
+        <!-- row 1 -->
+        <rect x="610" y="70" rx="6" ry="6" width="400" height="58" fill="#202838"/>
+        <rect x="620" y="78" rx="4" ry="4" width="32" height="42" fill="#33445f"/>
+        <text x="662" y="92" fill="#dce3ef" font-size="12" font-weight="700">Interstellar</text>
+        <text x="662" y="108" fill="#9fb0c8" font-size="10">Description line 1 of max 3...</text>
+        <text x="662" y="120" fill="#9fb0c8" font-size="10">Description line 2...</text>
+
+        <!-- row 2 -->
+        <rect x="610" y="136" rx="6" ry="6" width="400" height="58" fill="#202838"/>
+        <rect x="620" y="144" rx="4" ry="4" width="32" height="42" fill="#33445f"/>
+        <text x="662" y="158" fill="#dce3ef" font-size="12" font-weight="700">The Dark Knight</text>
+        <text x="662" y="174" fill="#9fb0c8" font-size="10">Description line 1 of max 3...</text>
+        <text x="662" y="186" fill="#9fb0c8" font-size="10">Description line 2...</text>
+
+        <!-- row 3 -->
+        <rect x="610" y="202" rx="6" ry="6" width="400" height="58" fill="#202838"/>
+        <rect x="620" y="210" rx="4" ry="4" width="32" height="42" fill="#33445f"/>
+        <text x="662" y="224" fill="#dce3ef" font-size="12" font-weight="700">Inception</text>
+        <text x="662" y="240" fill="#9fb0c8" font-size="10">Description line 1 of max 3...</text>
+        <text x="662" y="252" fill="#9fb0c8" font-size="10">Description line 2...</text>
+
+        <text x="610" y="292" fill="#cad5e6" font-size="12">Same top-5 set as carousel mode</text>
+        <text x="610" y="310" fill="#9fb0c8" font-size="11">Each row: poster + title + description (max 3 lines)</text>
+      </svg>
+      <div class="legend">Prototype note: visual-only review artifact, not production UI code.</div>
+    </div>
+  </div>
+</body>
+</html>
+

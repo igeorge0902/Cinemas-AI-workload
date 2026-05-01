@@ -1,5 +1,5 @@
-Phase 0 — C++ prerequisite (`@c++ developer`)
-- [ ] Update the C++ image-resizing app for profile-picture use case.
+Phase 0 — C++ prerequisite (`@cpp-developer`)
+- [x] Update the C++ image-resizing app for profile-picture use case.
 - [ ] Define/implement C++ resize API arguments expected from Java backend: `targetWidth`, `targetHeight`, `maxBytes`, `canCrop`, `keepAspectRatio`.
 - [ ] Validate expected resize output and runtime compatibility for JNI integration.
 - [ ] Mark prerequisite complete before starting Phase 4 and backend JNI wiring.
@@ -19,7 +19,7 @@ Phase 3 — mbook profile picture endpoint (`@backend-dev` + `@database-dev`)
 - [ ] Validate file type/size and sanitize filename.
 - [ ] Update `Logins.profilePicture` only after successful storage.
 
-Phase 4 — OpenCV JNI integration (`@c++ developer` + `@backend-dev`)
+Phase 4 — OpenCV JNI integration (`@cpp-developer` + `@backend-dev`)
 - [ ] Add JNI bridge layer for resize operation.
 - [ ] Pass Java backend resize arguments end-to-end into native layer (`targetWidth`, `targetHeight`, `maxBytes`, `canCrop`, `keepAspectRatio`).
 - [ ] Compile/package native library for runtime image service path.

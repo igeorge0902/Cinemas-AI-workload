@@ -2,7 +2,7 @@ Feature Plan: Profile picture upload with OpenCV JNI
 
 Objective
 - Add profile picture upload/change flow for iOS `MenuVC`.
-- Include C++ image-resizing app update as Phase 0 workstream owned by `@c++ developer`.
+- Include C++ image-resizing app update as Phase 0 workstream owned by `@cpp-developer`.
 - Resize uploaded images using OpenCV through JNI (native integration, no external CLI at runtime).
 - Resize parameters are provided by Java backend per request: target dimensions, precise max bytes, crop flag, and keep-aspect-ratio flag.
 - Keep external endpoint security as Option A: authenticated upload via `dalogin` session/XSRF/HMAC.
@@ -11,7 +11,7 @@ Objective
 
 Role ownership
 - API and orchestration: `@backend-dev`
-- Native OpenCV/JNI bridge: `@c++ developer`
+- Native OpenCV/JNI bridge: `@cpp-developer`
 - DB update and schema constraints: `@database-dev`
 - Auth/session/XSRF model validation: `@security-specialist`
 - Swift `MenuVC` upload integration: `@ios-dev`

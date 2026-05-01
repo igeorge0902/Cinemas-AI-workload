@@ -11,7 +11,7 @@ Overview
 - Image processing uses OpenCV through JNI integrated in backend runtime.
 
 Role collaboration
-- `@backend-dev`, `@c++ developer`, `@database-dev`, `@security-specialist`, `@ios-dev`, `@devops`, `@testing-engineer`
+- `@backend-dev`, `@cpp-developer`, `@database-dev`, `@security-specialist`, `@ios-dev`, `@devops`, `@testing-engineer`
 
 Functional requirements
 - `FR-000`: C++ image-resizing app update is a hard prerequisite and MUST be completed before backend JNI upload integration.

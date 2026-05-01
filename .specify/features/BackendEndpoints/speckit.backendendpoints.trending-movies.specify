@@ -12,7 +12,7 @@ REQ-TM-1 Endpoint contract
 - Path: `/rest/book/trending-movies`
 - Produces: `application/json`
 - Query params:
-  - `days` optional integer, default `30`, allowed range `1..365`
+  - `days` optional integer, default `30`, any positive integer (`>= 1`); if the requested window predates the earliest booking record, the effective window extends to the beginning of the earliest available record
   - `limit` optional integer, default `10`, allowed range `1..50`
 
 REQ-TM-2 Response schema
@@ -38,7 +38,7 @@ REQ-TM-4 Empty result behavior
   - `{"trendingMovies": []}`
 
 REQ-TM-5 Validation
-- Invalid `days` or `limit` (non-numeric or out of allowed range) returns `400` with JSON error payload.
+- Invalid `days` or `limit` (non-numeric, `days < 1`, or `limit` out of allowed range) returns `400` with JSON error payload.
 
 REQ-TM-6 Auth behavior
 - Match existing public movie-list read behavior (`/rest/book/movies`): no extra auth gate for this endpoint.
@@ -83,11 +83,11 @@ Error model
 - `500`: unexpected backend failure, preserve existing global error handling behavior.
 
 Acceptance criteria
-- [ ] `GET /rest/book/trending-movies` returns ranked data for default window.
-- [ ] `days` and `limit` correctly filter and cap results.
-- [ ] Ties follow deterministic ordering.
-- [ ] Invalid params return `400` JSON error.
-- [ ] Empty data returns `trendingMovies: []`.
-- [ ] Endpoint is documented in `mbooks-quarkus/README.md` with curl examples.
+- [x] `GET /rest/book/trending-movies` returns ranked data for default window.
+- [x] `days` and `limit` correctly filter and cap results.
+- [x] Ties follow deterministic ordering.
+- [x] Invalid params return `400` JSON error.
+- [x] Empty data returns `trendingMovies: []`.
+- [x] Endpoint is documented in `mbooks-quarkus/README.md` with curl examples.
 
 

@@ -41,7 +41,7 @@ Observability
 
 Risks
 - Legacy schema field names can differ in HQL mappings; validate query against current entities (`Ticket`, `Purchase`, `Screen`, `Movie`).
-- Large windows may produce heavy aggregation; bounded `days` and `limit` mitigate this.
+- Large `days` values produce full-history aggregation; `limit` caps the result set and mitigates memory pressure.
 
 Definition of done
 - Endpoint returns deterministic ranked list and validates inputs.
