@@ -8,3 +8,6 @@
 !.github
 !.claude
 !.specify
+!.github/**
+!.claude/**
+!.specify/**
