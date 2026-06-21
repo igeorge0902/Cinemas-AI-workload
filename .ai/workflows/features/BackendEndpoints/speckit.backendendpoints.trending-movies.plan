@@ -1,0 +1,51 @@
+Feature Plan: Trending Movies backend endpoint
+
+Objective
+- Add a read endpoint in `mbooks-quarkus` that returns the most booked movies for a recent time window.
+- Use endpoint naming: `trending-movies`.
+
+Role ownership
+- Primary: `@backend-dev`
+- SQL/query support: `@database-dev`
+- Deployment/verification support: `@devops`
+- Client parity consumers (if endpoint contract changes): `@ios-dev`
+
+Baseline (as-found)
+- Existing booking endpoints live in `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` under `/rest/book/...`.
+- Booking persistence path is `Ticket -> Purchase -> Screen -> Movie` via `DAO` and `BookingHandlerImpl`.
+- Current APIs expose movies, venues, seats, purchases, but no aggregated ranking endpoint.
+
+Proposed endpoint
+- Method: `GET`
+- Path: `/rest/book/trending-movies`
+- Query params:
+  - `days` (optional, default `30`, min `1`, max `365`)
+  - `limit` (optional, default `10`, min `1`, max `50`)
+- Response: ranked list by booked ticket count in the selected time window.
+
+High-level implementation sequence
+1. Add DAO aggregation query to count tickets per movie for purchases newer than `now - days`.
+2. Add service method in `BookingHandlerImpl` that maps raw query results to response DTOs.
+3. Add controller endpoint in `BookController` returning `{"trendingMovies": [...]}`.
+4. Add API tests (Java side) for parameter validation and response shape.
+5. Update backend README docs with endpoint contract and examples.
+
+Data/aggregation rule
+- Primary metric: total booked tickets per movie.
+- Sort: `ticketCount DESC`, tie-breaker `movieName ASC`, then `movieId ASC` for deterministic ordering.
+- Exclude rows with missing movie relation.
+
+Observability
+- Add metrics around endpoint latency and count (Micrometer/Jakarta timing style used by service).
+- Ensure logs include path, days, limit, and result size.
+
+Risks
+- Legacy schema field names can differ in HQL mappings; validate query against current entities (`Ticket`, `Purchase`, `Screen`, `Movie`).
+- Large `days` values produce full-history aggregation; `limit` caps the result set and mitigates memory pressure.
+
+Definition of done
+- Endpoint returns deterministic ranked list and validates inputs.
+- Contract documented in backend README.
+- Tests cover happy path + parameter bounds + empty result case.
+
+

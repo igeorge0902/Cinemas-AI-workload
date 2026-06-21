@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Screens Redesign Prototype</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f5f5f7; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .title { text-align: center; margin: 8px 0 18px; font-size: 20px; font-weight: 700; }
+    .note { text-align: center; margin-bottom: 20px; color: #666; font-size: 13px; }
+    .phone { width: 390px; height: 844px; border: 12px solid #333; border-radius: 36px; overflow: hidden; background: #fff; margin: 24px auto; box-shadow: 0 14px 40px rgba(0,0,0,.25); }
+    .status { height: 44px; border-bottom: 1px solid #e7e7ea; display: flex; align-items: center; padding: 0 16px; font-size: 12px; color: #333; }
+    .status .center { flex: 1; text-align: center; font-weight: 600; }
+    .content { height: calc(100% - 44px); overflow: auto; padding: 8px; }
+    .top-buttons { display: flex; gap: 8px; margin-bottom: 12px; }
+    .top-buttons button { flex: 1; height: 36px; border: none; border-radius: 14px; background: #111; color: #fff; font-size: 13px; font-weight: 600; }
+    .card { border: 1px solid #e5e5e8; background: #fafafb; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .card h3 { font-size: 12px; letter-spacing: .4px; text-transform: uppercase; color: #222; margin-bottom: 10px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .row:last-child { margin-bottom: 0; }
+    .field { flex: 1; min-width: 0; }
+    label { display: block; font-size: 13px; color: #333; margin-bottom: 4px; }
+    input { width: 100%; height: 38px; border: 1px solid #d2d2d7; border-radius: 6px; padding: 0 10px; font-family: Menlo, Monaco, monospace; color: #666; background: #fff; }
+    .input-row { display: flex; gap: 8px; }
+    .select { width: 84px; border: none; border-radius: 6px; background: #e9eaee; font-size: 12px; color: #1f1f1f; }
+    .readonly { background: #fff; color: #666; }
+    .update-readonly { background: #f0f0f3; color: #8a8a90; }
+    .optional::after { content: " (optional)"; color: #7d7d85; font-size: 12px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .actions button { flex: 1; height: 38px; border: none; border-radius: 14px; color: #fff; font-weight: 600; }
+    .save { background: #222; }
+    .delete { background: #d70015; }
+    .popover-note { text-align: center; margin: 8px 0 14px; color: #666; font-size: 13px; }
+    .popover-row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 8px 0 24px; }
+    .popover {
+      width: 352px;
+      border: 1px solid #d7d7dc;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(0,0,0,.14);
+    }
+    .popover-header {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      background: #111;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .popover-body { padding: 10px; }
+    .popover-search { width: 100%; margin-bottom: 8px; }
+    .chip-row { display: flex; gap: 6px; margin-bottom: 8px; overflow: hidden; }
+    .chip {
+      border: 1px solid #dadbe1;
+      background: #f0f1f4;
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 4px 8px;
+      white-space: nowrap;
+      color: #333;
+    }
+    .list {
+      border: 1px solid #ececf1;
+      border-radius: 8px;
+      overflow: hidden;
+      max-height: 248px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .update-movie-list {
+      max-height: 188px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ececf1;
+      background: #fff;
+      padding: 0 10px;
+      font-family: Menlo, Monaco, monospace;
+      font-size: 12px;
+      color: #333;
+    }
+    .list-item:last-child { border-bottom: 0; }
+    .list-item.movie { height: 60px; }
+    .list-item.venue {
+      min-height: 62px;
+      padding: 6px 10px;
+      align-items: stretch;
+      justify-content: center;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .venue-main { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .venue-title { display: flex; flex-direction: column; min-width: 0; }
+    .venue-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .venue-status {
+      margin-top: 1px;
+      font-size: 10px;
+      line-height: 1.2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #777786;
+    }
+    .list-item.venue.original .venue-status { color: #63636f; }
+    .list-item.venue.selected .venue-status { color: #50505a; font-weight: 600; }
+    .venue-meta {
+      display: none;
+      width: 100%;
+      border-top: 1px dashed #ececf1;
+      padding-top: 4px;
+      font-size: 11px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-item.venue.expanded { background: #fcfcff; }
+    .list-item.venue.expanded .venue-meta { display: block; }
+    .venue-popover .popover-body {
+      padding: 10px 10px 4px;
+      display: flex;
+      flex-direction: column;
+    }
+    .venue-popover .list {
+      max-height: 290px;
+      margin-bottom: 2px;
+    }
+    .list-item.selected { background: #f7f7fb; }
+    .list-item.selected .tag { color: #4c4c54; border-style: dashed; }
+    .movie-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .poster {
+      width: 42px;
+      height: 56px;
+      border-radius: 6px;
+      border: 1px solid #d0d1d7;
+      background: linear-gradient(140deg, #aeb4c0, #6f7788);
+      color: #fff;
+      font-size: 9px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: .4px;
+      flex: 0 0 auto;
+    }
+    .movie-title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tag {
+      border: 1px solid #d4d5da;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">AdminVC Prototype</div>
+    <div class="note">Screening Date above capacity fields; Rows and Seats side-by-side; no decorative icons.</div>
+
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="center">Admin</span></div>
+      <div class="content">
+        <div class="top-buttons"><button>Back</button><button>Update</button></div>
+
+        <div class="card">
+          <h3>Select Movie and Venue</h3>
+          <div class="field" style="margin-bottom:10px;">
+            <label>Movie</label>
+            <div class="input-row"><input value="movieName" readonly class="readonly" /><button class="select">Select</button></div>
+          </div>
+          <div class="field">
+            <label>Venue</label>
+            <div class="input-row"><input value="venueName" /><button class="select">Select</button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>When to Show</h3>
+          <div class="field"><label>Screening Date</label><input value="yyyy-MM-dd HH:mm:ss" /></div>
+        </div>
+
+        <div class="card">
+          <h3>Theater Capacity</h3>
+          <div class="row">
+            <div class="field"><label>Rows</label><input value="nrOfRows" /></div>
+            <div class="field"><label>Seats</label><input value="nrOfSeatsInRow" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Screen Details</h3>
+          <div class="field" style="margin-bottom:10px;"><label>Screen ID</label><input value="ScreeningID" /></div>
+          <div class="field"><label class="optional">Genre</label><input value="category" /></div>
+        </div>
+
+        <div class="actions"><button class="save">Save</button></div>
+      </div>
+    </div>
+
+    <div class="title">AdminUpdateVC Prototype</div>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="center">Admin Update</span></div>
+      <div class="content">
+        <div class="top-buttons"><button>Back</button><button>Clear</button></div>
+
+        <div class="card">
+          <h3>Select Movie and Venue</h3>
+          <div class="field" style="margin-bottom:10px;">
+            <label>Movie</label>
+            <div class="input-row"><input value="Interstellar" readonly class="update-readonly" /><button class="select">Select</button></div>
+          </div>
+          <div class="field">
+            <label>Venue</label>
+            <div class="input-row"><input value="downtown_cinema" readonly class="update-readonly" /><button class="select">Select</button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>When to Show</h3>
+          <div class="field"><label>Screening Date</label><input value="2026-05-16 19:30:00" /></div>
+        </div>
+
+        <div class="card">
+          <h3>Theater Capacity</h3>
+          <div class="row">
+            <div class="field"><label>Rows</label><input value="12" /></div>
+            <div class="field"><label>Seats</label><input value="18" /></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Screen Details</h3>
+          <div class="field" style="margin-bottom:10px;"><label>Screen ID</label><input value="SCR-241" /></div>
+          <div class="field"><label class="optional">Genre</label><input value="Sci-Fi" /></div>
+        </div>
+
+        <div class="actions"><button class="save">Save</button><button class="delete">Delete</button></div>
+      </div>
+    </div>
+
+    <div class="title">Select Popover Prototype</div>
+    <div class="popover-note">Movie and Venue selectors styled as admin popovers (no arrow, white background, list rows aligned to iOS modes).</div>
+    <div class="popover-row">
+      <div class="popover venue-popover">
+        <div class="popover-header">
+          <span>Movie Select</span>
+          <span>90% width x 50% height</span>
+        </div>
+        <div class="popover-body">
+          <input class="popover-search" value="Search movie" />
+          <div class="chip-row">
+            <span class="chip">Action</span>
+            <span class="chip">Drama</span>
+            <span class="chip">Crime</span>
+            <span class="chip">Romance</span>
+          </div>
+          <div class="list">
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">Interstellar</span></div>
+            </div>
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">Joker</span></div>
+            </div>
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">Blade Runner 2049</span></div>
+            </div>
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">Parasite</span></div>
+            </div>
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">Dune</span></div>
+            </div>
+            <div class="list-item movie">
+              <div class="movie-row"><div class="poster">POSTER</div><span class="movie-title">No Country for Old Men</span></div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#666;margin-top:8px;">Admin create mode in `MoviesVC` renders poster images in the list.</div>
+        </div>
+      </div>
+
+      <div class="popover venue-popover">
+         <div class="popover-header">
+           <span>Venue Select</span>
+           <span>Admin list mode</span>
+         </div>
+         <div class="popover-body">
+           <div class="list">
+             <div class="list-item venue original" data-venue-info="Downtown district, Grand Blvd 10">
+               <div class="venue-main"><div class="venue-title"><span class="venue-name">central_hall</span><span class="venue-status">(original)</span></div><span class="tag">capacity 320</span></div>
+               <div class="venue-meta">info: Downtown district, Grand Blvd 10</div>
+             </div>
+              <div class="list-item venue selected" data-venue-info="Old town, Market Street 22">
+                <div class="venue-main"><div class="venue-title"><span class="venue-name">downtown_cinema</span><span class="venue-status">(new selection)</span></div><span class="tag">capacity 280</span></div>
+               <div class="venue-meta">info: Old town, Market Street 22</div>
+             </div>
+             <div class="list-item venue" data-venue-info="Riverside block, Bridge Ave 7">
+               <div class="venue-main"><div class="venue-title"><span class="venue-name">riverside_screen</span></div><span class="tag">capacity 180</span></div>
+               <div class="venue-meta">info: Riverside block, Bridge Ave 7</div>
+             </div>
+             <div class="list-item venue" data-venue-info="North quarter, Studio Lane 5">
+               <div class="venue-main"><div class="venue-title"><span class="venue-name">north_studio</span></div><span class="tag">capacity 140</span></div>
+               <div class="venue-meta">info: North quarter, Studio Lane 5</div>
+             </div>
+             <div class="list-item venue" data-venue-info="Harbor side, Pier Road 3">
+               <div class="venue-main"><div class="venue-title"><span class="venue-name">harbor_room</span></div><span class="tag">capacity 220</span></div>
+               <div class="venue-meta">info: Harbor side, Pier Road 3</div>
+             </div>
+             <div class="list-item venue" data-venue-info="West end, Sunset Blvd 81">
+               <div class="venue-main"><div class="venue-title"><span class="venue-name">west_end_hall</span></div><span class="tag">capacity 260</span></div>
+               <div class="venue-meta">info: West end, Sunset Blvd 81</div>
+             </div>
+           </div>
+           <div style="font-size:11px;color:#666;margin-top:6px;">
+             Capacity values are mocked from current iOS-side venue data. API-backed capacity retrieval is tracked for a separate specification.
+           </div>
+           <div style="font-size:11px;color:#666;margin-top:4px;">Original and newly selected venues are marked on a smaller second line below the venue name.</div>
+           <div style="font-size:11px;color:#666;margin-top:4px;">Long press a venue row to expand one additional info line (with haptic feedback where supported).</div>
+         </div>
+       </div>
+
+      <div class="popover">
+        <div class="popover-header">
+          <span>Movie Select (Update)</span>
+          <span>Compact mode</span>
+        </div>
+        <div class="popover-body">
+          <div class="list update-movie-list">
+            <div class="list-item movie"><span>Interstellar</span></div>
+            <div class="list-item movie"><span>Joker</span></div>
+            <div class="list-item movie"><span>Parasite</span></div>
+            <div class="list-item movie"><span>Dune</span></div>
+            <div class="list-item movie"><span>The Matrix</span></div>
+            <div class="list-item movie"><span>Whiplash</span></div>
+          </div>
+          <div style="font-size:11px;color:#666;margin-top:8px;">Admin update mode in `MoviesVC` uses compact movie-name-only rows without posters.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var venueRows = document.querySelectorAll('.venue-popover .list-item.venue');
+
+      venueRows.forEach(function (row) {
+        var holdTimer = null;
+        var longPressTriggered = false;
+
+        var startHold = function () {
+          longPressTriggered = false;
+          clearTimeout(holdTimer);
+          holdTimer = setTimeout(function () {
+            longPressTriggered = true;
+            row.classList.toggle('expanded');
+            if (navigator.vibrate) {
+              navigator.vibrate(12);
+            }
+          }, 350);
+        };
+
+        var stopHold = function () {
+          clearTimeout(holdTimer);
+        };
+
+        row.addEventListener('pointerdown', startHold);
+        row.addEventListener('pointerup', stopHold);
+        row.addEventListener('pointerleave', stopHold);
+        row.addEventListener('pointercancel', stopHold);
+
+        row.addEventListener('click', function (event) {
+          if (longPressTriggered) {
+            event.preventDefault();
+            event.stopPropagation();
+            longPressTriggered = false;
+            return;
+          }
+
+          venueRows.forEach(function (other) {
+            other.classList.remove('selected');
+          });
+          row.classList.add('selected');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
+

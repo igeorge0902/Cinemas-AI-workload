@@ -1,0 +1,103 @@
+# 🚧 Registration UI Tasks (Film-Review WebUI)
+
+## Definition of Done Gates (mandatory)
+
+- [ ] Spec is current: `speckit.webui.registration-ui.specify`.
+- [ ] Implementation matches REQ-REG-1..15 and REQ-REG-NF-1..5.
+- [ ] Validation evidence captured for endpoint and status handling.
+- [ ] `@frontend-dev` implementation sign-off completed.
+- [ ] `@backend-dev` contract sign-off completed.
+- [ ] `@database-dev` precheck semantics sign-off completed.
+- [ ] `@devops` route exposure/rollout sign-off completed.
+- [ ] `@ios-dev` shared contract parity review completed.
+
+---
+
+## Phase 1 — Film-Review route + template foundation (`@frontend-dev`)
+
+- [ ] Add Film-Review `/register` route in `film-review/app.js` (REQ-REG-1).
+- [ ] Create registration template under `film-review/templates` (REQ-REG-1,2).
+- [ ] Reuse login visual language (`hero`, `login-wrap`, alerts/buttons) (REQ-REG-2).
+- [ ] Update Sign Up link in `film-review/templates/login.html` to `#/register` (REQ-REG-9).
+- [ ] Keep hash routing style aligned with existing app (`#/...`) (REQ-REG-NF-1).
+
+---
+
+## Phase 2 — Endpoint-specific integration (`@frontend-dev` + `@backend-dev`)
+
+### 2.1 Username precheck endpoint
+- [ ] Implement call to `GET /mbook-1/rest/newuser/{newuser}` (REQ-REG-4).
+- [ ] Trigger username precheck only when input length is at least 2 characters (REQ-REG-4).
+- [ ] Debounce username precheck calls to limit request noise during typing (REQ-REG-4).
+- [ ] Map `200` => available UI state, `412` => taken UI state (REQ-REG-4,10).
+- [ ] Ensure username precheck responses update inline form field validation state (REQ-REG-5B).
+
+### 2.2 Email precheck endpoint
+- [ ] Implement call to `GET /mbook-1/rest/newemail/{newemail}` (REQ-REG-5).
+- [ ] Trigger email precheck only when a full valid email format is present (REQ-REG-5).
+- [ ] Debounce email precheck calls to limit request noise during typing (REQ-REG-5).
+- [ ] Map `200` => available UI state, `412` => taken UI state (REQ-REG-5,10).
+- [ ] Ensure email precheck responses update inline form field validation state (REQ-REG-5B).
+
+### 2.3 Voucher validation endpoint
+- [ ] Implement voucher-mode call to `POST /login/voucher` before submit (REQ-REG-6).
+- [ ] Block submit on failed voucher precondition states (REQ-REG-6,10).
+
+### 2.4 Registration submit endpoints
+- [ ] Implement primary submit to `POST /login/register` (REQ-REG-7).
+- [ ] Implement optional submit mode to `POST /login/registerWithoutVoucher` (REQ-REG-7).
+- [ ] Ensure payload/header compatibility (`user`, `pswrd`, `email`, `deviceId`, optional `voucher_`, HMAC) (REQ-REG-7).
+
+### 2.5 Activation endpoints
+- [ ] Handle activation entry flow via `GET /login/activation?activation=...` (REQ-REG-8).
+- [ ] Handle activation resend/trigger path via `POST /login/activation` where applicable (REQ-REG-8).
+
+### 2.6 Voucher + activation dialogs
+- [ ] Implement dialog state keys for registration flow (`REG_VOUCHER_INVALID`, `REG_VOUCHER_VALID`, `REG_ACTIVATION_REQUIRED`, `REG_ACTIVATION_EMAIL_SENT`, `REG_ACTIVATION_RESEND_SUCCESS`, `REG_ACTIVATION_RESEND_FAILED`, `REG_REGISTRATION_SUCCESS`, `REG_REGISTRATION_FAILED`) (REQ-REG-13).
+- [ ] Render activation-pending dialog with resend CTA wired to `POST /login/activation` (REQ-REG-14).
+- [ ] Ensure dialog content remains user-facing and does not expose sensitive/internal backend details (REQ-REG-13, REQ-REG-NF-4).
+
+---
+
+## Phase 3 — Validation, error mapping, and safety (`@frontend-dev` + `@backend-dev` + `@database-dev`)
+
+- [ ] Add required-field validation for username/email/password (+voucher in voucher mode) (REQ-REG-3).
+- [ ] Add submit gating based on required valid values and precheck/voucher state validity (REQ-REG-3,4,5,5B,6).
+- [ ] Keep register button disabled while username/email prechecks are in `checking` state (REQ-REG-5B).
+- [ ] Map response statuses `200/300/412/502` to consistent user-visible messages (REQ-REG-10).
+- [ ] Preserve `X-Token` storage/session behavior consistent with Film-Review login flow (REQ-REG-11).
+- [ ] Remove or avoid sensitive console logs for password/sensitive fields (REQ-REG-NF-4).
+- [ ] Validate dialog matrix behavior across voucher invalid, activation pending, resend success, resend failure, and final success states (REQ-REG-13,14).
+- [ ] Validate activation-gated endpoint behavior: activation-pending users receive server activation-required response on protected requests and UI handles it without pre-blocking (REQ-REG-15).
+
+---
+
+## Phase 4 — Compatibility and rollout guardrails (`@frontend-dev` + `@devops` + `@ios-dev`)
+
+- [ ] Keep legacy `/login/register.html` available during migration window (REQ-REG-NF-3).
+- [ ] Mark Film-Review route as primary registration path in WebUI docs/artifacts (Deliverables).
+- [ ] Confirm no contract-breaking changes for shared clients/endpoints (REQ-REG-12).
+- [ ] Confirm docs-vs-code mismatches resolved with code as source of truth (REQ-REG-12).
+- [ ] Verify protected-request interception/handling path for activation-pending users works in Film-Review flow and remains server-driven (REQ-REG-15).
+
+---
+
+## Final DoD Checklist (feature-level)
+
+- [ ] Film-Review provides working `#/register` route and template.
+- [ ] Login page registration link points to Film-Review route.
+- [ ] Username precheck works with correct `200/412` UI feedback.
+- [ ] Username precheck starts at 2+ characters and is debounced.
+- [ ] Email precheck works with correct `200/412` UI feedback.
+- [ ] Email precheck runs only for full valid email format and is debounced.
+- [ ] Precheck UX states (`checking`, `available`, `taken`, `unknown`) and threshold/format hints are visible.
+- [ ] Username/email validation responses update inline field state in the registration form.
+- [ ] Register button stays disabled until all required values are valid and prechecks are not in `checking` state.
+- [ ] Voucher mode validates via `/login/voucher` before registration submit.
+- [ ] Registration submit works with existing servlet endpoint(s), no contract change.
+- [ ] Activation-related behavior is supported via existing activation endpoints.
+- [ ] Status handling for `200/300/412/502` is complete and user-visible.
+- [ ] Sensitive registration values are not emitted to browser logs.
+- [ ] Voucher/activation dialog matrix is implemented and visible in Film-Review registration UI.
+- [ ] Activation resend CTA is available only in activation-pending state.
+- [ ] Activation-gated access rule is implemented: no pre-blocking, server response drives activation-required dialogs on protected requests.

@@ -1,0 +1,82 @@
+Feature: MenuVC + PurchasesVC + TicketsVC unified admin-style redesign
+
+Overview
+- Define one shared redesign feature for `MenuVC`, `PurchasesVC` (requested as PurchesesVC), and `TicketsVC`.
+- Apply the same visual system used by admin view controllers.
+- Keep behavior, routes, payload contracts, and backend service usage unchanged.
+
+Scope
+- In scope: layout structure, component styling, hierarchy consistency, readability, and interaction affordances.
+- Out of scope: endpoint/path changes, auth/header changes, payload key changes, and business-logic rewrites.
+
+Prototype binding
+- This specification is reviewed against:
+  - `.ai/workflows/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
+
+Functional requirements
+
+REQ-MPT-1 Shared admin visual language
+- Use the admin design baseline: rounded black top actions, grouped cards, subtle gray surface, clear section headers.
+- Keep destructive emphasis only for destructive actions (for example, refund/cancel paths).
+
+REQ-MPT-2 MenuVC structure and styling
+- Keep top actions discoverable (`Back`, `Purchases`, optional `Admin` action depending on current role logic).
+- Present profile and session data in grouped admin-style cards.
+- Keep avatar/profile image visible and aligned with card content.
+
+REQ-MPT-3 PurchasesVC structure and sorting UX
+- Keep `Back`, sorting actions, and table content behavior unchanged.
+- Restyle header actions and list rows to match admin card/list style.
+- Preserve row swipe refund semantics and make the swipe affordance clear to users.
+- Keep movie pictures visible in purchase rows.
+- `Details` button is not needed in this redesign pass.
+
+REQ-MPT-4 TicketsVC structure and action hierarchy
+- Keep `Back` and `Pdf` actions present and primary.
+- Keep ticket cards, QR area, and details readable in admin-style grouped sections.
+- Preserve PDF preview/share/close flow behavior.
+
+REQ-MPT-5 Interaction contracts and navigation
+- Keep existing segue identifiers and destinations unchanged.
+- Keep data-source and DataManager wiring unchanged for purchases/tickets retrieval and update.
+
+REQ-MPT-6 Accessibility and touch targets
+- Maintain readable text contrast and hierarchy.
+- Buttons and row actions keep usable touch target sizes.
+
+REQ-MPT-7 Reusable custom components (side-track)
+- As a side part of this feature, implement reusable UI building blocks using existing iOS CustomCells patterns.
+- Prefer existing reusable classes/patterns (`ListViewCell`, `FeedCells`, shared constraint helpers) over one-off per-screen row/button implementations.
+- Define a reusable list-row style and reusable button style that can be shared by `MenuVC`, `PurchasesVC`, and `TicketsVC` redesign implementation.
+- Keep original screen behaviors and service contracts unchanged while introducing reusable UI components.
+
+Non-functional requirements
+
+REQ-MPT-NF-1 Stability
+- Existing menu -> purchases -> tickets flow must remain functionally equivalent.
+
+REQ-MPT-NF-2 Performance
+- Redesign should avoid repeated setup churn in appearance callbacks where possible.
+
+Acceptance criteria
+- [ ] One unified redesign feature covers `MenuVC`, `PurchasesVC`, and `TicketsVC`.
+- [ ] Admin visual language is consistently applied across all three screens.
+- [ ] Existing navigation, backend/service contracts, and action flows stay unchanged.
+- [ ] Purchases rows clearly communicate swipe-to-refund and show movie pictures.
+- [ ] Purchases prototype does not rely on a separate `Details` button.
+- [ ] Reusable list-cell/button component track is included as an implementation deliverable for this feature.
+- [ ] SVG artifacts exist for all three screens.
+- [ ] HTML prototype exists and shows the three-screen flow with admin styling.
+
+Reference files
+- `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/TicketsVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift`
+- `SwiftCinemas/SwiftLoginScreen/FeedCells.swift`
+- `SwiftCinemas/SwiftLoginScreen/UIViewExt.swift`
+- `SwiftCinemas/SwiftLoginScreen/menu-screen.svg`
+- `SwiftCinemas/SwiftLoginScreen/purchases-screen.svg`
+- `SwiftCinemas/SwiftLoginScreen/tickets-screen.svg`
+- `.ai/workflows/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
+

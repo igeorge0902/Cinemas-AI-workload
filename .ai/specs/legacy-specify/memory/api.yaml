@@ -1,0 +1,12 @@
+legacy_memory_redirect:
+  status: "archived compatibility shim"
+  canonical_file: ".ai/memory/api.yaml"
+  reason:
+    - "Active API memory is maintained in one canonical location."
+    - "This legacy mirror intentionally avoids duplicating contracts to prevent drift."
+  additional_sources:
+    - ".ai/agents/AGENTS.md"
+    - ".ai/retrieval/instructions.md"
+    - ".ai/skills/skills-github.md"
+  last_updated: "2026-05-16"
+

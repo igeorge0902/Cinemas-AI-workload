@@ -1,0 +1,65 @@
+Phase 1 - Contract wiring and model (`@ios-dev`)
+
+- [x] Add/confirm trending endpoint client call in `MbooksService` for `GET /mbooks-1/rest/book/trending-movies`.
+- [x] Request defaults: `limit=5`; optional `days` passthrough.
+- [x] Parse `trendingMovies` payload into HomeVC model.
+- [x] Map image fallback fields (`thumbnail_picture` then `large_picture`).
+
+Phase 2 - HomeVC state foundation (`@ios-dev`)
+
+- [x] Add `TrendingDisplayMode` enum (`carousel`, `list`).
+- [x] Add HomeVC state fields: `trendingMovies`, `displayMode`, `isLoading`, `errorState`.
+- [x] Ensure one data source is shared by carousel and list rendering.
+
+Phase 3 - Carousel UI (`@ios-dev`)
+
+- [x] Implement/default a horizontal carousel section in `HomeVC`.
+- [x] Render maximum five movies.
+- [x] Card content: poster + movie title.
+- [x] Preserve backend response order.
+
+Phase 4 - Swipe-down transform (`@ios-dev`)
+
+- [x] Add downward swipe recognizer to trending section container.
+- [x] Implement animated transition from carousel to list.
+- [x] Keep data in-memory; do not trigger second fetch on mode switch.
+
+Phase 5 - List UI (`@ios-dev`)
+
+- [x] Implement list mode rows (poster, title, description).
+- [x] Clamp description label to `numberOfLines = 3` and truncation tail.
+- [x] If description missing, show fallback descriptive text.
+
+Phase 5B - Visual style polish (`@ios-dev`)
+
+- [x] Apply black/white/grey palette to HomeVC trending section (cards/rows/text/background).
+- [x] Apply optional spacing/padding refinements for cleaner section rhythm.
+- [x] Apply optional soft shadow styling on cards/containers without reducing readability.
+
+Phase 6 - Empty/error/loading states (`@ios-dev`)
+
+- [x] Show loading placeholder/skeleton while fetching.
+- [x] Show compact empty-state copy when `trendingMovies` is empty.
+- [x] Show non-blocking error state and retry interaction.
+- [x] Keep HomeVC usable when trending fetch fails.
+
+Phase 7 - Diagnostics and logging (`@ios-dev`)
+
+- [x] Log request start/end and result count.
+- [x] Log mode switches (`carousel` -> `list`).
+- [x] Avoid logging sensitive session/auth values.
+
+Phase 8 - Review artifacts and documentation (`@ios-dev`)
+
+- [x] Keep prototype updated: `.specify/features/SwiftUIFeatures/prototypes/homevc-trending-carousel.prototype.html`.
+- [x] Confirm spec alignment with implementation notes in `speckit.swiftuifeatures.homevc-trending-carousel.specify`.
+
+Phase 9 - Verification (`@testing-engineer` + `@ios-dev`)
+
+- [x] Manual verify default carousel with top-5 data.
+- [x] Manual verify swipe-down transform animation.
+- [x] Manual verify description clamp to 3 lines in list mode.
+- [ ] Manual verify empty and error states are non-blocking.
+- [x] Manual verify implementation is UIKit-only (no SwiftUI usage).
+- [x] Manual verify black/white/grey style with optional padding/shadow polish in HomeVC trending section.
+

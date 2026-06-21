@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <rect width="390" height="844" fill="#f7f7fa"/>
+  <rect x="8" y="8" width="374" height="828" rx="36" fill="#fff" stroke="#333" stroke-width="12"/>
+
+  <rect x="24" y="60" width="342" height="36" rx="14" fill="#111"/>
+  <text x="55" y="83" font-family="Arial" font-size="13" fill="#fff">Back</text>
+
+  <rect x="24" y="106" width="166" height="34" rx="14" fill="#111"/>
+  <rect x="200" y="106" width="166" height="34" rx="14" fill="#111"/>
+  <text x="107" y="128" text-anchor="middle" font-family="Arial" font-size="12" fill="#fff">By Screening</text>
+  <text x="283" y="128" text-anchor="middle" font-family="Arial" font-size="12" fill="#fff">By Purchase</text>
+
+  <text x="24" y="156" font-family="Courier New" font-size="13" fill="#222">sortBy: purchase</text>
+
+  <rect x="18" y="170" width="354" height="82" rx="10" fill="#fff" stroke="#ececf1"/>
+  <rect x="28" y="182" width="38" height="54" rx="6" fill="#9aa3b3"/>
+  <text x="75" y="203" font-family="Courier New" font-size="12" fill="#222">Interstellar</text>
+  <text x="75" y="220" font-family="Courier New" font-size="11" fill="#777">2026-05-16 19:30</text>
+
+  <rect x="18" y="258" width="354" height="82" rx="10" fill="#fff" stroke="#ececf1"/>
+  <rect x="28" y="270" width="38" height="54" rx="6" fill="#9aa3b3"/>
+  <text x="75" y="291" font-family="Courier New" font-size="12" fill="#222">Joker</text>
+  <text x="75" y="308" font-family="Courier New" font-size="11" fill="#777">2026-05-17 21:00</text>
+
+  <rect x="12" y="742" width="366" height="86" rx="10" fill="#d8dbe0"/>
+  <text x="24" y="764" font-family="Arial" font-size="12" fill="#222">Long press a purchase row to enable swipe.</text>
+  <text x="24" y="782" font-family="Arial" font-size="12" fill="#222">Swipe left: Refund, then Confirm.</text>
+  <text x="24" y="806" font-family="Courier New" font-size="12" fill="#333">Refund history bubble (non-blocking)</text>
+
+  <text x="195" y="842" text-anchor="middle" font-family="Arial" font-size="10" fill="#666">Current UIKit wireframe from PurchasesVC.swift</text>
+</svg>
+

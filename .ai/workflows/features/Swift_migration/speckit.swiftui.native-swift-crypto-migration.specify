@@ -1,0 +1,115 @@
+# Native Swift Crypto Migration - Specification
+
+**Feature:** Replace CryptoJS/JavaScriptCore with Native Swift Crypto
+**Prefix:** `REQ-SWIFT-CRYPTO-*`
+**Status:** Implemented
+**Priority:** High
+**Complexity:** Medium-High
+**Implementation Window:** June 2026
+
+---
+
+## Outcome
+
+The iOS client crypto path is now native Swift (`CryptoSwift`) and no longer depends on JavaScript runtime execution.
+
+Implemented active-path replacements:
+- `LoginVC.swift`: password hash generation migrated to `NativeCrypto.sha3Hex(..., outputLength: 512)`.
+- `SignupVC.swift`: password hash generation migrated to `NativeCrypto.sha3Hex(..., outputLength: 512)`.
+- `ciphertext.swift`: AES ciphertext generation migrated to `NativeCrypto.encryptLegacyAES(...)`.
+- `AuthDataManager.swift`: sign-up request HMAC migrated to `NativeCrypto.loginHMAC(...)`.
+- `Networking/BackendServices.swift`: sign-in request HMAC migrated to `NativeCrypto.loginHMAC(...)`.
+
+Compatibility-critical note:
+- Legacy `CryptoJS.SHA3` behavior is Keccak-based. Native hashing was aligned to Keccak variants for wire/db parity.
+
+---
+
+## Final Scope
+
+### In Scope (Completed)
+- Replace active `CryptoJS` call sites with native Swift crypto utilities.
+- Preserve server contract outputs for hash/signing/ciphertext flows.
+- Remove `JavaScriptCore` from active crypto execution path.
+- Remove sensitive signing-secret logs in migrated auth paths.
+- Remove legacy CryptoJS `.js` assets from app target runtime resources.
+
+### Out of Scope (Intentionally Not Implemented)
+- Runtime/compile-time migration toggle (team decision: full cutover, rollback via git history).
+
+---
+
+## Requirement Closure
+
+### R01: Architecture and API
+- **REQ-SWIFT-CRYPTO-001:** Completed.
+- **REQ-SWIFT-CRYPTO-002:** Completed for migrated production paths.
+- **REQ-SWIFT-CRYPTO-003:** Completed (deterministic lowercase hex outputs in hashing path).
+
+### R02: Password Hashing Compatibility
+- **REQ-SWIFT-CRYPTO-010:** Completed with Keccak-compatible behavior for legacy `CryptoJS.SHA3` parity.
+- **REQ-SWIFT-CRYPTO-011:** Completed (UTF-8 semantics retained; no new normalization).
+- **REQ-SWIFT-CRYPTO-012:** Covered by manual parity validation during migration testing.
+
+### R03: HMAC/Signing Compatibility
+- **REQ-SWIFT-CRYPTO-020:** Completed.
+- **REQ-SWIFT-CRYPTO-021:** Completed (canonical payload format preserved).
+- **REQ-SWIFT-CRYPTO-022:** Covered by integration behavior checks and successful auth tests.
+- **REQ-SWIFT-CRYPTO-026:** Completed (shared signing helper used by both sign-up and sign-in paths).
+
+### R03b: AES Ciphertext Compatibility
+- **REQ-SWIFT-CRYPTO-023:** Completed.
+- **REQ-SWIFT-CRYPTO-024:** Completed (`keySize`, `iterationCount`, `salt`, `iv`, `passPhrase` preserved).
+- **REQ-SWIFT-CRYPTO-025:** Covered by successful app flow testing after migration.
+
+### R04: Dependency and Asset Cleanup
+- **REQ-SWIFT-CRYPTO-030:** Completed (`JavaScriptCore` removed from active crypto path).
+- **REQ-SWIFT-CRYPTO-031:** Completed for runtime bundle path (legacy `.js` crypto assets unbundled from app resources).
+- **REQ-SWIFT-CRYPTO-032:** Completed via post-migration build/test cycle.
+
+### R05: Migration Safety
+- **REQ-SWIFT-CRYPTO-040:** Waived by product decision (no toggle required).
+- **REQ-SWIFT-CRYPTO-041:** Completed (no sensitive-secret diagnostics retained in active paths).
+- **REQ-SWIFT-CRYPTO-042:** Satisfied through repository rollback strategy.
+
+### R06: Testing and Validation
+- **REQ-SWIFT-CRYPTO-050:** Partially completed (existing automated suite retained; crypto migration primarily validated with integration/manual parity checks).
+- **REQ-SWIFT-CRYPTO-051:** Completed through parity-focused verification during implementation.
+- **REQ-SWIFT-CRYPTO-052:** Completed.
+- **REQ-SWIFT-CRYPTO-053:** Completed.
+
+### R07: Documentation
+- **REQ-SWIFT-CRYPTO-060:** Completed.
+- **REQ-SWIFT-CRYPTO-061:** Completed.
+- **REQ-SWIFT-CRYPTO-062:** Completed.
+
+---
+
+## Acceptance Summary
+
+- Login and signup now use native Swift hashing.
+- Active sign-in/sign-up request signing now uses native Swift HMAC.
+- Device-id ciphertext path uses native Swift AES.
+- Backend compatibility validated in testing after Keccak parity fix.
+- No active runtime path requires JavaScriptCore-based crypto execution.
+
+---
+
+## Related Files
+
+- `SwiftCinemas/SwiftLoginScreen/CryptoJS.swift`
+- `SwiftCinemas/SwiftLoginScreen/LoginVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/SignupVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/ciphertext.swift`
+- `SwiftCinemas/SwiftLoginScreen/WebViewController.swift`
+- `SwiftCinemas/SwiftLoginScreen/DataManagers/AuthDataManager.swift`
+- `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+- `SwiftCinemas/SwiftCinemas.xcodeproj/project.pbxproj`
+
+---
+
+## Versioning
+
+**Version:** 1.0
+**Last Updated:** June 9, 2026
+**Owner:** iOS Platform Team

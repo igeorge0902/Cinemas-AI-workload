@@ -1,0 +1,86 @@
+Feature: VenuesDetailsVC UIKit redesign based on image1 (keep existing functions)
+
+Overview
+- Redesign `VenuesDetailsVC` visual layout using `.specify/features/SwiftUIFeatures/prototypes/venuesdetailsvc-redesign.prototype.html` as the primary review target, inspired by `.specify/features/SwiftUIFeatures/image1.png`.
+- Keep the movie media area as a rectangular hero region.
+- Introduce scroll-driven visual blur over the movie picture while user scrolls upward.
+- Present details text area before action buttons.
+- Align action buttons vertically.
+- Preserve all existing function wiring and flows (`book`, `dates`, `map`, `movieDetail`, `selectCalendar`, `navigateBack`).
+
+Scope
+- In scope: `VenuesDetailsVC` layout hierarchy, spacing, visual states, and interaction polish.
+- Out of scope: endpoint contracts, payload fields, auth headers, booking/payment logic, segue identifiers.
+
+Functional requirements
+
+REQ-VD-RD-1 Design baseline from reference
+- `VenuesDetailsVC` must follow the hierarchy direction defined in `.specify/features/SwiftUIFeatures/prototypes/venuesdetailsvc-redesign.prototype.html`.
+- `.specify/features/SwiftUIFeatures/image1.png` is the upstream visual inspiration.
+
+REQ-VD-RD-2 Rectangular movie media region retained
+- Movie media area remains a rectangle at the top region.
+- Existing local video/image rendering strategy remains valid (no contract changes required).
+
+REQ-VD-RD-3 Scroll-driven blur behavior
+- A scrollable content layer can overlay the hero region while scrolling up.
+- Blur intensity over movie picture increases with upward scroll progress.
+- Blur effect must degrade gracefully if blur APIs are unavailable on target runtime.
+
+REQ-VD-RD-4 Vertical content stack order
+- Details text area appears before action controls.
+- Action controls are vertically aligned in a single column.
+- Required button set remains visible in redesigned order: `Book`, `Dates`, `Map`, `Movie Detail`, `Calendar`.
+
+REQ-VD-RD-5 Preserve function contracts and navigation
+- Existing button actions and segue routes remain unchanged.
+- Existing data-manager interactions and request payload contracts remain unchanged.
+- Existing hardcoded header/payload contracts remain untouched.
+
+REQ-VD-RD-6 Back navigation retained
+- Top/back navigation affordance remains available and visible.
+
+REQ-VD-RD-7 Accessibility/readability
+- Text remains readable across light/dark mode.
+- Vertical button stack supports standard touch target sizing.
+
+REQ-VD-RD-8 UIKit-only constraint
+- Implementation must stay UIKit-based for this feature.
+- Do not introduce SwiftUI wrappers/hosting for this scope.
+
+Non-functional requirements
+
+REQ-VD-RD-NF-1 Performance
+- Scroll+blur behavior must remain smooth on supported devices.
+- Redesign must not introduce repeated setup churn on repeated appearance transitions.
+
+REQ-VD-RD-NF-2 Stability
+- Existing booking/date/map/calendar/movie-detail flows continue to function unchanged.
+
+REQ-VD-RD-9 Screen background and colors
+- Screen background: white (#FFFFFF).
+- Hero media area: rectangular, image/video fill with optional gradient overlay.
+- Blur overlay (scroll state): semi-transparent dark (#000000) at 0-80% opacity based on scroll progress.
+- Navigation buttons (Back): black (#000000), left-aligned in hero area top-left.
+- Action buttons: full-width, black (#000000) background, white (#FFFFFF) text.
+- Action button labels: use NSAttributedString with configurable font family + size.
+- Details text area: black (#000000) text on white background.
+
+REQ-VD-RD-10 Icon requirements
+- Back button: left-pointing chevron (‹) or back arrow; 13px, black, semi-transparent background pill.
+- Action button icons (left-aligned): Book (🎫 ticket), Dates (📅 calendar), Map (🗺️ map), Movie Detail (🎬 film), Calendar (📆 calendar); 12px each.
+- Optional back affordance: subtle chevron indicator showing scroll-up gesture for hero media.
+- Blur visual effect: iOS native `UIBlurEffect` or equivalent; Light/Dark adaptive.
+
+Acceptance criteria
+- [ ] Prototype exists at `.specify/features/SwiftUIFeatures/prototypes/venuesdetailsvc-redesign.prototype.html`.
+- [ ] Prototype reflects rectangular hero media region and scroll-driven blur direction.
+- [ ] Prototype shows details text before vertically aligned action buttons.
+- [ ] Spec explicitly preserves existing VenuesDetailsVC function wiring and contracts.
+- [ ] UIKit-only constraint documented.
+
+Reference files
+- `.specify/features/SwiftUIFeatures/prototypes/venuesdetailsvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/image1.png`
+- `SwiftCinemas/SwiftLoginScreen/VenuesDetailsVC.swift`
+

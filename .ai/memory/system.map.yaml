@@ -1,0 +1,42 @@
+document_scope:
+  purpose: "Keep a tiny module-to-domain map for fast navigation."
+  intentionally_excludes:
+    - "service implementation detail"
+    - "endpoint inventories"
+    - "deployment procedures"
+  canonical_sources:
+    architecture: ".ai/agents/AGENTS.md"
+    operational_routing: ".ai/retrieval/instructions.md"
+
+modules:
+  backend:
+    - dalogin-quarkus
+    - mbook-quarkus
+    - mbooks-quarkus
+    - simple-service-webapp-quarkus
+
+  frontend:
+    - SwiftCinemas
+    - dalogin-quarkus/java/resources/META-INF/resources/film-review
+
+  infra:
+    - k8infra
+
+  testing:
+    - appium
+
+  data:
+    - mysql_8
+
+relationships:
+  - backend -> infra
+  - backend -> data
+  - testing -> backend
+
+references:
+  contracts: ".ai/memory/constitution.md"
+  api: ".ai/memory/api.yaml"
+  testing: ".ai/memory/testing.yaml"
+  naming: ".ai/memory/naming.yaml"
+  k8s: ".ai/memory/k8s.yaml"
+

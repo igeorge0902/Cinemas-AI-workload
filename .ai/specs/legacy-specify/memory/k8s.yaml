@@ -1,0 +1,12 @@
+legacy_memory_redirect:
+  status: "archived compatibility shim"
+  canonical_file: ".ai/memory/k8s.yaml"
+  reason:
+    - "Active Kubernetes memory is maintained in one canonical location."
+    - "This legacy mirror intentionally avoids duplicating topology details, commands, and credentials."
+  additional_sources:
+    - "k8infra/quarkus-backend.yaml"
+    - "k8infra/README-k8s-local.md"
+    - ".ai/agents/AGENTS.md"
+  last_updated: "2026-05-16"
+

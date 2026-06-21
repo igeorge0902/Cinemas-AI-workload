@@ -1,0 +1,58 @@
+Feature Plan: VenueForMoviesVC expanded-list redesign with category + screening date (UIKit)
+
+Objective
+- Refresh `VenueForMoviesVC` to a polished expanded-list style for the Home -> Venues -> MapView flow.
+- Show one row per movie item with richer metadata.
+- Include category and screening date in each row.
+- Keep existing navigation behavior and endpoint contracts.
+
+Constraints
+- UIKit-only implementation.
+- No backend tasks in this feature.
+- No endpoint contract/header/payload changes.
+- Use existing movies + screening-date endpoint responses.
+
+Role ownership
+- Primary iOS implementation: `@ios-dev`
+- Contract compatibility review: `@backend-dev`
+- Manual regression verification: `@testing-engineer`
+
+Target files
+- `SwiftCinemas/SwiftLoginScreen/VenueForMoviesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift` (if reusable row style is shared)
+- `.specify/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.specify`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
+
+High-level architecture
+1. List visual refresh
+   - Shift to expanded-list visual hierarchy and spacing.
+   - Keep vertical one-row-per-item rendering.
+2. Metadata enrichment
+   - Bind `category` from existing movies endpoint data.
+   - Bind `screeningDate` from existing screening-date endpoint data.
+   - Provide `N/A` / `TBA` fallback labels when missing.
+3. Flow continuity
+   - Preserve navigation and selection contracts currently used by map/venues flow.
+4. No-backend guardrail
+   - Explicitly avoid backend endpoint changes or new backend tasks.
+5. Validation and diagnostics
+   - Verify mapping counts and fallback usage without logging sensitive headers/tokens.
+
+Interaction behavior
+- User reaches VenueForMovies list via Home -> Venues -> Map flow.
+- User sees expanded-list rows with title + category + screening date.
+- User can select rows and continue with existing navigation behavior.
+
+Verification strategy
+- Visual verify expanded-list style and readable hierarchy.
+- Verify category and screening date are shown in row cells.
+- Verify fallback labels display when data missing.
+- Verify no backend changes are required.
+- Verify navigation flow remains intact.
+
+Definition of done
+- Speckit artifacts (`.specify`, `.plan`, `.tasks`, prototype) are complete and aligned.
+- Prototype clearly shows category and screening date in each list row.
+- No backend task scope is introduced.
+

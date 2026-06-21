@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VenuesVC Redesign Prototype (UIKit)</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f1115;
+      color: #e8ebf1;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .phone {
+      width: min(430px, 96vw);
+      height: min(880px, 94vh);
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid #31394a;
+      background: #141a25;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .topbar {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid #2d3647;
+      background: #131926;
+    }
+
+    .back {
+      display: inline-block;
+      border: 1px solid #3a4459;
+      border-radius: 999px;
+      font-size: 13px;
+      padding: 7px 12px;
+      color: #f2f4f8;
+      background: #1e2738;
+    }
+
+    .title {
+      margin: 12px 0 4px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 12px;
+      color: #aab3c8;
+    }
+
+    .list {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: linear-gradient(180deg, #151c29 0%, #111722 100%);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 56px 1fr 24px;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid #2f394e;
+      border-radius: 12px;
+      background: #1b2435;
+      cursor: pointer;
+      transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+    }
+
+    .row:hover {
+      border-color: #576587;
+      background: #202b40;
+      transform: translateY(-1px);
+    }
+
+    .row.active {
+      border-color: #7d90bc;
+      background: #25324a;
+      box-shadow: inset 0 0 0 1px rgba(188, 205, 244, 0.2);
+    }
+
+    .thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      background: linear-gradient(160deg, #36425a, #252d3f);
+      border: 1px solid #4a5875;
+    }
+
+    .meta {
+      min-width: 0;
+    }
+
+    .name {
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0 0 3px;
+    }
+
+    .micro {
+      margin: 0;
+      font-size: 12px;
+      color: #a6afc4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chevron {
+      color: #b7bfd3;
+      font-size: 16px;
+      justify-self: end;
+    }
+
+    .details {
+      border-top: 1px solid #2d3647;
+      padding: 14px;
+      background: #121827;
+    }
+
+    .details h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #d7ddef;
+    }
+
+    .details-panel {
+      border: 1px solid #34415a;
+      border-radius: 10px;
+      padding: 12px;
+      background: #1b2435;
+      min-height: 84px;
+    }
+
+    .forward {
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid #42506e;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      background: #2a3958;
+      color: #f2f5ff;
+      cursor: pointer;
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+
+    .forward:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .forward:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9eb5e5;
+      min-height: 18px;
+    }
+
+    .details-name {
+      margin: 0 0 5px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .details-address {
+      margin: 0;
+      font-size: 13px;
+      color: #b6bfd4;
+      line-height: 1.35;
+    }
+
+    .note {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #97a2bb;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      color: #dce6ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="topbar">
+      <span class="back">Back</span>
+      <h1 class="title">Select Venue</h1>
+      <p class="subtitle">Polished vertical list inspired by expanded trending list style.</p>
+    </div>
+
+    <div class="list" id="venueList" aria-label="Vertical venues list">
+      <div class="row" data-name="Apollo Cinema" data-address="14 Baker Street, London NW1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Apollo Cinema</p>
+          <p class="micro">1.2 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Regent Screens" data-address="8 Regent Road, London SW1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Regent Screens</p>
+          <p class="micro">2.1 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Skyline Multiplex" data-address="42 Riverside Ave, London E14">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Skyline Multiplex</p>
+          <p class="micro">3.0 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Central Picturehouse" data-address="117 King Lane, London W2">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Central Picturehouse</p>
+          <p class="micro">3.5 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Royal Studios" data-address="2 Royal Crescent, London EC1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Royal Studios</p>
+          <p class="micro">4.2 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Metro Cinema" data-address="76 Metro Square, London SE1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Metro Cinema</p>
+          <p class="micro">4.8 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Grand Hall Screens" data-address="5 North Bridge, London N1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Grand Hall Screens</p>
+          <p class="micro">5.4 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="Harbor Lights" data-address="9 Dockside Avenue, London E1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">Harbor Lights</p>
+          <p class="micro">6.0 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+
+      <div class="row" data-name="West End Picture Club" data-address="31 Orchard Street, London W1">
+        <div class="thumb"></div>
+        <div class="meta">
+          <p class="name">West End Picture Club</p>
+          <p class="micro">6.6 km away</p>
+        </div>
+        <div class="chevron">›</div>
+      </div>
+    </div>
+
+    <div class="details">
+      <h2>Selected Venue Details (no map)</h2>
+      <div class="details-panel">
+        <p class="details-name" id="detailsName">No venue selected</p>
+        <p class="details-address" id="detailsAddress">Tap a venue row first, then continue from here.</p>
+      </div>
+      <button class="forward" id="forwardBtn" disabled>Continue to Venue Details</button>
+      <div class="status" id="statusText"></div>
+      <div class="note">
+        Prototype note: two-step interaction -> tap row to select, then use bottom button for forward navigation to <code>VenuesDetailsVC</code>.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const list = document.getElementById("venueList");
+    const detailsName = document.getElementById("detailsName");
+    const detailsAddress = document.getElementById("detailsAddress");
+    const forwardBtn = document.getElementById("forwardBtn");
+    const statusText = document.getElementById("statusText");
+    let selectedVenue = null;
+
+    list.addEventListener("click", (event) => {
+      const row = event.target.closest(".row");
+      if (!row) return;
+
+      document.querySelectorAll(".row.active").forEach((el) => el.classList.remove("active"));
+      row.classList.add("active");
+
+      detailsName.textContent = row.dataset.name || "Venue";
+      detailsAddress.textContent = row.dataset.address || "Address";
+      selectedVenue = {
+        name: row.dataset.name || "Venue",
+        address: row.dataset.address || "Address"
+      };
+      forwardBtn.disabled = false;
+      statusText.textContent = "Venue selected. Continue from bottom button.";
+    });
+
+    forwardBtn.addEventListener("click", () => {
+      if (!selectedVenue) return;
+      statusText.textContent = `Navigate -> VenuesDetailsVC (${selectedVenue.name})`;
+    });
+  </script>
+</body>
+</html>
+

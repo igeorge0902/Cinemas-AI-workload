@@ -1,0 +1,55 @@
+Phase 1 — Test Harness
+
+- [ ] Add request-capture utility for service tests (`URLProtocol` or APIClient test double).
+- [ ] Add shared assertion helpers for method/path/query/header/body checks.
+- [ ] Add JSON fixture loader for test payloads.
+- [ ] Add backend mode selector utility (`SWIFT_REST_BACKEND=mocked|real`, default mocked).
+- [ ] Add reusable XCTest skip guard for tests requiring real backend.
+
+Phase 2 — MbooksService Contract Tests
+
+- [ ] Create `MbooksServiceTests.swift`.
+- [ ] Add tests for `moviesPaging(query:)` and `moviesSearch(query:)`.
+- [ ] Add tests for `venue(movieId:)`, `locations()`, `dates(locationId:movieId:)`, `seats(screeningDateId:)`.
+- [ ] Add tests for `adminAddScreen(body:)`, `adminUpdateScreen(body:)`, `adminDeleteScreen(body:)`.
+- [ ] Assert method/path/query/body/header contract for each endpoint.
+- [ ] Add mock fixture mappings for all listed mbooks endpoints.
+
+Phase 3 — LoginGatewayService Contract Tests
+
+- [ ] Create `LoginGatewayServiceTests.swift`.
+- [ ] Add tests for `getUser()` and `getCheckOut()`.
+- [ ] Add tests for `postCheckOut(body:)` and `postManagePurchases(body:)` (form headers/body).
+- [ ] Add tests for `getAllPurchases()` and `getManagePurchases(purchaseId:)` query contracts.
+- [ ] Add tests for `postActivation(deviceId:user:)` JSON body + content-type.
+- [ ] Add `signIn(...)` contract test (path/body/header generation + success payload side effects).
+- [ ] Add mock fixture mappings for login/admin, checkout, purchases, activation, signIn success.
+
+Phase 4 — Response Schema Tests
+
+- [ ] Create `ServiceEndpointContractTests.swift`.
+- [ ] Add response-key assertions for movies, locations, seats, dates, purchases, login.
+- [ ] Ensure assertions validate schema presence, not hard-coded production IDs.
+- [ ] Add one negative test per domain using mocked non-2xx status to verify error mapping.
+
+Phase 5 — Test Plan Wiring
+
+- [ ] Update `SwiftCinemas.xctestplan` to unskip suite-level `SwiftCinemasTests`.
+- [ ] Keep live smoke tests opt-in with skip guard unless `SWIFT_REST_LIVE_TESTS=1`.
+- [ ] Verify test plan still targets `SwiftCinemas` app for variable expansion.
+- [ ] Document mock mode as default in test plan usage notes.
+
+Phase 6 — Legacy Test Cleanup
+
+- [ ] Replace placeholder `@testable import YourAppModule` in `VenueForMoviesIntegrationTests.swift`.
+- [ ] Remove invalid references (`AppServices.shared`, outdated model fields).
+- [ ] Keep only meaningful integration coverage or retire file after replacement.
+
+Phase 7 — Verification
+
+- [ ] Run test plan locally and confirm new contract tests execute.
+- [ ] Confirm failures print endpoint-specific diagnostics.
+- [ ] Document test run modes (default mocked vs opt-in live) in Swift test docs/README.
+- [ ] Verify both modes:
+  - mocked mode: deterministic pass without backend
+  - real mode: live smoke tests execute when env var is enabled

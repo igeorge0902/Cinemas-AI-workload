@@ -1,0 +1,86 @@
+Feature: VenueForMoviesVC expanded-list redesign for Home -> Venues -> Map flow (UIKit)
+
+Overview
+- Redesign `VenueForMoviesVC` with a polished vertical list style inspired by the expanded trending-list direction.
+- Keep current navigation context: HomeVC -> VenuesVC -> MapView -> VenueForMoviesVC.
+- Extend each list cell with:
+  - movie category
+  - screening date
+- Data sources are existing endpoints only:
+  - category from movies endpoint
+  - screening date from screening-date endpoint
+- No backend task is included in this feature.
+
+Scope
+- In scope: `VenueForMoviesVC` visual redesign, cell hierarchy, UI binding for category/date fields, loading/fallback presentation.
+- Out of scope: backend endpoint changes, payload contract changes, authentication/header contract changes.
+
+Functional requirements
+
+REQ-VFM-RD-1 Design baseline
+- `VenueForMoviesVC` must follow `.specify/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html` as the visual review baseline.
+- Style direction should align with expanded trending list readability and spacing.
+
+REQ-VFM-RD-2 Vertical list presentation
+- Content is displayed as a vertical list (one item per row).
+- Rows prioritize clear hierarchy: title, category, screening date, and supporting metadata.
+
+REQ-VFM-RD-3 Category field in cell
+- Each row displays movie category.
+- Category value is sourced from existing movies endpoint response.
+- If category is missing, show neutral fallback text (e.g., `Category: N/A`).
+
+REQ-VFM-RD-4 Screening date field in cell
+- Each row displays screening date.
+- Screening date value is sourced from existing screening-date endpoint response.
+- If date is missing/unavailable, show neutral fallback text (e.g., `Date: TBA`).
+
+REQ-VFM-RD-5 No backend work in this feature
+- Do not add new backend endpoints.
+- Do not change backend contracts.
+- Use existing endpoint payloads and client-side mapping only.
+
+REQ-VFM-RD-6 Flow continuity
+- Existing Home -> Venues -> MapView -> VenueForMovies flow remains operational.
+- Existing navigation behavior from list item selection remains unchanged.
+
+REQ-VFM-RD-7 UIKit-only constraint
+- Implementation remains UIKit-based.
+- Do not introduce SwiftUI wrappers or hosting in this scope.
+
+Non-functional requirements
+
+REQ-VFM-RD-NF-1 Performance
+- Scrolling remains smooth with new cell metadata fields.
+- Additional metadata hydration must not cause visible UI jank.
+
+REQ-VFM-RD-NF-2 Stability
+- Existing selection and navigation behavior remains stable.
+
+REQ-VFM-RD-12 Screen background and colors
+- Screen background: white (#FFFFFF).
+- Navigation buttons (Back, row CTAs): black (#000000), text-filled.
+- Row navigation indicators (chevrons › between cells): grayscale light gray (#c2cbe0).
+- All text: use NSAttributedString with configurable font family + size.
+- Fallback labels (Category: N/A, Date: TBA): medium gray (#808080).
+
+REQ-VFM-RD-13 Icon requirements
+- Row navigation chevron: right-pointing › or chevron-right; 15px, light gray (#c2cbe0).
+- Movie poster placeholder: film reel icon or placeholder gradient; 52x52px rounded.
+- Category metadata icon (optional): 📁 (folder) or generic tag; 12px.
+- Screening date icon (optional): 📅 (calendar) or date marker; 12px.
+
+Acceptance criteria
+- [ ] Prototype exists at `.specify/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html`.
+- [ ] Vertical expanded-list style is reflected in prototype hierarchy.
+- [ ] Each row includes category and screening date fields.
+- [ ] Spec states category source is movies endpoint (existing contract).
+- [ ] Spec states screening date source is screening-date endpoint (existing contract).
+- [ ] No backend tasks/contracts are introduced.
+- [ ] UIKit-only constraint is documented.
+
+Reference files
+- `.specify/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.homevc-trending-carousel.specify`
+- `SwiftCinemas/SwiftLoginScreen/VenueForMoviesVC.swift`
+

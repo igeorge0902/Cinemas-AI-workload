@@ -1,0 +1,54 @@
+Phase 0 — Baseline and safety checks (`@backend-dev` + `@testing-engineer`)
+- [ ] Inventory all `org.apache.log4j.Logger` imports in `dalogin-quarkus/src/main/java`.
+- [ ] Inventory active logger category names currently emitted in runtime logs.
+- [ ] Capture baseline logs for flows: `HelloWorld`, `CheckOut`, `GetAllPurchases`, `ManagePurchases`.
+- [ ] Freeze minimum required fields to preserve (`timestamp`, `level`, `source`, `message`).
+
+Phase 1 — Dependency and runtime alignment (`@backend-dev`)
+- [ ] Review `dalogin-quarkus/pom.xml` and keep Quarkus logging path as primary runtime.
+- [ ] Remove/avoid ambiguous legacy logging combinations that can duplicate/loop events.
+- [ ] Confirm final source of truth is Quarkus logging config for dalogin module behavior.
+- [ ] Keep `log4j.xml`/`log4j.properties` only as temporary rollback artifacts for one iteration.
+- [ ] Align runtime config keys and file routes with `speckit.system.dalogin-http-client-observability.*`.
+
+Phase 2 — Logger API migration (`@backend-dev`)
+- [ ] Replace `org.apache.log4j.Logger` imports with the selected logger API compatible with Quarkus logging runtime in priority classes:
+  - `CheckOut`, `GetAllPurchases`, `ManagePurchases`
+- [ ] Migrate logger imports in client path:
+  - `ServiceClient`, `RequestFilter`
+- [ ] Migrate remaining servlet/filter classes in `dalogin-quarkus/src/main/java/com/dalogin`.
+- [ ] Keep message semantics stable while migrating API usage.
+- [ ] Keep request/response log shape concise and informative: operation, downstream, status, duration, correlation.
+
+Phase 3 — Category and file routing (`@backend-dev` + `@devops`)
+- [ ] Configure dedicated file route for `LOG-HTTP-CLIENT` -> `logs/http-client.log`.
+- [ ] Configure default app route for `com.dalogin` -> `logs/dalogin.log`.
+- [ ] Configure file rotation/retention for both routes.
+- [ ] Verify no category mixing between `http-client.log` and `dalogin.log`.
+
+Phase 4 — HTTP observability hardening (`@backend-dev` + `@security-specialist`)
+- [ ] Keep START/END/ERROR event shape for all 8 ServiceClient outbound call paths using request/response filter instrumentation.
+- [ ] Ensure `RequestFilter` DEBUG logs only header names and fallback flags.
+- [ ] Ensure token/session/payment sensitive values are always masked/omitted:
+  - `token2`, `Ciphertext`, `uuid`, `payment_method_nonce`, cookie values
+- [ ] Verify SSL/exception path logs do not leak secrets.
+- [ ] Confirm logs complement OpenTelemetry traces and avoid duplicate verbose data.
+
+Phase 5 — Validation (`@testing-engineer` + `@performance-engineer`)
+- [ ] Verify all 8 `ServiceClient` methods emit expected START/END events.
+- [ ] Verify 4xx/5xx and exception paths emit WARN/ERROR as designed.
+- [ ] Run grep-based checks on generated logs for forbidden sensitive values.
+- [ ] Compare baseline vs migrated latency for checkout/purchases paths.
+- [ ] Confirm logging overhead remains acceptable.
+
+Phase 6 — Rollout and rollback readiness (`@backend-dev` + `@devops`)
+- [ ] Deploy to local/k8s dev canary and verify log routing + ingestion.
+- [ ] Confirm Grafana/Loki queries work for both `dalogin.log` and `http-client.log` streams.
+- [ ] Prepare rollback switch: temporary single-file route fallback if routing fails.
+- [ ] Complete one-cycle monitoring before removing legacy fallback config.
+
+Phase 7 — Documentation (`@backend-dev`)
+- [ ] Update `dalogin-quarkus/README.md` with final logging categories and file routing map.
+- [ ] Document migration decisions and final runtime logging source of truth.
+- [ ] Document redaction/masking policy and verification method.
+

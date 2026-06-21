@@ -1,0 +1,136 @@
+# Native Swift Crypto Migration - Tasks Checklist
+
+**Feature:** Replace CryptoJS/JavaScriptCore with Native Swift Crypto
+**Status:** Completed
+**Reference Plan:** `speckit.swiftui.native-swift-crypto-migration.plan`
+
+---
+
+## Phase 1: Baseline and Compatibility Vectors
+
+### Inventory and Contracts
+- [x] **C1.1** Search repo for `CryptoJS` call sites in Swift app code.
+- [x] **C1.2** Search repo for `JavaScriptCore` usage in crypto path.
+- [x] **C1.3** Search app target for bundled crypto JS resource references.
+- [x] **C1.4** Confirm active relation: `WebViewController.swift` -> `cipherText.getCipherText(deviceId)` -> `ciphertext.swift`.
+- [x] **C1.5** Capture canonical encoding and output formatting rules.
+
+### Parity Fixtures
+- [x] **C1.6** Capture legacy SHA3-512 fixture outputs for password samples.
+- [x] **C1.7** Capture legacy AES `getCipherText(_:)` fixture outputs.
+- [x] **C1.8** Capture legacy HMAC/signing outputs for representative payload/timestamp fixtures.
+- [x] **C1.9** Store fixture set in migration notes.
+- [x] **C1.10** Review fixture behavior against backend expectations.
+
+---
+
+## Phase 2: Native Crypto Facade
+
+### API Surface
+- [x] **C2.1** Add native crypto facade for hashing/signing/ciphertext generation.
+- [x] **C2.2** Ensure migrated production APIs avoid force unwraps.
+- [x] **C2.3** Preserve deterministic lowercase hex where required.
+- [x] **C2.4** Keep diagnostics non-sensitive.
+
+### SHA3 / HMAC / AES Core Implementations
+- [x] **C2.5** Implement native SHA3-compatible hashing service for login contract.
+- [x] **C2.6** Implement native request-signing/HMAC service preserving canonical format.
+- [x] **C2.7** Implement native AES encryption service for ciphertext path compatibility.
+- [x] **C2.8** Preserve AES parameter behavior (`keySize`, `iterationCount`, `salt`, `iv`, `passPhrase`).
+
+### Safety Toggle
+- [x] **C2.9** Toggle requirement waived by product decision (full replacement).
+- [x] **C2.10** Rollback documented via git history/revert strategy.
+
+---
+
+## Phase 3: Call-Site Migration
+
+### Login Hashing
+- [x] **C3.1** Update `SwiftCinemas/SwiftLoginScreen/LoginVC.swift` to use native hashing.
+- [x] **C3.2** Preserve existing password input normalization/encoding behavior.
+- [x] **C3.3** Verify login payload fields remained unchanged except crypto origin.
+
+### Signup Hashing
+- [x] **C3.3a** Update `SwiftCinemas/SwiftLoginScreen/SignupVC.swift` to use native hashing.
+- [x] **C3.3b** Verify sign-up payload hashing behavior matches legacy contract.
+
+### AES Ciphertext Relation
+- [x] **C3.4** Update `SwiftCinemas/SwiftLoginScreen/ciphertext.swift` to native AES helper.
+- [x] **C3.5** Validate `getCipherText(_:)` parity.
+- [x] **C3.6** Validate integration path in `SwiftCinemas/SwiftLoginScreen/WebViewController.swift`.
+
+### HMAC/Signing Path
+- [x] **C3.7** Replace `AuthDataManager.swift` HMAC flow with native signing service.
+- [x] **C3.7a** Replace `Networking/BackendServices.swift` HMAC flow with native signing service.
+- [x] **C3.7b** Consolidate sign-in/sign-up HMAC generation on one canonical helper.
+- [x] **C3.7c** Remove sensitive signing logs from migrated code paths.
+- [x] **C3.8** Validate generated headers/signatures via integration testing.
+
+### Interim Validation
+- [x] **C3.9** Execute migration regression checks.
+- [x] **C3.10** Run parity validation and resolve mismatch (Keccak compatibility fix).
+
+---
+
+## Phase 4: Legacy Dependency Cleanup
+
+### Remove Active Legacy Usage
+- [x] **C4.1** Remove active-path `JavaScriptCore` dependency.
+- [x] **C4.2** Ensure no production code paths call legacy `CryptoJS` JS wrappers.
+- [x] **C4.3** Remove app-target crypto JS resource dependency.
+- [x] **C4.4** Confirm project builds/runs after resource cleanup.
+
+### Repo Gates
+- [x] **C4.5** Repo-wide gate: no active `CryptoJS` usage in migrated flows.
+- [x] **C4.6** Repo-wide gate: no active `JavaScriptCore` crypto dependency.
+- [x] **C4.7** Attach cleanup evidence in migration docs.
+
+---
+
+## Phase 5: Validation, Rollout, and Documentation
+
+### Testing
+- [x] **C5.1** Complete deterministic checks for SHA3/HMAC/AES utility behavior.
+- [x] **C5.2** Complete parity checks against legacy behavior.
+- [x] **C5.3** Execute login integration smoke tests.
+- [x] **C5.4** Execute session bootstrap/authenticated flow smoke tests.
+- [x] **C5.5** Execute ciphertext consumer flow checks from `WebViewController.swift`.
+
+### Rollout + Rollback
+- [x] **C5.6** Confirm rollback path via git revert strategy (no runtime toggle).
+- [x] **C5.7** Validate production-style behavior with non-sensitive diagnostics.
+- [x] **C5.8** Record final go/no-go as go.
+
+### Documentation
+- [x] **C5.9** Document primitive/rationale including Keccak compatibility requirement.
+- [x] **C5.10** Document cleanup checklist and removed runtime dependencies.
+- [x] **C5.11** Document secret handling/logging constraints.
+- [x] **C5.12** Update feature docs pointers.
+
+---
+
+## Milestone Gates
+
+- [x] **G1** Baseline fixtures approved
+- [x] **G2** Native facade ready
+- [x] **G3** Call-site parity proven for SHA3/HMAC/AES
+- [x] **G4** Legacy active dependency removed
+- [x] **G5** Final validation + documentation complete
+
+---
+
+## Sign-Off Checklist
+
+- [x] iOS migration implementation complete
+- [x] Backend compatibility validated in integration testing
+- [x] QA smoke coverage completed by manual test pass
+- [x] Security-sensitive logging removed from active path
+
+---
+
+## Tasks Versioning
+
+**Version:** 1.0
+**Last Updated:** June 9, 2026
+**Status:** Closed - Complete

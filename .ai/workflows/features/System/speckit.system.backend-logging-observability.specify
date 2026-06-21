@@ -1,0 +1,69 @@
+Feature: Backend logging and Grafana observability
+
+Contract IDs
+- None (cross-cutting observability feature affecting existing backend behavior, not introducing a client API contract)
+
+Overview
+- Add comprehensive, structured logging across all backend services.
+- Introduce explicit log levels and event categories.
+- Make logs visible in Grafana in addition to existing metrics and traces.
+
+Role collaboration
+- `@backend-dev`, `@devops`, `@security-specialist`, `@testing-engineer`, `@performance-engineer`, `@business-analyst`
+
+Functional requirements
+- `FR-001`: All backend services MUST emit structured logs for endpoint/resource calls.
+- `FR-002`: All backend services MUST log Hibernate transaction lifecycle events at defined levels.
+- `FR-003`: Entity create/update/delete/load operations MUST have category-based logs where operationally useful.
+- `FR-004`: Session state transitions and auth-related session checks MUST be logged in services that manage sessions.
+- `FR-005`: Servlet/JAX-RS filter decisions MUST be logged with enough context to debug auth, cookie, and request rejection paths.
+- `FR-006`: SQL logging MUST support three detail modes:
+  - short summary (`INFO`)
+  - longer statement/debug context (`DEBUG`)
+  - failure/error logging (`ERROR`)
+- `FR-007`: Log categories MUST be documented and consistent across services.
+- `FR-008`: Grafana MUST be able to query backend logs by service, level, and category.
+- `FR-009`: Existing logging and existing Hibernate logging outputs MUST be reformatted to the shared structured format (no unstructured fallback by default).
+- `FR-010`: Hibernate log subtypes MUST remain routed to different log files (for example transaction vs SQL vs statistics categories), and MUST NOT be merged into one file.
+- `FR-011`: New logging categories introduced by this feature MUST follow the same per-category/per-type file separation rule.
+
+Log category requirements
+- `LOG-ENDPOINT`: request start/end, method, path, duration, status
+- `LOG-HIBERNATE-TX`: transaction begin/commit/rollback, timing, failures
+- `LOG-ENTITY`: entity mutation/load summaries
+- `LOG-SESSION`: login/session creation, expiry, invalidation, validation failure
+- `LOG-SQL`: query summary, slow query details, statement errors
+- `LOG-FILTER`: cookie/auth/ciphertext/request filter decisions and reasons
+
+Log level rules
+- `ERROR`: failed request, rollback, exception, rejected critical auth path, failed SQL
+- `WARN`: suspicious or degraded but recoverable condition
+- `INFO`: normal operational lifecycle events and short summaries
+- `DEBUG`: detailed diagnostic state and longer SQL/entity/filter detail
+- `TRACE`: optional deep diagnostics, disabled by default in normal environments
+
+Security requirements
+- `SEC-001`: Logs MUST NOT expose raw secrets, passwords, payment nonces, or sensitive session tokens.
+- `SEC-002`: Logs MUST redact or suppress sensitive headers/cookies where needed.
+- `SEC-003`: Session/auth logs MUST remain useful without leaking credential material.
+
+Non-functional requirements
+- `NFR-001`: Default logging volume MUST be production-safe and not require DEBUG for normal operations insight.
+- `NFR-002`: DEBUG/TRACE logging MUST be selectively configurable by service/category.
+- `NFR-003`: Log ingestion and dashboard queries MUST remain performant under normal service load.
+- `NFR-004`: Grafana log visualization MUST include filtering by service, level, and category.
+
+Acceptance criteria
+- [ ] All four backend services have documented logging level/category policy.
+- [ ] Endpoint, Hibernate, entity, session, SQL, and filter events are covered.
+- [ ] Sensitive values are redacted or omitted.
+- [ ] Grafana can visualize/query backend logs.
+- [ ] Default INFO/WARN/ERROR mode is useful without excessive noise.
+- [ ] Existing logs and Hibernate logs are emitted in the agreed structured format.
+- [ ] Hibernate log types and new logging categories are split into separate log files per configured routing.
+
+Definition of Done
+- [ ] Feature has spec, implementation, and tests.
+- [ ] `@testing-engineer` verification done.
+- [ ] `@security-specialist` verification done.
+- [ ] `@performance-engineer` verification done.

@@ -1,0 +1,66 @@
+Feature Plan: Venues list redesign for UIKit VenuesVC and SwiftUI VenuesMigration
+
+Objective
+- Refresh the venues list UX for both `VenuesVC` (UIKit) and `VenuesMigration` (SwiftUI) with a cleaner expanded-list style.
+- Show venues vertically, one per row.
+- Show selected venue details (name + address) in bottom section without map.
+- Preserve existing behaviors and navigation to `VenuesDetailsVC`.
+
+Constraints
+- Keep all existing function handlers and segue identifiers.
+- No backend contract changes.
+- Preserve admin/map flow behavior.
+- Implement parity across both targets: UIKit + SwiftUI.
+
+Role ownership
+- Primary iOS implementation: `@ios-dev`
+- Contract behavior/regression checks: `@backend-dev`
+- Manual flow verification: `@testing-engineer`
+
+Target files
+- `SwiftCinemas/SwiftLoginScreen/VenuesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/VenuesMigration/VenuesMigration.swift`
+- `.specify/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.specify`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
+
+High-level architecture
+1. List layout refresh
+   - UIKit target: keep UITableView-driven architecture.
+   - SwiftUI target: implement equivalent list hierarchy in `VenuesMigration`.
+   - Present one venue per line with polished spacing and typography.
+2. Selection details panel
+   - Keep bottom details panel region.
+   - On select, display selected venue and address (no map).
+   - Add explicit bottom CTA for forward navigation; CTA is enabled only after row selection.
+3. Navigation continuity
+   - Keep `goto_venues_details` segue on selection for normal movie flow.
+   - Preserve map/admin branching and notifications (especially in SwiftUI migration modes).
+4. Function preservation
+   - Keep `addData`, `addLocation`, `navigateBack`, `navigateToVenue`, table delegates unchanged in behavior.
+5. Stability/performance guardrails
+   - Avoid duplicate UI subview creation in repeated lifecycle transitions.
+   - Keep async image loading non-blocking and safe for reused cells.
+
+Interaction behavior
+- User enters VenuesVC from movie selection.
+- User scrolls a vertical venue list.
+- User taps a venue row to select and update bottom details panel.
+- User taps bottom CTA to proceed to VenuesDetailsVC (explicit second step).
+- No embedded map is shown in bottom details section.
+- Same interaction model is presented in both UIKit and SwiftUI targets.
+
+Verification strategy
+- Manual visual verify: expanded-list style, one-row-per-venue vertical list.
+- Manual behavior verify: details panel updates with address on selection.
+- Manual flow verify: still navigates to VenuesDetailsVC.
+- Manual verify: map/admin flows unchanged.
+- Compile verify: no Swift errors in `VenuesVC.swift`.
+- Compile verify: no Swift errors in `VenuesMigration.swift`.
+
+Definition of done
+- Speckit artifacts (`.specify`, `.plan`, `.tasks`, prototype) are complete and aligned.
+- Redesign is approved as polished visual update.
+- Existing VenuesVC functions and navigation contracts remain intact.
+- SwiftUI VenuesMigration presents equivalent redesigned behavior for the relevant list flow.
+

@@ -1,0 +1,94 @@
+Feature Plan: MoviesVC monochrome redesign with favorites and mocked ratings (UIKit)
+
+Objective
+- Redesign `MoviesVC` using `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html` as primary design target (derived from `image0.png`).
+- Add favorite toggles per movie.
+- Display ratings from static JSON fixture (mock external API).
+- Ensure footer navigation is not present in MoviesVC.
+- Keep the existing MoviesVC search bar behavior.
+- Remove segmented control and replace it with design-aligned category chips.
+- Load available categories from existing backend movie payload when present, otherwise use iOS static fallback chips.
+
+Constraints
+- UIKit-only implementation.
+- No backend API contract changes.
+- Ratings source is local static fixture (Option A), not remote call.
+- Category chips must not require backend API changes.
+
+Role ownership
+- Primary iOS implementation: `@ios-dev`
+- Data contract and fallback behavior review: `@ios-dev`
+- Regression validation: `@testing-engineer`
+
+Target files
+- `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/Networking/` (only if light helper needed)
+- `SwiftCinemas/SwiftLoginScreen/Resources/ratings-mock.json` (or existing resource bucket)
+- `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`
+
+High-level architecture
+1. Visual layer
+   - Refactor MoviesVC layout to match `movies-redesign2.prototype.html` hierarchy in monochrome style.
+   - Remove/hide footer navigation region for MoviesVC.
+   - Keep existing search bar visible and usable.
+   - Remove segmented control and render horizontal category chips instead.
+2. Categories baseline + iOS fallback
+   - Read category values from existing movie payload fields when available.
+   - Build deduplicated chip list in design order.
+   - If categories are missing/empty, render iOS static fallback chips while keeping movie list usable.
+3. Favorites
+   - Add local favorite state keyed by movie identifier.
+   - Render selected/unselected favorite icon state in list/grid cells.
+4. Ratings mock fixture
+   - Load static JSON fixture at screen init (or lazy load on first render).
+   - Map fixture entries by `movieId` to view model.
+   - Fallback to `N/A` when missing.
+5. Error/fallback
+   - If categories are unavailable from backend payload, keep movies render path active and show static fallback chips.
+   - If fixture fails parsing, keep movie rendering and show fallback ratings.
+6. Diagnostics
+   - Log category source (`backend` or `fallback`) and mapped category count.
+   - Log fixture load status and mapped rating count.
+
+Mock fixture contract (Option A)
+- Filename example: `ratings-mock.json`
+- Suggested shape:
+  - root: `ratings`
+  - items: `{ "movieId": <Int>, "rating": <String> }`
+
+Interaction behavior
+- Favorite toggle is immediate and local.
+- Rating display is read-only in this phase.
+- No footer navigation controls in MoviesVC.
+- Existing search bar remains the primary text search control.
+- Segmented control is removed.
+- Category chips are data-driven from existing backend payload values, with iOS static fallback.
+
+Verification strategy
+- Manual verify monochrome styling and `movies-redesign2.prototype.html` structure.
+- Manual verify search bar is present and usable.
+- Manual verify segmented control is absent.
+- Manual verify category chips render from backend payload when available and degrade to static fallback values when missing.
+- Manual verify favorite toggle visual states.
+- Manual verify ratings show from fixture and fallback for missing entries.
+- Manual verify no footer navigation in MoviesVC.
+- Confirm UIKit-only implementation.
+
+Definition of done
+- MoviesVC follows `movies-redesign2.prototype.html` monochrome layout.
+- Existing search bar remains available.
+- Segmented control is removed.
+- Category chips are supplied by backend payload when available, else static fallback values.
+- Favorites and mocked ratings are visible and stable.
+- Footer navigation is removed from MoviesVC.
+- Static fixture load + fallback behavior confirmed.
+- Category source detection (`backend` vs `fallback`) and fallback behavior confirmed.
+- Prototype and speckit artifacts are complete and aligned.
+
+Deferred risk tracking (FIX LATER)
+- `RISK-MVC-SAFE-001`: `category_!` force-unwrap can crash before first category selection in section 1 (primary repro: `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:254`).
+- Related paths: `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:527`, `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:531`, `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:590`, `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:603`.
+- Backlog references:
+  - `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10)
+  - `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-safety.analyze.md`
+

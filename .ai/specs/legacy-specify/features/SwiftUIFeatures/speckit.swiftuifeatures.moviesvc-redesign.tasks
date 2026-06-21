@@ -1,0 +1,80 @@
+Phase 1 - Spec and contract alignment (`@ios-dev`)
+
+- [x] Use requirement prefix `REQ-MVC-RD-*` for this feature.
+- [x] Confirm ratings mock source is static JSON fixture (Option A).
+- [x] Link design source `.specify/features/SwiftUIFeatures/image0.png`.
+- [x] Add requirements for retained search bar, segmented-control removal, and category fallback strategy.
+
+Phase 1A - Replacement mode and compile gate (`@ios-dev`)
+
+- [x] Apply code replacement only for `MoviesVC` scope in this feature pass.
+- [x] After each replacement chunk, run compile check and resolve build errors before next chunk.
+- [x] Do not start next screen redesign until `MoviesVC` compiles cleanly.
+
+Phase 2 - UI structure redesign (`@ios-dev`)
+
+- [x] Refactor `MoviesVC` layout to follow `movies-redesign2.prototype.html` hierarchy (derived from `image0.png`).
+- [x] Apply monochrome palette (black/white/gray only).
+- [x] Ensure title/rating/favorite information is visible without secondary navigation.
+- [x] Keep existing search bar visible and functional.
+- [x] Remove segmented control from redesigned MoviesVC.
+- [x] Render categories as horizontal chips per design.
+
+Phase 3 - Categories data source (`@ios-dev`)
+
+- [x] Read category values from existing backend movie payload fields when available.
+- [x] Build deduplicated chips list with canonical "All" first.
+- [x] Use static fallback categories when backend category values are missing.
+- [x] Keep MoviesVC usable when category values are empty or inconsistent.
+
+Phase 4 - Favorites (`@ios-dev`)
+
+- [x] Add favorite toggle control to movie cell/card.
+- [x] Implement local favorite state map keyed by movie identifier.
+- [x] Render selected/unselected favorite visuals consistently.
+
+Phase 5 - Ratings mock fixture (`@ios-dev`)
+
+- [x] Add static JSON fixture (e.g., `ratings-mock.json`) into app resources.
+- [x] Load and parse fixture safely.
+- [x] Map ratings to movies by deterministic key.
+- [x] Show fallback `N/A` for missing or unmapped rating.
+
+Phase 6 - Footer removal (`@ios-dev`)
+
+- [x] Remove/hide footer navigation controls in MoviesVC.
+- [x] Confirm existing non-footer navigation routes still work.
+
+Phase 7 - Error handling and diagnostics (`@ios-dev`)
+
+- [x] Handle missing/empty backend category values without blocking movie render.
+- [x] Handle fixture read/parse failure without blocking movie render.
+- [x] Log category source (`backend` or `fallback`) and mapped count.
+- [x] Log fixture load status and rating mapping count.
+- [x] Avoid logging sensitive values.
+
+Phase 8 - Prototype and artifacts (`@ios-dev`)
+
+- [x] Add prototype: `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`.
+- [x] Ensure spec/plan/tasks remain aligned to chosen options and `movies-redesign2.prototype.html`.
+
+Phase 9 - Manual verification handoff (`@user`)
+
+- [x] Manual verify monochrome UI and `movies-redesign2.prototype.html` composition.
+- [x] Manual verify search bar remains present and usable.
+- [x] Manual verify segmented control is removed.
+- [x] Manual verify category chips are populated from backend payload when present.
+- [x] Manual verify static category fallback appears when backend category values are missing.
+- [x] Manual verify favorite toggle behavior and visual state.
+- [x] Manual verify ratings display from static fixture.
+- [x] Manual verify fallback `N/A` for missing ratings.
+- [x] Manual verify footer navigation is absent in MoviesVC.
+- [x] Manual verify UIKit-only implementation.
+
+Phase 10 - Deferred safety hardening backlog (`@ios-dev`) [FIX LATER]
+
+- [ ] Replace `category_!` force-unwrap in search path with safe fallback when `section_ == 1` and no category selected yet (`MoviesVC.swift:254`).
+- [ ] Replace remaining `category_!` force-unwraps in MoviesVC pagination/admin paths (`MoviesVC.swift:527`, `MoviesVC.swift:531`, `MoviesVC.swift:590`, `MoviesVC.swift:603`).
+- [ ] Add guard/early-return path so section switch to categories cannot crash before first category tap.
+- [ ] Add manual crash-repro checks for: switch-to-categories -> type 3+ chars before selecting category.
+

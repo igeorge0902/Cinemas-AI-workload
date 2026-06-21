@@ -1,0 +1,99 @@
+Feature: Venues list redesign for UIKit VenuesVC and SwiftUI VenuesMigration
+
+Overview
+- Apply the same redesigned venues list behavior to both:
+  - UIKit surface: `VenuesVC`
+  - SwiftUI surface: `VenuesMigration`
+- Redesign is inspired by the expanded trending list style used by HomeVC.
+- Venues are presented one per row (single-line list rhythm).
+- Selecting a venue reveals venue details (including address) in a bottom details panel, without embedded map.
+- Forward navigation is initiated from bottom panel action after venue selection (two-step tap flow).
+- Preserve all existing function wiring and data/segue contracts.
+
+Scope
+- In scope: dual-surface visual hierarchy, row styling, details panel presentation, and selection polish for `VenuesVC` + `VenuesMigration`.
+- Out of scope: backend contracts, map embedding in details panel, auth/session headers, payload changes.
+
+Functional requirements
+
+REQ-VEN-RD-1 Design baseline
+- `VenuesVC` and `VenuesMigration` must follow `.specify/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html` as the review baseline.
+- Inspiration sources include existing HomeVC expanded trending-list direction.
+
+REQ-VEN-RD-2 Vertical venues list
+- Render venues in a vertical list, one venue per row.
+- Row layout should prioritize readability and tap affordance.
+- Keep current data source behavior for movie-driven and map/admin flows.
+
+REQ-VEN-RD-3 Expanded-list visual style parity
+- Row spacing, typography hierarchy, and card/container treatment should align with the expanded-list visual direction.
+- Both surfaces should present equivalent interaction/order semantics:
+  - first tap selects row and updates bottom details
+  - second tap from bottom CTA navigates forward
+
+REQ-VEN-RD-4 Bottom details panel (no map)
+- On row selection, show selected venue details in a bottom panel section.
+- Bottom panel includes venue name and address.
+- Do not embed map content in this panel.
+
+REQ-VEN-RD-5 Navigate after selection
+- Selection is explicit first step: row tap only selects and updates bottom details.
+- Forward action is explicit second step: user taps bottom CTA to navigate to `VenuesDetailsVC`.
+- Existing segue identifier and context propagation remain unchanged.
+
+REQ-VEN-RD-6 Preserve existing functions/contracts
+- Keep all current functions and handlers in `VenuesVC` operational.
+- Keep `VenuesMigration` mode behavior intact (standard/admin/map), with redesign applied to standard list UX.
+- Keep data manager interactions and field contracts unchanged.
+- Keep existing behavior for admin/map flows and selection notifications.
+
+REQ-VEN-RD-7 Back navigation retained
+- Keep back button behavior and navigation semantics unchanged.
+
+REQ-VEN-RD-8 Accessibility/readability
+- Maintain clear contrast and touch target sizing.
+- Details panel text remains readable in light/dark mode.
+
+REQ-VEN-RD-9 Technology targets
+- UIKit target: `SwiftCinemas/SwiftLoginScreen/VenuesVC.swift`.
+- SwiftUI target: `SwiftCinemas/SwiftLoginScreen/VenuesMigration/VenuesMigration.swift`.
+- This feature is complete only when both targets are aligned to the redesigned interaction model.
+
+REQ-VEN-RD-10 Screen background and colors
+- Screen background: white (#FFFFFF).
+- Navigation buttons (Back, bottom CTA): black (#000000), text-filled.
+- Row navigation indicators (chevrons › in venue list): grayscale light gray (#b7bfd3).
+- All text: use NSAttributedString with configurable font family + size.
+- Bottom CTA button: black (#000000) when enabled, disabled gray when no venue selected.
+
+REQ-VEN-RD-11 Icon requirements
+- Back button icon: left-pointing chevron (‹) or back arrow; 13px, black.
+- Row navigation chevron: right-pointing › or chevron-right; 16px, light gray (#b7bfd3).
+- Venue address metadata icons (optional visual): 📍 (location pin) or 🏠 (home); emoji or 16px asset.
+- Bottom CTA icon: optional, navigation arrow pointing right; 12px, black.
+
+Non-functional requirements
+
+REQ-VEN-RD-NF-1 Performance
+- List scrolling remains smooth with image loading.
+- Redesign does not introduce repeated heavy setup in lifecycle callbacks.
+
+REQ-VEN-RD-NF-2 Stability
+- Existing venue selection, details update, and segue flow remain stable.
+
+Acceptance criteria
+- [ ] Prototype exists at `.specify/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html`.
+- [ ] Venues are shown as a polished vertical one-row-per-venue list.
+- [ ] Selected venue shows bottom details panel with address and no map embed.
+- [ ] First tap selects venue and updates bottom details; second tap on bottom CTA navigates to `VenuesDetailsVC`.
+- [ ] Existing functions and contracts are explicitly preserved.
+- [ ] `VenuesVC` (UIKit) implements the redesigned behavior.
+- [ ] `VenuesMigration` (SwiftUI) implements equivalent redesigned behavior.
+
+Reference files
+- `.specify/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.homevc-trending-carousel.specify`
+- `SwiftCinemas/SwiftLoginScreen/VenuesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/VenuesMigration/VenuesMigration.swift`
+- `SwiftCinemas/SwiftLoginScreen/VenuesDetailsVC.swift`
+

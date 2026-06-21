@@ -1,0 +1,181 @@
+{
+  "source": "/Users/gyorgy.gaspar/work/cinemas/cinemas/.specify/features/SwiftUIFeatures/icons.png",
+  "counts": {
+    "top_candidates": 5,
+    "mid_candidates": 6,
+    "bottom_candidates": 4,
+    "exports": 14
+  },
+  "exports": [
+    {
+      "category": "required/navigation",
+      "name": "chevron_right_16",
+      "bbox": {
+        "x": 1071,
+        "y": 152,
+        "w": 45,
+        "h": 57,
+        "area": 1076
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/navigation",
+      "name": "chevron_right_15",
+      "bbox": {
+        "x": 249,
+        "y": 149,
+        "w": 44,
+        "h": 57,
+        "area": 1080
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/navigation",
+      "name": "chevron_left_13",
+      "bbox": {
+        "x": 631,
+        "y": 149,
+        "w": 43,
+        "h": 56,
+        "area": 1073
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/favorite",
+      "name": "favorite_outline_32",
+      "bbox": {
+        "x": 230,
+        "y": 429,
+        "w": 100,
+        "h": 51,
+        "area": 4530
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/favorite",
+      "name": "favorite_filled_32",
+      "bbox": {
+        "x": 379,
+        "y": 427,
+        "w": 85,
+        "h": 53,
+        "area": 4148
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/actions",
+      "name": "action_book_12",
+      "bbox": {
+        "x": 521,
+        "y": 426,
+        "w": 67,
+        "h": 62,
+        "area": 3798
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/actions",
+      "name": "action_dates_12",
+      "bbox": {
+        "x": 754,
+        "y": 425,
+        "w": 52,
+        "h": 65,
+        "area": 2085
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/actions",
+      "name": "action_map_12",
+      "bbox": {
+        "x": 643,
+        "y": 425,
+        "w": 50,
+        "h": 64,
+        "area": 1947
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/actions",
+      "name": "action_movie_detail_12",
+      "bbox": {
+        "x": 858,
+        "y": 425,
+        "w": 77,
+        "h": 68,
+        "area": 4147
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "required/placeholder",
+      "name": "poster_placeholder_52",
+      "bbox": {
+        "x": 1066,
+        "y": 353,
+        "w": 263,
+        "h": 234,
+        "area": 53587
+      },
+      "note": "locked component-id mapping"
+    },
+    {
+      "category": "optional/metadata",
+      "name": "meta_location_pin_16",
+      "bbox": {
+        "x": 368,
+        "y": 751,
+        "w": 58,
+        "h": 75,
+        "area": 2982
+      },
+      "note": "bottom-row positional mapping"
+    },
+    {
+      "category": "optional/metadata",
+      "name": "meta_home_16",
+      "bbox": {
+        "x": 538,
+        "y": 755,
+        "w": 90,
+        "h": 70,
+        "area": 4384
+      },
+      "note": "bottom-row positional mapping"
+    },
+    {
+      "category": "optional/metadata",
+      "name": "meta_folder_tag_12",
+      "bbox": {
+        "x": 740,
+        "y": 757,
+        "w": 90,
+        "h": 70,
+        "area": 5607
+      },
+      "note": "bottom-row positional mapping"
+    },
+    {
+      "category": "optional/metadata",
+      "name": "meta_calendar_date_12",
+      "bbox": {
+        "x": 958,
+        "y": 752,
+        "w": 86,
+        "h": 75,
+        "area": 5694
+      },
+      "note": "bottom-row positional mapping"
+    }
+  ],
+  "verification_required": true,
+  "verification_note": "Mappings use locked component IDs to prevent icon mix-ups. Re-validate IDs only if icons.png is replaced."
+}

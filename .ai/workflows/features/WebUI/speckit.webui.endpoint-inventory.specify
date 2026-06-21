@@ -1,0 +1,129 @@
+# 📌 Feature Spec: WebUI Endpoint Inventory and Scope Extension
+
+## 1. Feature Overview
+
+This feature defines the endpoint contract inventory required by the Film-Review WebUI in:
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review`
+
+It standardizes:
+- which routes/controllers depend on which backend endpoints,
+- which service owns each endpoint,
+- what endpoint gaps block template extension beyond booking flow.
+
+---
+
+## 2. Scope
+
+## ✅ Included
+
+- Active Film-Review Angular routes currently used in `app.js`
+- Endpoint mapping for `dalogin-quarkus`, `mbooks-quarkus`, `mbook-quarkus`, `simple-service-webapp-quarkus`
+- Gap analysis for template pages not currently wired
+- Phased extension definition (P1/P2/P3)
+
+## 🚫 Excluded
+
+- Rewriting AngularJS architecture
+- Implementing all new endpoints in this feature
+- Enabling community/profile modules before endpoint contracts exist
+
+---
+
+## 3. Functional Requirements
+
+### REQ-WEI-1 Endpoint matrix
+
+A matrix MUST be produced for each active route with these fields:
+- route
+- Angular controller
+- HTTP method
+- endpoint path
+- backend service owner
+- auth expectation (public/session/HMAC)
+- status (`implemented` | `missing` | `partial`)
+
+### REQ-WEI-2 Current flow coverage
+
+The matrix MUST include all active booking-flow routes:
+- `/login`
+- `/change-password`
+- `/movies`
+- `/venues-list`
+- `/venue-movies/:locationId`
+- `/venues/:movieId`
+- `/dates/:locationId/:movieId`
+- `/checkout`
+- `/purchases`
+- `/purchases/:purchaseId`
+
+### REQ-WEI-3 Service ownership validation
+
+Each mapped endpoint MUST have one owning service:
+- `dalogin-quarkus`
+- `mbooks-quarkus`
+- `mbook-quarkus`
+- `simple-service-webapp-quarkus`
+
+### REQ-WEI-4 Gap classification
+
+Missing or partial endpoints MUST be categorized:
+- P1: booking-complete hardening (must-have now)
+- P2: discovery enhancements (trending, detail enrichment, server-side filtering)
+- P3: optional community/profile modules
+
+### REQ-WEI-5 P2 discovery contracts
+
+The spec MUST include concrete candidate contracts for discovery extension:
+- `GET /mbooks-1/rest/book/trending-movies`
+- `GET /mbooks-1/rest/book/movies/{movieId}`
+- `GET /mbooks-1/rest/book/movies/paging?...`
+- `GET /mbooks-1/rest/book/movies/search?...`
+
+### REQ-WEI-6 Scope guard for template modules
+
+Template pages not in booking scope (blog/news/celebrity/profile/rating) MUST remain disabled from active nav until their endpoint contracts are marked `implemented`.
+
+### REQ-WEI-7 Source of truth
+
+Endpoint mapping decisions MUST be derived from code first:
+- WebUI calls in `film-review/app.js`
+- backend controllers in Quarkus services
+
+README docs are supportive references, not primary authority when mismatch exists.
+
+---
+
+## 4. Non-Functional Requirements
+
+### REQ-WEI-NF-1 Traceability
+
+Each matrix row MUST be traceable to at least one concrete callsite in `film-review/app.js`.
+
+### REQ-WEI-NF-2 Change safety
+
+No route should be enabled in UI without a mapped endpoint owner and auth expectation.
+
+### REQ-WEI-NF-3 Maintainability
+
+The endpoint inventory format should remain stable so future template pages can be added without restructuring docs.
+
+---
+
+## 5. Deliverables
+
+- Endpoint matrix document (route -> controller -> endpoint -> owner)
+- Gap list by phase (P1/P2/P3)
+- Candidate endpoint contracts for P2/P3 expansion
+- Acceptance checklist for safe route enablement
+
+---
+
+## 6. Acceptance Criteria
+
+- [ ] All active Film-Review routes are represented in endpoint matrix.
+- [ ] Every mapped endpoint has exactly one owning backend service.
+- [ ] Missing/partial endpoints are phased as P1/P2/P3.
+- [ ] `trending-movies` is explicitly defined in P2 discovery scope.
+- [ ] Non-booking modules are marked disabled until contract + owner exist.
+- [ ] Matrix rows can be traced to `app.js` callsites.
+

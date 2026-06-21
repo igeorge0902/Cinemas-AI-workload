@@ -1,0 +1,55 @@
+Feature: Profile picture upload with OpenCV JNI
+
+Contract IDs
+- `CID-LOGIN-PROFILE-UPLOAD`
+- `CID-MBOOK-PROFILEPICTURE-UPDATE`
+
+Overview
+- Add authenticated profile picture upload/change capability.
+- Initial client scope: iOS `MenuVC` only.
+- Upload path uses existing dalogin auth model (Option A).
+- Image processing uses OpenCV through JNI integrated in backend runtime.
+
+Role collaboration
+- `@backend-dev`, `@cpp-developer`, `@database-dev`, `@security-specialist`, `@ios-dev`, `@devops`, `@testing-engineer`
+
+Functional requirements
+- `FR-000`: C++ image-resizing app update is a hard prerequisite and MUST be completed before backend JNI upload integration.
+- `FR-001`: System MUST expose `POST /login/profile-picture` protected by session/XSRF/HMAC.
+- `FR-002`: `dalogin` MUST proxy upload payload to `mbook` without bypassing auth checks.
+- `FR-003`: `mbook` MUST resize the uploaded image through JNI/OpenCV before persisting.
+- `FR-003A`: JNI/OpenCV resize API MUST accept backend arguments: `targetWidth`, `targetHeight`, `maxBytes`, `canCrop`, `keepAspectRatio`.
+- `FR-003B`: `maxBytes` MUST be treated as a precise upper limit for output size.
+- `FR-003C`: `canCrop` and `keepAspectRatio` behavior MUST be deterministic and documented for conflicting combinations.
+- `FR-004`: Final file MUST be stored on PVC path `/pictures/profiles`.
+- `FR-005`: `mbook` MUST update `Logins.profilePicture` only after successful file write.
+- `FR-006`: Response MUST return updated `profilePicture` path for immediate client refresh.
+- `FR-007`: Allowed upload formats MUST be validated (jpg/jpeg/png), oversized files rejected.
+- `FR-008`: Filenames MUST be sanitized and generated server-side (no trust in client filename).
+- `FR-009`: Existing `GET /rest/user/{user}/{token1}` response MUST continue returning `profilePicture`.
+
+Security requirements
+- `SEC-001`: Upload endpoint MUST require valid authenticated session and XSRF cookie.
+- `SEC-002`: MIME type and extension checks MUST be enforced before processing.
+- `SEC-003`: Path traversal attempts MUST be rejected.
+- `SEC-004`: Error payloads MUST avoid leaking internal filesystem/native details.
+
+Non-functional requirements
+- `NFR-001`: Resize operation should complete under 1s for typical profile image sizes.
+- `NFR-002`: PVC write failures MUST return explicit recoverable error status.
+- `NFR-003`: Native library load failures MUST produce controlled API error and logs.
+
+Acceptance criteria
+- [ ] iOS `MenuVC` can upload/change profile picture through `dalogin`.
+- [ ] Stored image exists under `/pictures/profiles` and is served by image service.
+- [ ] `logins.profilePicture` is updated in `mbook` DB path only.
+- [ ] Invalid file types/sizes are rejected with 4xx.
+- [ ] JNI resize path is validated in container runtime.
+
+Definition of Done
+- [ ] Feature has spec, implementation, and tests.
+- [ ] `@testing-engineer` verification done.
+- [ ] `@security-specialist` verification done.
+- [ ] `@performance-engineer` verification done.
+- [ ] Contract IDs are registered/updated in `.github/references/CONTRACTS_INDEX.md`.
+

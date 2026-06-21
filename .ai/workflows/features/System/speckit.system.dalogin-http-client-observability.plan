@@ -1,0 +1,75 @@
+Feature Plan: dalogin outbound HTTP client observability
+
+Objective
+- Introduce structured, low-intrusion logging for every outbound HTTP call made from
+  `dalogin-quarkus` to `mbook-quarkus` and `mbooks-quarkus`.
+- Use a self-contained low-intrusion instrumentation model for this module (JAX-RS request/response filters).
+- Cover the full call chain: servlet trigger -> ServiceClient dispatch -> RequestFilter decoration -> downstream response.
+
+Relationship to backend logging feature
+- This feature closes the dalogin outbound-call gap referenced by `speckit.system.backend-logging-observability.*`.
+- Scope is limited to `dalogin-quarkus` outbound HTTP client flow; it does not replace endpoint/filter/session rollout work in other services.
+- This feature is combined with `speckit.system.dalogin-logging-migration.*` and follows Quarkus-style logging configuration.
+
+Role ownership
+- Logging implementation: `@backend-dev`
+- Security review of forwarded headers: `@security-specialist`
+- Verification: `@testing-engineer`
+- Performance baseline: `@performance-engineer`
+
+Baseline (as-found)
+- `ServiceClient` uses RESTEasy `ResteasyClient` with a `RequestFilter` JAX-RS `ClientRequestFilter`.
+- Auth attributes (uuid, token2, TIME_) are injected into every outbound request by `RequestFilter`.
+- Ciphertext fallback logic exists: if request header `Ciphertext` is absent, `token2` is used.
+- All servlets use `org.apache.log4j.Logger` at method/class level — not structured.
+- No consistent call START/END/ERROR events exist; logs are ad-hoc.
+- `ServiceClient` is not a CDI bean (plain `new` instantiation) — interceptors will NOT fire directly.
+
+Gap closure status (reviewed 2026-06-21)
+- Gap: no `ClientResponseFilter` implementation for END/ERROR event emission.
+- Gap: no consistent START events across all `ServiceClient` call paths.
+- Gap: no dedicated `LOG-HTTP-CLIENT` category routing to `http-client.log`.
+- Gap: no verification artifacts for masking and path coverage.
+
+CDI constraint
+- `ServiceClient` is instantiated with `new ServiceClient(...)` in each servlet.
+- CDI `@AroundInvoke` interceptors cannot intercept plain instantiation or direct method calls.
+- Resolution: instrument using JAX-RS client filters only (request + response), no CDI interceptor dependency.
+
+Instrumentation strategy (OpenTelemetry-aware, simple and clean)
+1. **ClientRequestFilter (`ClientCallRequestFilter`)**:
+   - emits `START` event once per outbound request
+   - records method, sanitized path/template, downstream service alias
+2. **ClientResponseFilter (`ClientCallResponseFilter`)**:
+   - emits `END` for success and `ERROR` for failure based on response status/exception path
+   - records status, method, sanitized path/template, downstream service alias
+3. **OpenTelemetry interplay**:
+   - OTel traces remain the source of truth for distributed timing/causality
+   - logs provide concise operational events and security-safe context
+   - no duplicate payload/value logging; avoid noisy per-method ad-hoc logs
+
+Target outcomes
+1. Every outbound call produces START (INFO), END (INFO), ERROR (ERROR) structured log events.
+2. `RequestFilter` logs injected header names at DEBUG (not values).
+3. All events go to `LOG-HTTP-CLIENT` category → dedicated `http-client.log` file.
+4. Sensitive fields (token2, uuid, Ciphertext, nonce) are never logged verbatim.
+5. Request/response logs are concise and informative (operation, downstream, status, duration, correlation) without duplicating telemetry spans.
+   (Note: timing and correlation are provided by OpenTelemetry; logs focus on operational status/context.)
+
+Service scope
+- `dalogin-quarkus` only (this is where outbound calls originate).
+- `simple-service-webapp-quarkus` is out-of-scope for this specific feature.
+
+Execution sequence to close open gaps
+1. Implement and register `ClientCallResponseFilter` in `ServiceClient`.
+2. Add and register `ClientCallRequestFilter` for START event emission and timing context.
+3. Add DEBUG header-name-only trace in `RequestFilter` with masking-safe flags.
+4. Add `LOG-HTTP-CLIENT` file routing (`http-client.log`) in `dalogin-quarkus` Quarkus logging config.
+5. Add verification evidence and README/update docs.
+
+Definition of done
+- All `ServiceClient` methods are covered (8 call paths).
+- `RequestFilter` emits DEBUG header-injection trace.
+- Sensitive field masking is reviewed and confirmed.
+- Logs routed to `http-client.log`.
+- Performance overhead confirmed negligible.

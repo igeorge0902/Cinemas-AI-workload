@@ -1,0 +1,158 @@
+# Testing Reference: Cinemas Project
+# Durable test inventory and validation boundaries only
+# Last Updated: May 16, 2026
+
+document_scope:
+  purpose: "Track stable test suites, ownership areas, and environment expectations."
+  intentionally_excludes:
+    - "long command catalogs"
+    - "inline XML, scripts, or CI job recipes"
+    - "secret-backed test data values"
+  canonical_sources:
+    operational_playbook: ".ai/retrieval/instructions.md"
+    implementation_patterns: ".ai/skills/skills-github.md"
+    appium_docs: "appium/README.md"
+    deployment_runbook: "k8infra/README-k8s-local.md"
+
+frameworks:
+  java_unit_tests:
+    framework: "Quarkus @QuarkusTest"
+    runtime: "Java 17 / Quarkus 3.19.4"
+    runner: "JUnit 5"
+    primary_locations:
+      - "dalogin-quarkus/src/test/java/"
+      - "mbooks-quarkus/src/test/java/"
+      - "simple-service-webapp-quarkus/src/test/java/"
+
+  ios_xcuitests:
+    framework: "XCTest / XCUITest"
+    language: "Swift"
+    location: "SwiftCinemas/"
+    target_family: "iPhone simulator"
+
+  appium_ui_tests:
+    framework: "Appium 3 + XCUITest driver + TestNG"
+    language: "Java"
+    location: "appium/"
+    target_family: "iPhone 16 Pro / iOS 26.1 baseline"
+
+  java_rest_assured_api_tests:
+    framework: "Rest Assured"
+    language: "Java"
+    location: "k8infra/api-smoke-restassured/"
+    status: "Preferred Java API smoke suite"
+
+  load_testing:
+    framework: "JMeter"
+    plan_file: "API2.jmx"
+    purpose: "Login, browse, and booking load validation"
+
+  experimental_framework_tests:
+    framework: "Quarkus framework-level probes"
+    status: "Experimental / non-primary regression signal"
+
+test_suites:
+  dalogin:
+    focus:
+      - "HMAC login flow"
+      - "session and admin behavior"
+    locations:
+      - "dalogin-quarkus/src/test/java/com/dalogin/"
+    requires:
+      - "login_ schema available"
+      - "dependent services reachable when test covers proxy/admin paths"
+
+  mbooks:
+    focus:
+      - "health and metrics smoke"
+      - "booking/payment contract regression when covered by integration tests"
+    locations:
+      - "mbooks-quarkus/src/test/java/com/jeet/rest/"
+
+  simple_service_webapp:
+    focus:
+      - "image-serving health"
+      - "404 behavior for missing assets"
+    locations:
+      - "simple-service-webapp-quarkus/src/test/java/com/simple/rest/"
+
+  rest_assured_api:
+    focus:
+      - "login to profile flow"
+      - "browse and purchase API contract verification"
+      - "admin/session smoke coverage"
+    locations:
+      - "k8infra/api-smoke-restassured/"
+    environment_expectations:
+      - "dalogin, mbook, and mbooks deployed"
+      - "MySQL seeded"
+      - "cluster ingress reachable for HTTPS-based flows"
+
+  appium:
+    focus:
+      - "movies to venue to dates to seat map navigation"
+      - "checkout path"
+      - "selector stability via page objects"
+    locations:
+      - "appium/src/test/java/qa/ios/test/"
+      - "appium/src/main/java/qa/ios/pages/"
+      - "appium/testng.xml"
+      - "appium/testng-inspect.xml"
+    special_tools:
+      inspect_ui: "qa.ios.util.InspectUI"
+      suite_builder: "qa.ios.util.CreateXml"
+
+  xcuitest:
+    focus:
+      - "native iOS UI regression"
+      - "screen loading and interaction timing"
+    locations:
+      - "SwiftCinemas/"
+
+environment_baseline:
+  backend:
+    - "MySQL seeded with login_ and book schemas"
+    - "dalogin, mbook, mbooks, and simple-service-webapp reachable for integration/UI coverage"
+  ios_ui:
+    - "Xcode installed"
+    - "Appium available when running Appium suite"
+    - "iOS simulator aligned with Appium baseline device/runtime"
+  kubernetes:
+    - "Minikube ingress/tunnel operational for HTTPS-dependent flows"
+
+test_data_policy:
+  fixtures:
+    - "Use seeded SQL data or runtime-injected secrets."
+    - "Do not store plaintext user credentials in this file."
+  payments:
+    - "Use Braintree Sandbox only."
+  contracts:
+    - "Preserve immutable checkout keys and header names when authoring tests."
+
+validation_policy:
+  priorities:
+    - "Prefer smallest targeted suite first."
+    - "Use integration/UI suites to verify cross-service behavior or client contracts."
+    - "Treat experimental framework tests as environment signals, not sole regression proof."
+  expected_outputs:
+    - "Auth and booking regressions should surface as explicit contract/assertion failures."
+    - "UI selector issues should be debugged through page-source inspection, not memory-file snippets."
+
+load_test_expectations:
+  workload_classes:
+    - "baseline browse/auth"
+    - "medium venue/seat exploration"
+    - "stress booking path"
+  success_signals:
+    - "stable throughput under configured thread counts"
+    - "low error rate"
+    - "latency spikes investigated alongside MySQL, Kafka, and proxy telemetry"
+
+references:
+  appium_docs: "appium/README.md"
+  appium_html_docs: "appium/appium-test-documentation.html"
+  system_docs: "k8infra/system-documentation.html"
+  deployment_runbook: "k8infra/README-k8s-local.md"
+  run_configurations: ".run/"
+  coding_patterns: ".ai/skills/skills-github.md"
+

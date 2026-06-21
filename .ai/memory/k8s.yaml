@@ -1,0 +1,192 @@
+# Kubernetes Configuration Reference
+# Durable topology and deployment invariants only
+# Last Updated: May 16, 2026
+
+document_scope:
+  purpose: "Capture stable local-Kubernetes topology, routing boundaries, and invariants for the Cinemas stack."
+  intentionally_excludes:
+    - "full manifest duplication"
+    - "embedded config file contents"
+    - "credentials, secret values, or step-by-step command catalogs"
+  canonical_sources:
+    deployment_manifest: "k8infra/quarkus-backend.yaml"
+    deployment_runbook: "k8infra/README-k8s-local.md"
+    architecture_reference: ".ai/agents/AGENTS.md"
+
+cluster:
+  local_profile:
+    provider: "Minikube"
+    expected_addons:
+      - ingress
+      - metrics-server
+    note: "Local HTTPS/iOS reachability depends on an active Minikube tunnel."
+  namespace:
+    name: "default"
+    note: "Current local stack runs in a single namespace."
+
+application_topology:
+  ingress:
+    host: "milo.crabdance.com"
+    entrypoint: "NGINX ingress"
+    backend: "apache:80"
+    tls_secret: "ingress-tls"
+  proxy:
+    service: "apache"
+    role: "Reverse proxy and route fan-out for all backend services"
+  services:
+    dalogin:
+      root_path: "/login"
+      internal_port: 8080
+      depends_on:
+        - mysql
+        - kafka
+    mbook:
+      root_path: "/mbook-1"
+      internal_port: 8888
+      depends_on:
+        - mysql
+        - kafka
+    mbooks:
+      root_path: "/mbooks-1"
+      internal_port: 8080
+      depends_on:
+        - mysql
+        - kafka
+        - external_braintree
+    simple_service_webapp:
+      root_path: "/simple-service-webapp"
+      internal_port: 8085
+      depends_on:
+        - pictures-pvc
+
+infrastructure:
+  mysql:
+    kind: "Stateful dependency"
+    schema_names:
+      - login_
+      - book
+    note: "Seed from root SQL files; keep credentials and init details in manifests/secrets, not here."
+  kafka:
+    kind: "Messaging backbone"
+    companion_service: "zookeeper"
+    topics_of_interest:
+      - ios-movies-notifications2
+      - user-updates
+  apache:
+    kind: "HTTP/WebSocket reverse proxy"
+  prometheus:
+    kind: "Metrics store"
+  tempo:
+    kind: "Trace store"
+    otlp_ports:
+      - 4317
+      - 4318
+  grafana:
+    kind: "Observability UI"
+    ingress_path: "/grafana/"
+  mysqld_exporter:
+    kind: "MySQL metrics sidecar/exporter"
+
+routing_invariants:
+  apache_proxy_order:
+    - "/mbook-1/ws must be routed before /mbook-1"
+    - "/mbooks-1/ws must be routed before /mbooks-1"
+  public_paths:
+    - "/login"
+    - "/mbook-1"
+    - "/mbooks-1"
+    - "/simple-service-webapp"
+    - "/grafana/"
+  notes:
+    - "Breaking proxy order can silently break WebSocket upgrades."
+    - "Ingress and Apache together define the externally visible path contract."
+
+observability:
+  metrics:
+    source_endpoints:
+      - "dalogin /q/metrics"
+      - "mbook /q/metrics"
+      - "mbooks /q/metrics"
+      - "simple-service-webapp /q/metrics"
+      - "mysql exporter /metrics"
+  tracing:
+    backend: "Tempo"
+    protocols:
+      - "OTLP gRPC"
+      - "OTLP HTTP"
+    note: "Service-specific OTLP protocol differences are configuration details; preserve runtime compatibility."
+  dashboards:
+    primary_surface: "Grafana"
+    focus_areas:
+      - "HTTP request rate and latency"
+      - "5xx errors"
+      - "JVM health"
+      - "MySQL health"
+
+storage:
+  pictures_pvc:
+    name: "pictures-pvc"
+    mount_point: "/pictures"
+    used_by: "simple-service-webapp"
+    contents:
+      - "movie posters"
+      - "venue photos"
+      - "profile images"
+
+configuration_objects:
+  configmaps:
+    - apache-config
+    - prometheus-config
+    - tempo-config
+    - mysql-init
+  secrets:
+    - braintree-credentials
+    - ingress-tls
+  note: "Keep concrete values in Kubernetes resources or secret stores only."
+
+networking:
+  client_to_cluster:
+    protocol: "HTTPS"
+    hostname: "milo.crabdance.com"
+  internal_flows:
+    - "ingress -> apache"
+    - "apache -> quarkus services"
+    - "quarkus -> mysql"
+    - "quarkus -> kafka"
+    - "quarkus -> tempo"
+    - "prometheus -> service metrics endpoints"
+  external_flows:
+    - "quarkus -> Braintree"
+    - "quarkus -> PayPal/Braintree-related services"
+
+operational_reminders:
+  use_canonical_docs_for:
+    - "image build/load workflows"
+    - "database seed commands"
+    - "host file and tunnel setup"
+    - "verification curl/kubectl commands"
+  critical_checks:
+    - "ingress resolves to the Apache service"
+    - "Minikube tunnel is active when testing iOS/web flows"
+    - "pictures PVC is mounted before image-serving validation"
+    - "MySQL is seeded before auth/booking tests"
+
+troubleshooting_focus:
+  pods_not_starting:
+    - "Check image names, manifests, and dependency readiness."
+    - "Inspect pod logs and descriptions in the active cluster."
+  ingress_or_tls:
+    - "Verify host mapping, tunnel state, and ingress rules."
+  websocket_failures:
+    - "Re-check Apache ProxyPass ordering first."
+  missing_data_or_images:
+    - "Validate database seed state and pictures PVC contents."
+
+references:
+  deployment_manifest: "k8infra/quarkus-backend.yaml"
+  deployment_runbook: "k8infra/README-k8s-local.md"
+  database_schemas:
+    - "mysql_8/login.sql"
+    - "mysql_8/book.sql"
+  observability_docs: "k8infra/system-documentation.html"
+

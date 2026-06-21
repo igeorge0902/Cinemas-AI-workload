@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VenuesDetailsVC Redesign Prototype (UIKit)</title>
+  <style>
+    :root {
+      --hero-blur: 0px;
+      --panel-alpha: 0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f1115;
+      color: #e7e8eb;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .phone {
+      width: min(420px, 95vw);
+      height: min(860px, 92vh);
+      border-radius: 26px;
+      border: 1px solid #2d3340;
+      overflow: hidden;
+      background: #121722;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      position: relative;
+    }
+
+    .hero {
+      position: sticky;
+      top: 0;
+      height: 250px;
+      overflow: hidden;
+      z-index: 1;
+      background: #2a3140;
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 40%),
+        linear-gradient(200deg, #404b62 0%, #202838 55%, #171c28 100%);
+    }
+
+    .hero-frame {
+      position: absolute;
+      inset: 18px;
+      border-radius: 10px;
+      border: 2px solid rgba(241, 244, 250, 0.25);
+      pointer-events: none;
+    }
+
+    .hero-blur {
+      position: absolute;
+      inset: 0;
+      backdrop-filter: blur(var(--hero-blur));
+      -webkit-backdrop-filter: blur(var(--hero-blur));
+      background: rgba(16, 20, 30, var(--panel-alpha));
+      transition: backdrop-filter 120ms linear, background-color 120ms linear;
+    }
+
+    .back {
+      position: absolute;
+      top: 16px;
+      left: 14px;
+      z-index: 3;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+      background: rgba(11, 14, 20, 0.55);
+      color: #f0f2f8;
+    }
+
+    .scroll {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      z-index: 2;
+      scrollbar-width: thin;
+      padding-top: 210px;
+    }
+
+    .content {
+      background: rgba(12, 16, 24, 0.93);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      border-top: 1px solid #353d4e;
+      padding: 20px 18px 24px;
+      min-height: 700px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .sub {
+      margin: 8px 0 14px;
+      color: #aeb6c8;
+      font-size: 13px;
+    }
+
+    .text-panel {
+      background: #161d2b;
+      border: 1px solid #303a4c;
+      border-radius: 12px;
+      padding: 12px;
+      color: #d7dbe6;
+      line-height: 1.45;
+      margin-bottom: 16px;
+      min-height: 120px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      width: 100%;
+      border: 1px solid #3a4357;
+      border-radius: 10px;
+      padding: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      background: #202a3a;
+      color: #edf0f7;
+      text-align: left;
+    }
+
+    .hint {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #9ea7bc;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="hero" aria-label="Rectangular movie media region">
+      <div class="hero-media"></div>
+      <div class="hero-frame"></div>
+      <div class="hero-blur" id="heroBlur"></div>
+      <div class="back">Back</div>
+    </div>
+
+    <div class="scroll" id="scrollLayer">
+      <div class="content">
+        <h1 class="title">Venues Details</h1>
+        <p class="sub">Scroll up to increase blur and bring controls into focus.</p>
+
+        <div class="text-panel">
+          Description text area comes first in hierarchy (before action buttons). Keep existing movie detail content and formatting pipeline in UIKit implementation.
+        </div>
+
+        <div class="buttons" aria-label="Vertically aligned actions">
+          <button class="btn">Book</button>
+          <button class="btn">Dates</button>
+          <button class="btn">Map</button>
+          <button class="btn">Movie Detail</button>
+          <button class="btn">Calendar</button>
+        </div>
+
+        <div class="hint">
+          Prototype note: visual direction only. Production screen keeps existing handlers and flows: <code>book</code>, <code>dates</code>, <code>map</code>, <code>movieDetail</code>, <code>selectCalendar</code>, <code>navigateBack</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scrollLayer = document.getElementById("scrollLayer");
+    const root = document.documentElement;
+
+    scrollLayer.addEventListener("scroll", () => {
+      const maxScroll = 180;
+      const progress = Math.max(0, Math.min(1, scrollLayer.scrollTop / maxScroll));
+      const blurPx = (progress * 14).toFixed(2);
+      const alpha = (0.08 + progress * 0.38).toFixed(3);
+
+      root.style.setProperty("--hero-blur", blurPx + "px");
+      root.style.setProperty("--panel-alpha", alpha);
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VenueForMoviesVC Redesign Prototype (UIKit)</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f1115;
+      color: #e7ebf4;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .phone {
+      width: min(430px, 96vw);
+      height: min(880px, 94vh);
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid #2f3748;
+      background: #131a27;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .header {
+      padding: 14px;
+      border-bottom: 1px solid #2c3648;
+      background: #101724;
+    }
+
+    .path {
+      font-size: 11px;
+      color: #9fb0cc;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .sub {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: #adbad4;
+    }
+
+    .list {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: linear-gradient(180deg, #141c2b 0%, #111724 100%);
+    }
+
+    .cell {
+      border: 1px solid #34415a;
+      border-radius: 12px;
+      padding: 11px;
+      background: #1a2436;
+      display: grid;
+      grid-template-columns: 52px 1fr 18px;
+      gap: 11px;
+      align-items: center;
+    }
+
+    .poster {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      border: 1px solid #4d5f82;
+      background: linear-gradient(160deg, #3b4b67, #273349);
+    }
+
+    .meta { min-width: 0; }
+
+    .name {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .line {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: #b4bfd7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #4a5d82;
+      background: #24324b;
+      font-size: 11px;
+      color: #dbe6ff;
+    }
+
+    .arrow {
+      color: #c2cbe0;
+      font-size: 15px;
+      justify-self: end;
+    }
+
+    .note {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #97a8c8;
+      line-height: 1.4;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      color: #dbe6ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="header">
+      <div class="path">HomeVC -> VenuesVC -> MapView -> VenueForMoviesVC</div>
+      <h1 class="title">Movies At Selected Venue</h1>
+      <p class="sub">Expanded-list style with category + screening date metadata in each row.</p>
+    </div>
+
+    <div class="list" aria-label="Venue movies list">
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">Interstellar</p>
+          <span class="chip">Category: Sci-Fi</span>
+          <p class="line">Screening Date: 2026-05-10 19:30</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">Dune: Part Two</p>
+          <span class="chip">Category: Adventure</span>
+          <p class="line">Screening Date: 2026-05-10 21:00</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">The Dark Knight</p>
+          <span class="chip">Category: Action</span>
+          <p class="line">Screening Date: 2026-05-11 18:45</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">Inception</p>
+          <span class="chip">Category: Thriller</span>
+          <p class="line">Screening Date: 2026-05-11 20:15</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">The Matrix</p>
+          <span class="chip">Category: N/A</span>
+          <p class="line">Screening Date: TBA</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="cell">
+        <div class="poster"></div>
+        <div class="meta">
+          <p class="name">Arrival</p>
+          <span class="chip">Category: Drama</span>
+          <p class="line">Screening Date: 2026-05-12 17:30</p>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="note">
+        Prototype note: category value is expected from existing movies endpoint and screening date from existing screening-date endpoint. No backend tasks are in scope for this feature.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

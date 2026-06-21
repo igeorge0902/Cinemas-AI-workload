@@ -1,0 +1,224 @@
+# API Reference: Cinemas Microservices
+# Durable endpoint and header contracts only
+# Last Updated: May 16, 2026
+
+document_scope:
+  purpose: "Keep stable API paths, auth expectations, and client-visible contract reminders."
+  intentionally_excludes:
+    - "step-by-step auth walkthroughs"
+    - "browser CSP and deployment-specific config catalogs"
+    - "copy-paste request examples that belong in skills/docs"
+    - "plaintext credential examples or secret values"
+  canonical_sources:
+    contracts: ".ai/agents/AGENTS.md"
+    implementation_patterns: ".ai/skills/skills-github.md"
+    routing_and_quick_checks: ".ai/retrieval/instructions.md"
+
+services:
+  dalogin:
+    name: "dalogin-quarkus (Login Gateway)"
+    port: 8080
+    root_path: "/login"
+    database: "login_"
+    primary_role: "Session management, HMAC authentication, proxy servlet gateway"
+    endpoints:
+      - path: "/HelloWorld"
+        method: POST
+        auth: "HMAC-SHA512"
+        contract:
+          required_parameters:
+            - username
+            - password
+            - deviceId
+          notes:
+            - "These are immutable request field names, not sample credential values."
+            - "Do not store plaintext usernames, passwords, or seeded secrets in memory files."
+          returns:
+            - token
+            - uuid
+            - status
+      - path: "/CheckOut"
+        method: "GET, POST"
+        auth: "Session / X-Token"
+        contract:
+          immutable_post_keys:
+            - payment_method_nonce
+            - orderId
+            - seatsToBeReserved
+          notes:
+            - "Keep field names and request encoding aligned with active iOS/web clients."
+            - "This gateway proxies to mbooks payment endpoints; do not split the path contract casually."
+      - path: "/GetAllPurchases"
+        method: GET
+        auth: "Session / X-Token"
+      - path: "/ManagePurchases"
+        method: "GET, POST"
+        auth: "Session / X-Token"
+        contract:
+          required_query_or_form_keys:
+            - purchaseId
+          optional_post_key:
+            - ticketsToBeCancelled
+      - path: "/logout"
+        method: GET
+        auth: "Session / X-Token"
+      - path: "/admin"
+        method: GET
+        auth: "Admin session"
+
+  mbooks:
+    name: "mbooks-quarkus (Movies, Booking, Payment)"
+    port: 8080
+    root_path: "/mbooks-1/rest/book"
+    database: "book"
+    primary_role: "Movie catalog, venue/seat data, booking, Braintree integration"
+    endpoints:
+      - path: "/movies"
+        method: GET
+        auth: "Public"
+      - path: "/locations"
+        method: GET
+        auth: "Public"
+      - path: "/venue/v2/{movieId}"
+        method: GET
+        auth: "HMAC-SHA512 or session"
+      - path: "/venue/movies"
+        method: GET
+        auth: "Public"
+      - path: "/dates/{locationId}/{movieId}"
+        method: GET
+        auth: "HMAC-SHA512"
+      - path: "/seats/{screeningDateId}"
+        method: GET
+        auth: "HMAC-SHA512 or session"
+        contract:
+          invariants:
+            - "Seat freshness matters; availability responses should reflect current DB state."
+            - "seat.isReserved remains string '0' or '1'."
+      - path: "/payment/clientToken"
+        method: GET
+        auth: "Session / X-Token"
+        contract:
+          response_keys:
+            - clientToken
+          response_headers:
+            - APIKEY
+      - path: "/payment/fullcheckout2"
+        method: POST
+        auth: "Session path with request validation"
+        contract:
+          immutable_post_keys:
+            - payment_method_nonce
+            - orderId
+            - seatsToBeReserved
+          invariants:
+            - "Seat reservation is all-or-nothing."
+            - "Pessimistic locking and rollback semantics must be preserved."
+            - "Successful booking marks seats reserved and returns updated booking state."
+      - path: "/purchases"
+        method: GET
+        auth: "Session / X-Token"
+      - path: "/purchases/tickets"
+        method: GET
+        auth: "Session / X-Token"
+      - path: "/managepurchases"
+        method: POST
+        auth: "Session / X-Token"
+      - path: "/deletepurchases"
+        method: POST
+        auth: "Session / X-Token"
+      - path: "/ws"
+        method: "WebSocket upgrade"
+        auth: "Session via Apache proxy"
+        contract:
+          invariants:
+            - "Apache WebSocket ProxyPass must stay before HTTP routes."
+            - "Realtime seat updates are client-visible behavior."
+
+  mbook:
+    name: "mbook-quarkus (Users, Devices, Sessions)"
+    port: 8888
+    root_path: "/mbook-1"
+    database: "login_"
+    primary_role: "User profile, device management, session tracking"
+    endpoints:
+      - path: "/rest/user/profile"
+        method: GET
+        auth: "HMAC-SHA512 or forwarded session context"
+      - path: "/rest/device/list"
+        method: GET
+        auth: "HMAC-SHA512 or forwarded session context"
+      - path: "/ws"
+        method: "WebSocket upgrade"
+        auth: "Session cookie"
+
+  simple_service_webapp:
+    name: "simple-service-webapp-quarkus (Image Serving)"
+    port: 8085
+    root_path: "/simple-service-webapp"
+    primary_role: "Serve movie posters, venue photos, profile pictures"
+    endpoints:
+      - path: "/rest/images/movie/{movieId}"
+        method: GET
+        auth: "Public"
+      - path: "/rest/images/venue/{venueId}"
+        method: GET
+        auth: "Public"
+      - path: "/rest/images/*"
+        method: GET
+        auth: "Public"
+
+headers:
+  request_headers:
+    - name: "X-Token"
+      role: "Session token"
+      stability: "Immutable client-visible name"
+    - name: "X-HMAC-HASH"
+      role: "HMAC-SHA512 signature"
+      stability: "Immutable client-visible name"
+    - name: "X-Device"
+      role: "Device identifier"
+      stability: "Immutable client-visible name"
+    - name: "X-Micro-Time"
+      role: "Client timestamp used by HMAC flow"
+      stability: "Immutable client-visible name"
+    - name: "uuid"
+      role: "User/device identity propagation"
+      stability: "Immutable client-visible name"
+    - name: "Ciphertext"
+      role: "Encrypted request body/header flow used by iOS-authenticated paths"
+      stability: "Immutable client-visible name"
+    - name: "TIME_"
+      role: "Gateway timestamp propagation"
+      stability: "Immutable internal contract name"
+    - name: "XSRF-TOKEN"
+      role: "CSRF token for checkout/session flows"
+      stability: "Immutable client-visible name"
+  response_headers:
+    - name: "APIKEY"
+      role: "Web UI session/cache token"
+    - name: "X-Token"
+      role: "Login/session response token"
+
+contract_invariants:
+  checkout_contract:
+    immutable_keys:
+      - payment_method_nonce
+      - orderId
+      - seatsToBeReserved
+    notes:
+      - "Do not rename keys or silently change encoding without coordinated iOS/web updates."
+  seat_contract:
+    invariants:
+      - "Seat availability is represented with string values '0' and '1'."
+      - "Booking flow must preserve rollback on payment failure."
+  path_contract:
+    notes:
+      - "Public client paths under /login, /mbook-1, /mbooks-1, and /simple-service-webapp are treated as stable integration contracts."
+
+references:
+  architecture_and_deep_contracts: ".ai/agents/AGENTS.md"
+  operational_playbook: ".ai/retrieval/instructions.md"
+  implementation_patterns: ".ai/skills/skills-github.md"
+  local_k8s_manifest: "k8infra/quarkus-backend.yaml"
+

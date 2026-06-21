@@ -1,0 +1,76 @@
+Feature Plan: Backend logging and observability
+
+Objective
+- Standardize comprehensive logging across all backend services.
+- Introduce clear log levels and event categories for operational visibility.
+- Cover endpoint calls, Hibernate transactions, entity operations, session state, SQL queries, and servlet filters.
+- Make logs queryable and visualizable in Grafana dashboards.
+- Use annotation-first instrumentation (`@ObservedLog` + interceptor) with DAO-first proof of concept.
+
+Role ownership
+- Logging implementation in services: `@backend-dev`
+- Dashboard/log pipeline rollout: `@devops`
+- Sensitive data and auth/session log review: `@security-specialist`
+- Verification and regression coverage: `@testing-engineer`
+- Volume/overhead review and query cost: `@performance-engineer`
+- Scope and acceptance slicing: `@business-analyst`
+
+Baseline (as-found)
+- `mbook-quarkus` and `mbooks-quarkus` already expose metrics/traces and some Hibernate logging toggles.
+- `dalogin-quarkus` still carries legacy `log4j.xml` patterns in addition to Quarkus config.
+- Grafana/Prometheus/Tempo are present in `k8infra/quarkus-backend.yaml`, but there is no log storage/query datasource documented yet.
+- Existing log outputs are not consistently formatted/routed by category, and Hibernate log types need explicit file separation policy.
+
+Gap closure status (reviewed 2026-06-21)
+- Done: routing config aligned to Quarkus-style split handlers in all four services.
+- Done: DAO PoC annotation/interceptor exists in `mbook-quarkus` and `mbooks-quarkus`.
+- Gap: endpoint/filter/session category rollout is incomplete across services.
+- Gap: dalogin outbound HTTP client call-chain observability is tracked in separate feature (`speckit.system.dalogin-http-client-observability.*`).
+- Gap: Grafana/Loki log ingestion, dashboards, and verification evidence are missing.
+- Gap: README/docs and acceptance evidence are missing.
+
+Target outcome
+1. All four backend services emit structured logs with shared field conventions.
+2. Log levels are defined per category:
+   - `ERROR`: failed request, failed transaction, native/runtime failure, filter rejection
+   - `WARN`: degraded path, retry, validation anomaly, partial fallback
+   - `INFO`: endpoint start/end, session lifecycle, transaction summary, short SQL summary
+   - `DEBUG`: detailed entity operations, filter internals, longer SQL context
+   - `TRACE`: optional deep diagnostics for payload/SQL bind details in non-default mode
+3. SQL logging is split by intent:
+   - short info summary
+   - longer debug view
+   - error logging on failed statements/transactions
+4. Grafana gets a logs datasource and dashboards/panels for backend event streams.
+5. DAO proof of concept is complete in `mbook-quarkus` and `mbooks-quarkus`, and service rollout extends to endpoint/filter/session flows.
+6. Existing logging (including Hibernate) is reformatted to the shared structured format while preserving category identity.
+7. Hibernate log types remain separated into distinct log files; the same per-category/per-type file split rule applies to newly introduced logging.
+8. Verification artifacts exist for each acceptance criterion (log samples, tests, dashboard queries, and security checks).
+
+Service scope
+- `dalogin-quarkus`
+- `mbook-quarkus`
+- `mbooks-quarkus`
+- `simple-service-webapp-quarkus`
+
+Implementation direction
+- Prefer structured JSON logs across all services.
+- Introduce logger/category conventions for endpoint, filter, hibernate, entity, session, SQL.
+- Add a Grafana-compatible log backend (expected: Loki) next to existing Prometheus/Tempo stack.
+- Add dashboard panels and/or Explore presets for error rates, auth/filter rejections, slow SQL, and session events.
+- Keep annotation-first approach (`@ObservedLog` + interceptor) for low-intrusion rollout.
+- Keep Hibernate categories and new logging categories routed to different log files; avoid merging them into a single sink/file.
+
+Execution sequence to close open gaps
+1. Service coverage: add/verify `LOG-ENDPOINT`, `LOG-FILTER`, and `LOG-SESSION` in in-scope services.
+2. SQL/Hibernate detail: implement short INFO + DEBUG detail + ERROR pathways with explicit category routing.
+3. Observability stack: provision Loki (or equivalent), wire log ingestion, add Grafana queries/panels.
+4. Verification: add automated checks and captured evidence for all acceptance criteria.
+5. Documentation: update module READMEs and observability runbook with category map and debug/trace controls.
+
+Definition of done
+- All backend services have documented log categories and level rules.
+- Default runtime emits useful INFO/WARN/ERROR without noisy debug traces.
+- DEBUG/TRACE mode is available for deeper investigation.
+- Logs are visible in Grafana with service/category filtering.
+- DAO PoC and full service rollout are implemented, reviewed, and verified with evidence.

@@ -1,0 +1,93 @@
+Feature: Trending Movies endpoint
+
+Overview
+- Add a new `mbooks-quarkus` endpoint that returns the most booked movies.
+- Route spelling: `trending-movies`.
+- Place endpoint in `BookController` with the existing `/rest/book` namespace.
+
+Functional requirements
+
+REQ-TM-1 Endpoint contract
+- Method: `GET`
+- Path: `/rest/book/trending-movies`
+- Produces: `application/json`
+- Query params:
+  - `days` optional integer, default `30`, any positive integer (`>= 1`); if the requested window predates the earliest booking record, the effective window extends to the beginning of the earliest available record
+  - `limit` optional integer, default `10`, allowed range `1..50`
+
+REQ-TM-2 Response schema
+- Success response code: `200`
+- Body root key: `trendingMovies`
+- `trendingMovies` item fields:
+  - `movieId` (number)
+  - `name` (string)
+  - `thumbnail_picture` (string, can be empty)
+  - `large_picture` (string, can be empty)
+  - `bookedTickets` (number)
+  - `lastBookingTime` (ISO-8601 string or null)
+
+REQ-TM-3 Ranking rule
+- Count booked tickets by movie from purchases where `Purchase.time >= now - days`.
+- Sort order:
+  1) `bookedTickets` descending
+  2) `name` ascending
+  3) `movieId` ascending
+
+REQ-TM-4 Empty result behavior
+- If no bookings in window, return `200` with:
+  - `{"trendingMovies": []}`
+
+REQ-TM-5 Validation
+- Invalid `days` or `limit` (non-numeric, `days < 1`, or `limit` out of allowed range) returns `400` with JSON error payload.
+
+REQ-TM-6 Auth behavior
+- Match existing public movie-list read behavior (`/rest/book/movies`): no extra auth gate for this endpoint.
+
+REQ-TM-7 Service boundaries
+- Controller: request parsing + response formatting only.
+- `BookingHandlerImpl`: endpoint-level business orchestration.
+- `DAO`: aggregation query and database interaction.
+
+Technical design
+
+Data source and query path
+- Use existing entities:
+  - `Ticket` (`mbooks-quarkus/src/main/java/com/jeet/api/Ticket.java`)
+  - `Purchase` (`mbooks-quarkus/src/main/java/com/jeet/api/Purchase.java`)
+  - `Screen` and `Movie`
+- Add DAO method that returns grouped aggregates by movie over the time window.
+- Prefer HQL/JPA projection query; keep native SQL only as fallback if mapping issues occur.
+
+Suggested projection fields from DAO
+- `movie.movieId`
+- `movie.name`
+- `movie.thumbnail_picture`
+- `movie.large_picture`
+- `count(ticket.ticketId)` as bookedTickets
+- `max(purchase.time)` as lastBookingTime
+
+Non-functional requirements
+
+REQ-TM-NF-1 Performance
+- Query should complete under 300 ms for default params in local/minikube baseline data.
+
+REQ-TM-NF-2 Determinism
+- Result ordering must be stable for same data snapshot.
+
+REQ-TM-NF-3 Observability
+- Log structured info: `days`, `limit`, result size.
+- Expose endpoint request metrics through existing Prometheus scraping setup.
+
+Error model
+- `400`: invalid query params, include machine-readable `error` and human-readable `message`.
+- `500`: unexpected backend failure, preserve existing global error handling behavior.
+
+Acceptance criteria
+- [x] `GET /rest/book/trending-movies` returns ranked data for default window.
+- [x] `days` and `limit` correctly filter and cap results.
+- [x] Ties follow deterministic ordering.
+- [x] Invalid params return `400` JSON error.
+- [x] Empty data returns `trendingMovies: []`.
+- [x] Endpoint is documented in `mbooks-quarkus/README.md` with curl examples.
+
+

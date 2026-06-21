@@ -1,0 +1,477 @@
+# Swift iOS Data Manager Migration - Implementation Plan
+
+**Feature:** iOS Data Manager Pattern Refactoring
+**Phases:** 5 phases across 2 weeks
+**Team:** 1 iOS Developer + QA
+**Risk Level:** Low (client-side only)
+
+---
+
+## Phase 1: Foundation & Architecture Review (2 hours)
+
+### Goals
+- Establish shared data manager base protocol
+- Document architecture decisions
+- Define cleanup scope for unused extensions
+- Record deferred testing policy (non-blocking)
+
+### Tasks
+1. **Review Architecture** (30 min)
+   - Read `.specify/features/Swift_migration/` documents
+   - Discuss ADRs with team
+   - Confirm existing injection layout remains unchanged (`AppDelegate` -> `AppServices`, `HasAPIClient`, `injectAPIClientIfNeeded`, `HasAppServices`)
+   - Identify any concerns
+
+2. **Create Base Protocol** (45 min)
+   - Implement `SharedDataManager.swift` in `Networking/`
+   - Define `async throws` method signature pattern
+   - Add protocol documentation
+
+3. **Cleanup Scope + Deferred Testing Policy** (45 min)
+   - List extensions likely to become unused after manager migration
+   - Define safe-removal rule (remove only after call-site verification)
+   - Record policy: test implementation/execution is deferred and optional until further notice
+
+### Deliverables
+- ✅ `SharedDataManager.swift` (protocol)
+- ✅ Unused-extension cleanup checklist
+- ✅ Deferred testing policy documented
+
+### Success Criteria
+- Protocol compiles without warnings
+- Cleanup scope for unused extensions is agreed
+- Deferred testing policy is explicit
+
+---
+
+## Phase 2: Core Data Managers (6 hours)
+
+### Goals
+- Implement 8 data managers
+- Ensure type-safe APIs
+- Remove unused extensions where call sites are gone
+
+### 2A: Movies & Seats Managers (2 hours)
+
+**Tasks:**
+1. Create `MoviesDataManager.swift`
+   - Implement `fetchPaging(query:)`
+   - Implement `search(query:)`
+   - Implement `fetchTrending(limit:)`
+   - Add Realm caching logic
+   - Add image preloading helper
+   - (Deferred) Unit tests optional; do not block implementation
+
+2. Create `SeatsDataManager.swift`
+   - Implement `fetchSeats(screeningDateId:)`
+   - Implement `reserveSeats(screeningDateId:seats:)`
+   - Add pessimistic locking awareness
+   - Add row grouping helper
+   - (Deferred) Unit tests optional; do not block implementation
+
+**Deliverables:**
+- `MoviesDataManager.swift` (150 lines)
+- `SeatsDataManager.swift` (120 lines)
+- Unit tests (100+ lines each)
+
+---
+
+### 2B: Venues, Dates, Locations Managers (2 hours)
+
+**Tasks:**
+1. Create `VenuesDataManager.swift`
+   - Implement `fetchVenues()`
+   - Implement `getScreens(venueId:)`
+   - Implement `getSeatsForScreen(screenId:date:)`
+   - Add caching per venue
+
+2. Create `DatesDataManager.swift`
+   - Implement `fetchDates(venueId:movieId:)`
+   - Implement date sorting
+   - Add time formatting helpers
+
+3. Create `LocationsDataManager.swift`
+   - Implement `fetchLocations()`
+   - Implement map coordinate helpers
+   - Add distance calculation
+
+**Deliverables:**
+- `VenuesDataManager.swift` (100 lines)
+- `DatesDataManager.swift` (80 lines)
+- `LocationsDataManager.swift` (70 lines)
+- Unit tests (60+ lines each)
+
+---
+
+### 2C: Auth & Admin Managers (2 hours)
+
+**Tasks:**
+1. Create `AuthDataManager.swift`
+   - Implement `login(username:password:)`
+   - Implement `signup(user:)`
+   - Implement `refreshToken()`
+   - Handle session token storage
+   - Auto-update `SessionHeaderProvider`
+
+2. Create `CheckoutDataManager.swift`
+   - Implement `fetchClientToken()`
+   - Implement `checkout(paymentMethodNonce:orderId:seats:)`
+   - Implement `fetchPurchases()`
+   - Add payment error interpretation
+
+3. Create `AdminDataManager.swift`
+   - Implement `updateMovie(movie:)`
+   - Implement `updateVenue(venue:)`
+   - Implement `updateScreen(screen:)`
+   - Add role checking
+
+**Deliverables:**
+- `AuthDataManager.swift` (110 lines)
+- `CheckoutDataManager.swift` (140 lines)
+- `AdminDataManager.swift` (90 lines)
+- Unit tests (80+ lines each)
+
+---
+
+## Phase 3: ViewController Migration - Batch 1 (2 hours)
+
+### Goals
+- Migrate 5 critical ViewControllers
+- Verify no regressions
+- Establish migration pattern
+- Replace direct payload copying in segues with manager-owned navigation context
+
+### Cross-Screen Data Passing Track (applies to Phase 3 and 4)
+1. Audit all `prepare(for:)` payload assignments for duplicate movie/venue/location fields.
+2. Move selected entities into manager context before navigation:
+   - `MoviesDataManager.shared.selectedMovie`
+   - `VenuesDataManager.shared.selectedVenue`
+   - `LocationsDataManager.shared.selectedLocationId`
+   - `DatesDataManager.shared.selectedScreeningDateId`
+   - `BasketDataManager.shared.basketItemsBySeatId`
+   - `PurchasesDataManager.shared.selectedPurchaseId`
+3. Keep segues for routing only, not for full domain object transfer.
+4. Add manager context reset points on flow completion/cancel to avoid stale state.
+
+### Tasks
+1. **MoviesVC** (30 min)
+   - Remove `AppDelegate.services.mbooks` calls
+   - Use `MoviesDataManager.shared`
+   - Remove manual JSON parsing
+   - Update error handling
+   - Run unit tests
+
+2. **VenuesVC** (30 min)
+   - Use `VenuesDataManager.shared`
+   - Use `LocationsDataManager.shared`
+   - Remove global array mutations
+   - Type-safe model handling
+
+3. **iOSCalendarVC / DatesVC** (30 min)
+   - Use `DatesDataManager.shared`
+   - Add date sorting
+   - Update table view delegate
+
+4. **SeatsVC** (30 min)
+   - Use `SeatsDataManager.shared`
+   - Use row grouping helper
+   - Remove global seat array mutations
+
+**Deliverables:**
+- 4 refactored ViewControllers
+- Updated instance variables (typed models)
+- Manual flow verification documented
+
+---
+
+## Phase 4: ViewController Migration - Batch 2 (1.5 hours)
+
+### Goals
+- Migrate 10 additional ViewControllers
+- Optional Appium verification after each batch (deferred by default)
+
+### Auth & Payment VCs (45 min)
+1. **LoginVC** → Use `AuthDataManager.shared`
+2. **SignupVC** → Use `AuthDataManager.shared`
+3. **CheckoutVC** → Use `CheckoutDataManager.shared`
+4. **PurchasesVC** → Use `CheckoutDataManager.shared`
+
+### Admin & Menu VCs (30 min)
+5. **AdminVC** → Use `AdminDataManager.shared`
+6. **AdminUpdateVC** → Use `AdminDataManager.shared`
+7. **MenuVC** → Use multiple managers
+8. **HomeVC** → Use `MoviesDataManager.shared`
+
+### Secondary VCs (15 min)
+9. **MovieDetailVC** → Use `MoviesDataManager.shared`
+10. **VenuesDetailsVC** → Use `VenuesDataManager.shared`
+
+**Deliverables:**
+- 10 refactored ViewControllers
+- Optional Appium status documented (deferred unless requested)
+- No console warnings/errors
+
+---
+
+## Phase 5: Testing & Verification (Deferred / Optional, 1.5 hours)
+
+### Goals
+- Optional testing only (deferred/non-blocking)
+- Performance profiling
+- Documentation updates
+- Team sign-off
+- Validate cross-screen state continuity using manager context only
+
+### Deferred Testing Policy
+- Unit, integration, and Appium test implementation/execution are optional until further notice.
+- Implementation completion is gated by compile success and manual flow verification.
+
+### Testing Subtasks (1 hour)
+
+1. **Unit Tests** (20 min)
+   - Optional (deferred)
+   - Run all data manager unit tests (if re-enabled)
+   - Verify 70%+ coverage (if re-enabled)
+   - Fix failing tests (if executed)
+
+2. **Integration Tests** (20 min)
+   - Optional (deferred)
+   - Run auth flow end-to-end (if re-enabled)
+   - Run payment flow end-to-end (if re-enabled)
+   - Test error handling paths (if executed)
+
+3. **Appium E2E Tests** (15 min)
+   - Optional (deferred)
+   - Run full test suite (85+ tests)
+   - Verify 0% regression
+   - Capture performance metrics
+   - Explicitly verify navigation continuity: Movies -> Venues -> Dates -> Seats -> Basket -> Checkout
+   - Explicitly verify Purchases -> Tickets selected purchase context
+
+4. **Manual Smoke Tests** (5 min)
+   - Test on real iOS device
+   - Browse movies
+   - Select seats
+   - Submit payment
+
+### Documentation & Sign-Off (30 min)
+
+1. **Update Constitution** (10 min)
+   - Add data manager pattern documentation
+   - Link to implementation guide
+   - Document ADRs
+
+2. **Update README** (10 min)
+   - Add iOS architecture section
+   - Document manager naming conventions
+   - Link to guides
+
+3. **Team Training** (5 min)
+   - Review key patterns
+   - Q&A session
+
+4. **Final Sign-Off** (5 min)
+   - QA approval
+   - Release readiness check
+
+**Deliverables:**
+- Deferred test status documented (tests optional/non-blocking)
+- Performance benchmarks documented
+- Constitution updated
+- Team trained
+
+---
+
+## Daily Standups
+
+### Week 1
+- **Monday:** Phase 1 completion + Phase 2A kickoff
+- **Tuesday:** Phase 2A completion + Phase 2B kickoff
+- **Wednesday:** Phase 2B completion + Phase 2C kickoff
+- **Thursday:** Phase 2C completion + Phase 3 kickoff
+- **Friday:** Phase 3 review + Appium E2E run
+
+### Week 2
+- **Monday:** Phase 4 batch 1 + Appium verification
+- **Tuesday:** Phase 4 batch 2 + integration tests
+- **Wednesday:** Phase 5 testing + documentation
+- **Thursday:** Performance profiling + rollback planning
+- **Friday:** Team sign-off + deployment readiness
+
+---
+
+## Risk Mitigation Throughout Phases
+
+### Incomplete ViewController Coverage
+**Detection:** Grep for direct endpoint invocations in VCs (for example `app.services.mbooks.*`, `app.services.loginGateway.*`) after Phase 4
+**Mitigation:** Create checklist of all VCs; verify each uses manager
+
+### Cross-Screen State Regression
+**Detection:** Booking/map/purchase flows lose selected IDs after screen transitions
+**Mitigation:** Store selected context in manager properties and add flow-level reset + regression checks
+
+### Memory Leaks from Singletons
+**Detection:** Instruments profiling in Phase 5
+**Mitigation:** Verify `[weak self]` in all closures; profile main user flows
+
+### Decoding Failures on Malformed Data
+**Detection:** Unit tests with invalid JSON in Phase 2
+**Mitigation:** All models have optional fields; fallback to empty results
+
+### Unused Extension Residue
+**Detection:** Unused extension methods/types remain after migration
+**Mitigation:** Remove unused extensions after call-site verification and compile check
+
+### Auth Header Loss
+**Detection:** Login tests fail in Phase 4
+**Mitigation:** Verify `SessionHeaderProvider` auto-injected in managers
+
+---
+
+## Definition of Done
+
+Each phase is complete when:
+- ✅ All code compiles without warnings
+- ✅ Automated tests are optional/deferred (non-blocking)
+- ✅ Code reviewed by tech lead
+- ✅ No new console warnings/errors
+- ✅ Memory profiled (no leaks)
+- ✅ Manual verification of migrated flows completed
+- ✅ Cross-screen state is sourced from managers, not globals or repeated segue payload copies
+- ✅ Unused extensions removed where no active call sites remain
+
+---
+
+## Rollback Checkpoints
+
+Each phase has a rollback checkpoint:
+
+| Phase | Checkpoint | Rollback Time | Data Loss |
+|-------|-----------|---------------|-----------|
+| Phase 1 | Base protocol tested | <5 min | None (not deployed) |
+| Phase 2 | Core managers implemented + compile verified | <5 min | None (not deployed) |
+| Phase 3 | 4 VCs migrated + manually verified | <15 min | None (git revert) |
+| Phase 4 | 10 VCs migrated + cleanup verified | <15 min | None (git revert) |
+| Phase 5 | Deferred testing status documented | <5 min | None (git revert) |
+
+**If critical issue discovered:** Execute phase rollback, investigate, document lesson, retry.
+
+---
+
+## Communication Plan
+
+### Daily Updates
+- Standup: 15 min sync on progress + blockers
+- Slack: Daily update (phase progress, blockers, next steps)
+
+### Weekly Review
+- Friday 4pm: Phase completion review
+- QA: Run Appium suite + report results
+- Team: Decision on proceed vs. retry
+
+### Issues Management
+- High severity (regression, auth failure): Immediate escalation + rollback
+- Medium severity (decode error, specific VC issue): Documented, fixed next day
+- Low severity (warning, comment): Fixed in current phase
+
+---
+
+## Success Metrics by Phase
+
+### Phase 1
+- ✅ Protocol defined and documented
+- ✅ Cleanup scope for unused extensions defined
+- ✅ Deferred testing policy documented
+
+### Phase 2
+- ✅ 8 data managers implemented (1200+ lines)
+- ✅ Optional/deferred test tasks tracked (non-blocking)
+- ✅ All managers return typed models
+- ✅ Error logging with domain prefix
+- ✅ No compiler warnings
+
+### Phase 3
+- ✅ 4 VCs refactored (300 lines removed)
+- ✅ No direct endpoint invocations via `app.services.<service>.*` in Phase 3 VCs
+- ✅ `HasAPIClient`/`injectAPIClientIfNeeded`/`HasAppServices` wiring unchanged
+- ✅ No console errors/warnings
+
+### Phase 4
+- ✅ 10 VCs refactored (500+ lines removed)
+- ✅ All auth/payment flow passes
+- ✅ Manual smoke tests pass
+
+### Phase 5
+- ✅ Automated tests marked deferred/optional (non-blocking)
+- ✅ Performance delta < 5%
+- ✅ Constitution updated
+- ✅ Team trained
+
+---
+
+## Post-Implementation (Week 3)
+
+### Monitoring (24-48 hours)
+- Watch crash logs (Firebase Crashlytics)
+- Monitor network errors in analytics
+- Check user-reported issues
+
+### Documentation
+- Create internal blog post on patterns
+- Update Contributing.md
+- Add to team knowledge base
+
+### Future Improvements
+- Evaluate SwiftUI support
+- Add caching strategies (LRU cache)
+- Consider async image loading patterns
+
+---
+
+## Escalation Path
+
+| Issue | Severity | Response Time | Owner | Escalate To |
+|-------|----------|---------------|-------|-------------|
+| Compilation error | High | Immediate | Dev | Tech Lead |
+| Appium regression | High | Immediate | Dev + QA | Product Manager |
+| Memory leak | High | 1 hour | Dev | Tech Lead |
+| Decode failure | Medium | Next day | Dev | Tech Lead |
+| Console warning | Low | End of phase | Dev | Tech Lead |
+
+---
+
+## Timeline Summary
+
+```
+Week 1
+├─ Mon: Phase 1 (2h) → Foundation complete
+├─ Tue: Phase 2A (2h) → Movies + Seats
+├─ Wed: Phase 2B (2h) → Venues + Dates + Locations
+├─ Thu: Phase 2C (2h) → Auth + Checkout + Admin
+└─ Fri: Phase 3 (2h) → 4 critical VCs migrated
+
+Week 2
+├─ Mon: Phase 4A (1h) → 4 Auth/Payment VCs
+├─ Tue: Phase 4B (0.5h) → 6 Menu/Admin VCs
+├─ Wed: Phase 5 Testing (1.5h) → Full verification
+├─ Thu: Profiling + Sign-off (0.5h)
+└─ Fri: Ready for production
+
+Total: ~17.5 hours development + 3 hours testing = 20.5 hours
+```
+
+---
+
+## Approval Sign-Off
+
+- [ ] Architecture approved by Tech Lead: _____ Date: _____
+- [ ] Timeline agreed with Product: _____ Date: _____
+- [ ] QA testing plan reviewed: _____ Date: _____
+- [ ] Go/No-go decision: _____ Date: _____
+
+---
+
+**Status:** ✅ Ready for Implementation
+**Version:** 1.0
+**Last Updated:** May 5, 2026
+

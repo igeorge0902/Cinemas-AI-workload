@@ -1,0 +1,51 @@
+Key principles for AI deduction:
+- Most “AI” is just automation, not true intelligence.
+- Real intelligence requires context understanding, reasoning, learning over time, and asking questions when input is incomplete.
+- Intelligence should evolve progressively (like humans, children, language), not appear fully formed.
+- Human control and guardrails are essential: automation assists but does not replace accountability.
+- Avoid misleading marketing; define capability boundaries clearly and base claims on evidence.
+
+How to apply this to OPERATIONAL_CHAIN_METAMODEL.md
+
+Metamodel invariants:
+- Context-first invariant:
+  No execution before extracting context (environment, intent, constraints, evidence source).
+
+- Clarification invariant:
+  If ambiguity exists, the agent must ask before modifying any artifacts.
+
+- Evidence invariant:
+  Every decision point must record why it was made, including inputs and source of truth.
+
+- Learning-loop invariant:
+  Outcomes from triage feed back into retrieval rules and future decision gates.
+
+- Human-ownership invariant:
+  All commit, history, and deploy actions remain user-owned.
+
+- Capability-boundary invariant:
+  Clearly distinguish between automation, inference, and human decision-making.
+
+Recommended chain shape:
+Input -> Context Parse -> Ambiguity Check -> Retrieval -> Decision Gate -> Action -> Evidence Log -> Feedback Update
+
+How to apply this to AI_AGENT_QUICK_REFERENCE_CARD.md
+
+Fast operator rules:
+
+Always Do:
+- Verify context and scope first
+- Ask when unclear
+- Cite the canonical source used
+- Log the evidence path
+- Stop at ownership boundaries (no commit/push/rewrite)
+
+Never Do:
+- Guess missing business meaning
+- Silently apply defaults when critical inputs are missing
+- Present uncertain output as “intelligent”
+
+If / Then rules:
+- If input is incomplete -> ask a question
+- If system/auth/runtime failure occurs -> classify the issue, do not patch data
+- If a canonical decision changes -> sync all active documents in the same change set

@@ -1,0 +1,63 @@
+Feature Plan: Backend logging and observability
+
+Objective
+- Standardize comprehensive logging across all backend services.
+- Introduce clear log levels and event categories for operational visibility.
+- Cover endpoint calls, Hibernate transactions, entity operations, session state, SQL queries, and servlet filters.
+- Make logs queryable and visualizable in Grafana dashboards.
+- Introduce an interface-based logging service contract for emitters, with DAO-first proof of concept.
+
+Role ownership
+- Logging implementation in services: `@backend-dev`
+- Dashboard/log pipeline rollout: `@devops`
+- Sensitive data and auth/session log review: `@security-specialist`
+- Verification and regression coverage: `@testing-engineer`
+- Volume/overhead review and query cost: `@performance-engineer`
+- Scope and acceptance slicing: `@business-analyst`
+
+Baseline (as-found)
+- `mbook-quarkus` and `mbooks-quarkus` already expose metrics/traces and some Hibernate logging toggles.
+- `dalogin-quarkus` still carries legacy `log4j.xml` patterns in addition to Quarkus config.
+- Grafana/Prometheus/Tempo are present in `k8infra/quarkus-backend.yaml`, but there is no log storage/query datasource documented yet.
+- Existing log outputs are not consistently formatted/routed by category, and Hibernate log types need explicit file separation policy.
+
+Target outcome
+1. All four backend services emit structured logs with shared field conventions.
+2. Log levels are defined per category:
+   - `ERROR`: failed request, failed transaction, native/runtime failure, filter rejection
+   - `WARN`: degraded path, retry, validation anomaly, partial fallback
+   - `INFO`: endpoint start/end, session lifecycle, transaction summary, short SQL summary
+   - `DEBUG`: detailed entity operations, filter internals, longer SQL context
+   - `TRACE`: optional deep diagnostics for payload/SQL bind details in non-default mode
+3. SQL logging is split by intent:
+   - short info summary
+   - longer debug view
+   - error logging on failed statements/transactions
+4. Grafana gets a logs datasource and dashboards/panels for backend event streams.
+5. Logging emitters implement a shared interface contract:
+   - implementation method collects emitted logs based on system-wide logging level threshold
+   - class methods that emit operational events are required to call the interface implementation
+6. Proof of concept applies the interface contract to DAO classes first (`mbook-quarkus` + `mbooks-quarkus`).
+7. Existing logging (including Hibernate) is reformatted to the shared structured format, while preserving category identity.
+8. Hibernate log types remain separated into distinct log files; the same per-category/per-type file split rule applies to newly introduced logging.
+
+Service scope
+- `dalogin-quarkus`
+- `mbook-quarkus`
+- `mbooks-quarkus`
+- `simple-service-webapp-quarkus`
+
+Implementation direction
+- Prefer structured JSON logs across all services.
+- Introduce logger/category conventions for endpoint, filter, hibernate, entity, session, SQL.
+- Add a Grafana-compatible log backend (expected: Loki) next to existing Prometheus/Tempo stack.
+- Add dashboard panels and/or Explore presets for error rates, auth/filter rejections, slow SQL, and session events.
+- Define an interface-first logging service pattern and rollout with DAO PoC before broader service adoption.
+- Keep Hibernate categories and new logging categories routed to different log files; avoid merging them into a single sink/file.
+
+Definition of done
+- All backend services have documented log categories and level rules.
+- Default runtime emits useful INFO/WARN/ERROR without noisy debug traces.
+- DEBUG/TRACE mode is available for deeper investigation.
+- Logs are visible in Grafana with service/category filtering.
+- Interface-based logging service contract and DAO PoC are planned, reviewed, and accepted for implementation.

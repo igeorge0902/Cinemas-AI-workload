@@ -1,0 +1,93 @@
+Feature: AdminVC and AdminUpdateVC UIKit redesign with stronger admin visual identity
+
+Overview
+- Define redesign requirements for `AdminVC` and `AdminUpdateVC` in `SwiftCinemas`.
+- Keep existing action wiring and backend contracts intact.
+- Improve form structure and readability with clearer field grouping.
+- Apply a more explicit "admin" visual style without changing business behavior.
+
+Scope
+- In scope: layout hierarchy, field order, required/optional labeling, and visual styling for both admin screens.
+- Out of scope: API contracts, request payload keys, auth headers, segue identifiers, and DAO/backend behavior.
+
+Prototype binding
+- This specification is implemented and reviewed against:
+  - `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+
+Functional requirements
+
+REQ-AD-RD-1 Form order update for AdminVC
+- In `AdminVC`, `Screening Date` must appear above row/seat capacity inputs.
+- In `AdminVC`, `NrOfRows` and `NrOfSeatsInRow` must be shown in a two-column row on the same horizontal line.
+- Existing values and field bindings remain unchanged.
+
+REQ-AD-RD-2 Category optionality
+- `Category` must be treated as optional on admin create/update screens.
+- Empty category must not block save/update.
+- If category is present, category validation can still apply.
+
+REQ-AD-RD-3 Preserve flow contracts
+- Keep all current button actions and routes unchanged (`navigateBack`, `adminUpdate`, `addNewScreen`, `updateScreen`, `deleteScreen`, `clear`).
+- Keep existing payload fields and names unchanged.
+- Do not alter service endpoint paths or header contracts.
+
+REQ-AD-RD-4 Shared top navigation style
+- Top navigation buttons must follow the same shared style baseline used by redesigned screens (rounded corners, black background, white text).
+- Top button vertical offset aligns with the VenuesDetails baseline.
+
+REQ-AD-RD-5 Admin visual identity
+- Add a stronger admin look using subtle management-console cues:
+- High-contrast section headers (e.g., "Screen Setup", "Publishing").
+- Grouped cards/panels for related inputs.
+- Consistent iconography for actions (Save, Update, Delete, Clear) where practical.
+- Emphasis color reserved for destructive action (`Delete`) and validation messages.
+
+REQ-AD-RD-6 AdminUpdateVC layout refinement
+- Keep Movie and Venue select affordances visible and discoverable.
+- In `AdminUpdateVC`, the Movie and Venue fields should look grayed out in their default state so they read as locked selection values.
+- The only supported way to change Movie/Venue is through their popover list selection.
+- Keep Save/Delete as the primary bottom action pair.
+- Preserve clear indication when venue value has changed.
+- Use a neutral parenthetical marker such as `(changed)` to indicate venue changes instead of red font styling.
+
+REQ-AD-RD-7 Accessibility and touch targets
+- Maintain readable typography and contrast.
+- Action buttons meet standard touch target size.
+- Validation text remains visible and understandable.
+
+REQ-AD-RD-8 Venue select list behavior and data scope
+- In the venue select popover, the list bottom edge should sit visually closer to the popover bottom edge (reduced bottom gap/padding).
+- Venue `capacity` may be shown in UI using mocked data aligned with current iOS-side models.
+- In AdminUpdate venue selection mode, both the original venue and the newly selected venue should be explicitly indicated.
+- The original/new indicators should be rendered on a smaller second line below the venue name.
+- Capacity must remain visible for both original and newly selected rows.
+- Capacity API sourcing is explicitly out of scope for this redesign and must be covered by a separate follow-up specification.
+- Long press on a venue row should trigger haptic feedback and expand the row to reveal one additional line of venue metadata (e.g., address/info).
+
+Non-functional requirements
+
+REQ-AD-RD-NF-1 Stability
+- Existing admin create/update/delete workflows continue functioning with unchanged behavior.
+
+REQ-AD-RD-NF-2 Performance
+- Redesign must avoid repeated view-setup churn during repeated `viewWillAppear` transitions.
+
+Acceptance criteria
+- [ ] Spec documents `Screening Date` above row/seat fields for `AdminVC`.
+- [ ] Spec documents side-by-side layout for `NrOfRows` and `NrOfSeatsInRow`.
+- [ ] Spec documents `Category` as optional for admin forms.
+- [ ] Spec documents stronger admin visual identity requirements.
+- [ ] Spec preserves existing function wiring and payload contracts.
+- [ ] Spec references the canonical prototype file for this redesign.
+- [ ] Spec documents venue popover bottom spacing, mocked capacity scope, and long-press haptic expand behavior.
+- [ ] Spec documents original/new venue indicators below the venue name and keeps capacity visible on both rows.
+- [ ] Spec documents a neutral parenthetical venue-change indicator instead of red-font emphasis.
+- [ ] Spec documents that AdminUpdateVC movie and venue inputs are grayed out and only changed via popover selection.
+
+Reference files
+- `SwiftCinemas/SwiftLoginScreen/AdminVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/admin-screen.svg`
+- `SwiftCinemas/SwiftLoginScreen/admin-update-screen.svg`
+- `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+

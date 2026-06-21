@@ -1,0 +1,520 @@
+schema_version: 2
+speckit_lifecycle:
+  entrypoint: speckit.specify
+  flow:
+    - speckit.specify
+    - speckit.clarify
+    - speckit.plan
+    - speckit.tasks
+    - speckit.analyze
+    - speckit.implement
+    - speckit.checklist
+  optional:
+    - speckit.constitution
+    - speckit.taskstoissues
+  lifecycle_paths:
+    constitution: .ai/constitution/constitution.md
+    features_root: .ai/workflows/features
+    templates_root: .ai/specs/templates
+    scripts_root: .ai/specs/legacy-specify/scripts/bash
+    prompts_root: .ai/prompts
+agents:
+  - name: speckit.specify
+    scope:
+      - specification
+      - requirements
+      - feature-init
+    vocabulary:
+      - scope
+      - user-story
+      - acceptance-criteria
+      - branch
+      - feature
+      - cid
+    direct_tasks:
+      - task: create or refine feature specification
+        trigger: intent_match
+        priority: high
+      - task: initialize feature artifacts and naming
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.clarify
+    scope:
+      - clarification
+      - ambiguity-resolution
+      - requirements-quality
+    vocabulary:
+      - ambiguity
+      - assumption
+      - edge-case
+      - question
+      - constraint
+      - acceptance
+    direct_tasks:
+      - task: identify and resolve specification ambiguities
+        trigger: intent_match
+        priority: high
+      - task: capture explicit assumptions before planning
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.plan
+    scope:
+      - architecture-planning
+      - implementation-strategy
+      - sequencing
+    vocabulary:
+      - milestone
+      - dependency
+      - risk
+      - architecture
+      - rollout
+      - contract
+    direct_tasks:
+      - task: generate implementation plan from approved specification
+        trigger: intent_match
+        priority: high
+      - task: align plan with constitution constraints
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.tasks
+    scope:
+      - task-breakdown
+      - execution-slicing
+      - delivery-tracking
+    vocabulary:
+      - phase
+      - checklist
+      - owner
+      - estimate
+      - dependency
+      - validation
+    direct_tasks:
+      - task: create actionable task list from plan
+        trigger: intent_match
+        priority: high
+      - task: enforce ordering and dependency correctness
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.analyze
+    scope:
+      - consistency-audit
+      - risk-analysis
+      - readiness-review
+    vocabulary:
+      - inconsistency
+      - gap
+      - risk
+      - conflict
+      - coverage
+      - critical
+    direct_tasks:
+      - task: audit spec, plan, and tasks for alignment
+        trigger: intent_match
+        priority: high
+      - task: report blocking issues before implementation
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.implement
+    scope:
+      - execution
+      - coding
+      - validation
+    vocabulary:
+      - patch
+      - compile
+      - test
+      - regression
+      - handoff
+      - completion
+    direct_tasks:
+      - task: execute approved tasks in order
+        trigger: intent_match
+        priority: high
+      - task: validate edits with build and test checks
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.checklist
+    scope:
+      - qa-gate
+      - release-readiness
+      - acceptance-verification
+    vocabulary:
+      - checklist
+      - done-criteria
+      - sign-off
+      - gate
+      - regression
+      - handoff
+    direct_tasks:
+      - task: generate and enforce completion checklist
+        trigger: intent_match
+        priority: high
+      - task: verify definition of done coverage
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.constitution
+    scope:
+      - governance
+      - constitutional-rules
+      - policy-updates
+    vocabulary:
+      - principle
+      - governance
+      - version
+      - ratification
+      - amendment
+      - policy
+    direct_tasks:
+      - task: update constitution and propagate template impacts
+        trigger: intent_match
+        priority: high
+      - task: enforce constitutional consistency across lifecycle artifacts
+        trigger: intent_match
+        priority: high
+
+  - name: speckit.taskstoissues
+    scope:
+      - issue-tracking
+      - backlog-sync
+      - execution-ops
+    vocabulary:
+      - issue
+      - backlog
+      - sync
+      - tracker
+      - status
+      - linkage
+    direct_tasks:
+      - task: convert tasks into issue tracker items
+        trigger: intent_match
+        priority: medium
+      - task: keep issue status aligned with task completion
+        trigger: intent_match
+        priority: medium
+
+  - name: backend-dev
+    scope:
+      - quarkus
+      - java
+      - rest-api
+    vocabulary:
+      - endpoint
+      - dto
+      - service
+      - repository
+      - transaction
+      - pagination
+    direct_tasks:
+      - task: add or update rest endpoints
+        trigger: intent_match
+        priority: medium
+      - task: implement service-layer business rules
+        trigger: intent_match
+        priority: medium
+      - task: fix api validation and error mapping
+        trigger: incident
+        priority: high
+      - task: wire downstream client calls and headers
+        trigger: intent_match
+        priority: medium
+      - task: add backend unit/integration tests
+        trigger: intent_match
+        priority: medium
+
+  - name: devops
+    scope:
+      - kubernetes
+      - ci-cd
+      - observability
+    vocabulary:
+      - deployment
+      - ingress
+      - rollout
+      - pipeline
+      - helm
+      - autoscaling
+    direct_tasks:
+      - task: update k8s manifests and service exposure
+        trigger: intent_match
+        priority: medium
+      - task: improve ci-cd build and release pipelines
+        trigger: intent_match
+        priority: medium
+      - task: troubleshoot pod crashes and rollout issues
+        trigger: incident
+        priority: high
+      - task: configure metrics, logs, and tracing
+        trigger: intent_match
+        priority: medium
+      - task: harden runtime config and secret handling
+        trigger: incident
+        priority: high
+
+  - name: ios-dev
+    scope:
+      - swift
+      - ios
+      - ui
+    vocabulary:
+      - swiftui
+      - uikit
+      - urlsession
+      - async-await
+      - navigation
+      - keychain
+    direct_tasks:
+      - task: build or refactor ios screens
+        trigger: intent_match
+        priority: medium
+      - task: implement api client calls and decoding
+        trigger: intent_match
+        priority: medium
+      - task: improve state handling and navigation flow
+        trigger: intent_match
+        priority: medium
+      - task: fix mobile-specific auth/session issues
+        trigger: incident
+        priority: high
+      - task: add ios unit/ui tests
+        trigger: intent_match
+        priority: medium
+
+  - name: database-dev
+    scope:
+      - sql
+      - mysql
+      - schema
+    vocabulary:
+      - migration
+      - index
+      - join
+      - trigger
+      - stored-procedure
+      - transaction
+    direct_tasks:
+      - task: design or update schema objects
+        trigger: intent_match
+        priority: medium
+      - task: optimize slow queries and indexes
+        trigger: incident
+        priority: high
+      - task: maintain triggers and stored procedures
+        trigger: intent_match
+        priority: medium
+      - task: create data backfill or repair scripts
+        trigger: incident
+        priority: high
+      - task: validate data integrity and constraints
+        trigger: incident
+        priority: high
+
+  - name: frontend-dev
+    scope:
+      - react
+      - angular
+      - css
+    vocabulary:
+      - component
+      - route
+      - state
+      - template
+      - form-validation
+      - accessibility
+    direct_tasks:
+      - task: implement ui components and pages
+        trigger: intent_match
+        priority: medium
+      - task: wire frontend routes and navigation
+        trigger: intent_match
+        priority: medium
+      - task: add form validation and inline feedback
+        trigger: intent_match
+        priority: medium
+      - task: integrate frontend with backend endpoints
+        trigger: intent_match
+        priority: medium
+      - task: fix styling and responsive layout issues
+        trigger: incident
+        priority: low
+
+  - name: testing-engineer
+    scope:
+      - unit-testing
+      - integration-testing
+      - e2e-testing
+    vocabulary:
+      - test-case
+      - assertion
+      - mock
+      - fixture
+      - regression
+      - coverage
+    direct_tasks:
+      - task: create and maintain test suites
+        trigger: intent_match
+        priority: medium
+      - task: add mocks, fixtures, and test data
+        trigger: intent_match
+        priority: medium
+      - task: reproduce bugs and add regression tests
+        trigger: incident
+        priority: high
+      - task: improve flaky test stability
+        trigger: incident
+        priority: high
+      - task: report coverage gaps and risk areas
+        trigger: intent_match
+        priority: medium
+
+  - name: security-specialist
+    scope:
+      - application-security
+      - network-security
+      - data-security
+    vocabulary:
+      - threat-model
+      - cve
+      - encryption
+      - hmac
+      - secrets
+      - least-privilege
+    direct_tasks:
+      - task: review auth and authorization flows
+        trigger: incident
+        priority: high
+      - task: scan dependencies and remediate cves
+        trigger: incident
+        priority: high
+      - task: harden headers, cookies, and transport settings
+        trigger: incident
+        priority: high
+      - task: validate secret storage and rotation strategy
+        trigger: intent_match
+        priority: high
+      - task: test for common vulnerability classes
+        trigger: intent_match
+        priority: high
+
+  - name: performance-engineer
+    scope:
+      - performance-testing
+      - load-testing
+      - stress-testing
+    vocabulary:
+      - latency
+      - throughput
+      - bottleneck
+      - profiling
+      - caching
+      - concurrency
+    direct_tasks:
+      - task: benchmark critical request paths
+        trigger: intent_match
+        priority: medium
+      - task: profile cpu, memory, and io hot spots
+        trigger: incident
+        priority: high
+      - task: tune query/service/cache performance
+        trigger: incident
+        priority: high
+      - task: design load and stress test scenarios
+        trigger: intent_match
+        priority: medium
+      - task: define and track performance budgets
+        trigger: intent_match
+        priority: medium
+
+  - name: ai-researcher
+    scope:
+      - machine-learning
+      - deep-learning
+      - natural-language-processing
+    vocabulary:
+      - dataset
+      - embedding
+      - fine-tuning
+      - inference
+      - evaluation
+      - prompt
+    direct_tasks:
+      - task: define experiments and success metrics
+        trigger: intent_match
+        priority: medium
+      - task: compare model or prompt variants
+        trigger: intent_match
+        priority: medium
+      - task: prepare datasets and evaluation sets
+        trigger: intent_match
+        priority: medium
+      - task: analyze model output quality and drift
+        trigger: incident
+        priority: high
+      - task: document findings and recommendations
+        trigger: intent_match
+        priority: low
+
+  - name: business-analyst
+    scope:
+      - requirements-gathering
+      - process-modeling
+      - stakeholder-alignment
+    vocabulary:
+      - user-story
+      - acceptance-criteria
+      - workflow
+      - kpi
+      - dependency
+      - risk
+    direct_tasks:
+      - task: refine requirements into clear stories
+        trigger: intent_match
+        priority: medium
+      - task: write testable acceptance criteria
+        trigger: intent_match
+        priority: high
+      - task: map process flows and edge cases
+        trigger: intent_match
+        priority: medium
+      - task: prioritize backlog by value and risk
+        trigger: intent_match
+        priority: medium
+      - task: align scope across stakeholders
+        trigger: intent_match
+        priority: medium
+
+  - name: cpp-developer
+    # Canonical handle; legacy @c++ developer mention is deprecated.
+    scope:
+      - c++
+      - systems-programming
+      - performance-critical-code
+    vocabulary:
+      - raii
+      - stl
+      - smart-pointer
+      - template
+      - undefined-behavior
+      - move-semantics
+    direct_tasks:
+      - task: implement core c++ features and modules
+        trigger: intent_match
+        priority: medium
+      - task: fix ownership and memory safety bugs
+        trigger: incident
+        priority: high
+      - task: optimize cpu and memory performance
+        trigger: incident
+        priority: high
+      - task: improve template and build diagnostics
+        trigger: intent_match
+        priority: medium
+      - task: add unit tests for low-level behavior
+        trigger: intent_match
+        priority: medium

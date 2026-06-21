@@ -1,0 +1,12 @@
+legacy_memory_redirect:
+  status: "archived compatibility shim"
+  canonical_file: ".ai/memory/naming.yaml"
+  reason:
+    - "Active naming memory is maintained in one canonical location."
+    - "This legacy mirror intentionally avoids duplicating identifiers and risking stale references."
+  additional_sources:
+    - ".ai/memory/api.yaml"
+    - ".ai/memory/k8s.yaml"
+    - ".ai/agents/AGENTS.md"
+  last_updated: "2026-05-16"
+

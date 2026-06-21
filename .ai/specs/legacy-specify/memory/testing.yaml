@@ -1,0 +1,13 @@
+legacy_memory_redirect:
+  status: "archived compatibility shim"
+  canonical_file: ".ai/memory/testing.yaml"
+  reason:
+    - "Active testing memory is maintained in one canonical location."
+    - "This legacy mirror intentionally avoids duplicating procedures and command catalogs."
+  additional_sources:
+    - ".ai/retrieval/instructions.md"
+    - ".ai/skills/skills-github.md"
+    - "appium/README.md"
+    - "k8infra/README-k8s-local.md"
+  last_updated: "2026-05-16"
+

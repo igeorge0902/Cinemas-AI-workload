@@ -1,0 +1,54 @@
+Phase 1 - Speckit artifact setup (`@ios-dev`)
+
+- [x] Create feature spec: `speckit.swiftuifeatures.venuesvc-redesign.specify`.
+- [x] Create feature plan: `speckit.swiftuifeatures.venuesvc-redesign.plan`.
+- [x] Create feature tasks: `speckit.swiftuifeatures.venuesvc-redesign.tasks`.
+- [x] Create visual prototype: `prototypes/venuesvc-redesign.prototype.html`.
+
+Phase 1A - Replacement mode and compile gate (`@ios-dev`)
+
+- [x] Apply code replacement only for `VenuesVC`/`VenuesMigration` scope in this feature pass.
+- [x] After each replacement chunk, run compile check and resolve build errors before continuing.
+- [x] Do not begin next screen redesign until `VenuesVC` (and migration parity target) compiles cleanly.
+
+Phase 2 - UIKit VenuesVC list redesign (`@ios-dev`)
+
+- [x] Keep venues rendered in a vertical list, one venue per row.
+- [x] Apply expanded-list style polish (spacing, typography, row card treatment).
+- [x] Keep row image/title data mapping behavior unchanged.
+
+Phase 2B - SwiftUI VenuesMigration redesign parity (`@ios-dev`)
+
+- [x] Apply equivalent expanded-list styling in `VenuesMigration` for standard list flow.
+- [x] Keep one-row-per-venue vertical list hierarchy and readability parity.
+- [x] Keep two-step interaction parity (select first, bottom CTA navigation second).
+
+Phase 3 - Selection details panel (`@ios-dev`)
+
+- [x] Keep bottom details section visible in VenuesVC.
+- [x] On selection, display venue name + address in panel.
+- [x] Confirm no map is embedded in details panel.
+- [x] Add bottom CTA for forward navigation, disabled until venue is selected.
+
+Phase 4 - Preserve contracts and navigation (`@ios-dev`)
+
+- [x] Keep existing function behavior (`addData`, `addLocation`, `navigateBack`, table delegates).
+- [x] Keep segue `goto_venues_details` and selected venue propagation unchanged.
+- [x] Keep admin/map flow notification behavior unchanged.
+- [x] Enforce two-step flow: row tap selects only, bottom CTA triggers navigation.
+
+Phase 5 - Stability and performance (`@ios-dev`)
+
+- [x] Ensure no duplicate subviews are added on repeated appearances.
+- [x] Ensure async row image loading remains cell-reuse safe.
+- [x] Ensure list remains smooth while scrolling.
+
+Phase 6 - Manual verification handoff (`@user`)
+
+- [ ] Visual verify one-line vertical venues list and polished style.
+- [ ] Verify selected venue details/address appears in bottom panel.
+- [ ] Verify first tap selects and second tap (bottom CTA) navigates to `VenuesDetailsVC`.
+- [ ] Verify no map content appears in bottom details section.
+- [ ] Verify map/admin flows still behave as before.
+- [ ] Verify UIKit `VenuesVC` and SwiftUI `VenuesMigration` both satisfy redesigned behavior.
+

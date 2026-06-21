@@ -1,0 +1,39 @@
+Feature Plan: Kubernetes startup orchestrator for local bring-up
+
+Objective
+- Reduce local stack startup in `k8infra` to a single orchestrator command.
+- Keep behavior aligned with `k8infra/README-k8s-local.md` and `k8infra/quarkus-backend.yaml`.
+- Enforce dependency-aware startup and deterministic health verification.
+
+Role ownership
+- Orchestrator implementation: `@platform-engineer`, `@backend-dev`
+- Runtime/cluster integration checks: `@devops`
+- Smoke validation and regression checks: `@testing-engineer`
+- Secrets/command safety review: `@security-specialist`
+- Startup-time baseline and retry policy review: `@performance-engineer`
+
+Implementation outline
+1. Define orchestrator entrypoint in `k8infra` and command contract (`up`, `status`, `restart <service>`, `down`).
+2. Implement prerequisite checks for `colima`, `minikube`, `kubectl`, ingress availability.
+3. Implement deployment flow using `kubectl apply -f k8infra/quarkus-backend.yaml` and namespace-scoped readiness gates.
+4. Enforce startup sequence: `mysql` readiness before `dalogin`, `mbook`, `mbooks`, `simple-service-webapp` rollout checks.
+5. Add optional seed hooks for `mysql_8/login.sql` and `mysql_8/book.sql` with safe skip behavior when data already exists.
+6. Implement `status` snapshot for pods/services/ingress + endpoint reachability checks.
+7. Implement `restart <service>` for service-scoped rebuild/load/rollout parity with current runbook image names.
+8. Implement `down` for controlled shutdown without PVC deletion by default.
+9. Update `k8infra/README-k8s-local.md` with orchestrator usage and manual fallback parity.
+
+Validation strategy
+- Verify one-command bring-up reaches:
+  - `https://milo.crabdance.com/login/`
+  - `https://milo.crabdance.com/mbooks-1/rest/book/locations`
+  - `https://milo.crabdance.com/simple-service-webapp/webapi/myresource`
+- Verify non-zero exit and failing step output when dependency checks fail.
+- Verify restart path affects only targeted service deployment.
+
+Definition of done
+- Orchestrator command contract is implemented and documented.
+- Startup and readiness behavior matches the existing runbook intent.
+- Failure output is deterministic and actionable.
+- Role sign-offs are captured in the corresponding tasks file.
+

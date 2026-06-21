@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MenuVC PurchasesVC TicketsVC Admin Style Prototype</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f5f5f7; padding: 20px; }
+    .container { max-width: 980px; margin: 0 auto; }
+    .title { text-align: center; margin: 8px 0 10px; font-size: 20px; font-weight: 700; }
+    .note { text-align: center; margin-bottom: 18px; color: #666; font-size: 13px; }
+    .row { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+    .phone { width: 390px; height: 844px; border: 12px solid #333; border-radius: 36px; overflow: hidden; background: #fff; box-shadow: 0 14px 40px rgba(0,0,0,.25); margin: 0 auto 20px; }
+    .phone.focus { box-shadow: 0 0 0 3px #2d6cdf, 0 14px 40px rgba(0,0,0,.25); }
+    .status { height: 44px; border-bottom: 1px solid #e7e7ea; display: flex; align-items: center; padding: 0 16px; font-size: 12px; color: #333; }
+    .status .center { flex: 1; text-align: center; font-weight: 600; }
+    .content { height: calc(100% - 44px); overflow: auto; padding: 10px 8px; background: #f7f7fa; position: relative; }
+    .purchases-content { display: flex; flex-direction: column; overflow: hidden; }
+    .top-buttons { display: flex; gap: 8px; margin-bottom: 12px; }
+    .top-buttons button { flex: 1; height: 36px; border: none; border-radius: 14px; background: #111; color: #fff; font-size: 13px; font-weight: 600; }
+    .card { border: 1px solid #e5e5e8; background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .card h3 { font-size: 12px; letter-spacing: .4px; text-transform: uppercase; color: #222; margin-bottom: 10px; }
+    .kv { display: grid; grid-template-columns: 118px 1fr; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .k { color: #666; }
+    .v { color: #222; font-family: Menlo, Monaco, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .avatar { width: 100%; height: 170px; border: 1px solid #dbdce2; border-radius: 10px; background: linear-gradient(140deg, #c5cad4, #8f97a8); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; letter-spacing: .5px; }
+    .caption { margin-top: 6px; font-size: 11px; color: #787884; }
+    .badge { display: inline-block; border: 1px solid #d4d5da; border-radius: 999px; padding: 2px 7px; font-size: 10px; color: #666; margin-left: 4px; }
+    .list { border: 1px solid #ececf1; border-radius: 8px; max-height: 222px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .purchase-list-card { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-bottom: 0; }
+    .purchase-list-card .list { flex: 1 1 auto; max-height: none; min-height: 0; }
+    .list-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #ececf1; background: #fff; padding: 10px; }
+    .list-item:last-child { border-bottom: 0; }
+    .purchase-row {
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+      touch-action: pan-y;
+    }
+    .purchase-row.swipable { box-shadow: inset 0 0 0 1px #c9d7ff; }
+    .purchase-row.swiped.swipable { background: #f7f9ff; border-color: #c9d7ff; }
+    .refund-indicator {
+      display: none;
+      margin-top: 4px;
+      font-size: 10px;
+      color: #3f5ea8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+    .purchase-row.swiped.swipable .refund-indicator { display: inline; }
+    .purchase-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .thumb {
+      width: 38px;
+      height: 54px;
+      border-radius: 6px;
+      border: 1px solid #d0d1d7;
+      background: linear-gradient(140deg, #aeb4c0, #6f7788);
+      color: #fff;
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .line-main { font-family: Menlo, Monaco, monospace; font-size: 12px; color: #222; }
+    .line-sub { font-size: 11px; color: #787884; margin-top: 2px; }
+    .pill { border: 1px solid #d4d5da; border-radius: 999px; padding: 2px 7px; font-size: 10px; color: #666; white-space: nowrap; }
+    .ticket-row { border: 1px solid #ececf1; border-radius: 8px; background: #fff; margin-bottom: 10px; overflow: hidden; }
+    .ticket-main { display: grid; grid-template-columns: 82px 1fr; gap: 10px; padding: 10px; }
+    .poster { width: 82px; height: 112px; border-radius: 8px; border: 1px solid #d0d1d7; background: linear-gradient(140deg, #aeb4c0, #6f7788); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+    .qr { margin-top: 8px; width: 76px; height: 76px; border: 1px solid #d2d2d8; background: repeating-linear-gradient(45deg, #111 0, #111 2px, #fff 2px, #fff 4px); }
+    .ticket-reveal { display: none; border-top: 1px dashed #ececf1; padding: 8px 10px; align-items: center; justify-content: space-between; }
+    .ticket-row.reveal .ticket-reveal { display: flex; }
+    .delete-btn { border: none; background: #d70015; color: #fff; border-radius: 10px; padding: 7px 10px; font-size: 11px; cursor: pointer; }
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .actions button { flex: 1; height: 36px; border: none; border-radius: 12px; color: #fff; background: #111; font-size: 12px; font-weight: 600; }
+    .actions button.destructive { background: #d70015; }
+    .toast {
+      display: none;
+      border: 1px solid #c8d6f5;
+      background: #eef3ff;
+      color: #2b4f93;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .toast.show { display: block; }
+    .toast.refund-log {
+      border-color: #d2d3d9;
+      background: #f0f1f4;
+      color: #3a3a43;
+      white-space: pre-line;
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      margin: 0;
+      z-index: 25;
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+      pointer-events: none;
+    }
+    .pdf-panel {
+      display: none;
+      border: 1px solid #e5e5e8;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    .pdf-panel.show { display: block; }
+    .pdf-canvas {
+      border: 1px solid #d9dbe3;
+      border-radius: 10px;
+      background: #fff;
+      height: 540px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .pdf-page {
+      border: 1px solid #ececf1;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .pdf-ticket {
+      border: 1px dashed #d9dbe3;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .pdf-qr {
+      width: 54px;
+      height: 54px;
+      border: 1px solid #d2d2d8;
+      background: repeating-linear-gradient(45deg, #111 0, #111 2px, #fff 2px, #fff 4px);
+    }
+    .tickets-refreshed {
+      display: none;
+      border: 1px solid #c8d6f5;
+      background: #eef3ff;
+      color: #2b4f93;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .tickets-refreshed.show { display: block; }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">MenuVC + PurchasesVC + TicketsVC Admin-Style Prototype</div>
+    <div class="note">Analyze pass: backend profile image state, ticket QR/data visibility, long-press delete reveal, purchase-deleted feedback + back navigation.</div>
+
+    <div class="row">
+      <div class="phone" id="menuPhone">
+        <div class="status"><span>9:41</span><span class="center">Menu / Profile</span></div>
+        <div class="content">
+          <div class="top-buttons"><button>Back</button><button>Purchases</button></div>
+          <div class="card">
+            <h3>Profile</h3>
+            <div class="kv"><div class="k">Username</div><div class="v">cinema_user</div></div>
+            <div class="kv"><div class="k">Email</div><div class="v">user@cinemas.local</div></div>
+            <div class="caption">Data sourced from backend profile endpoint.</div>
+          </div>
+          <div class="card">
+            <h3>Profile Picture</h3>
+            <div class="avatar">PROFILE IMAGE (backend)</div>
+            <div class="caption">If image fetch fails, keep placeholder fallback.</div>
+            <div class="actions"><button>Admin</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone" id="purchasesPhone">
+        <div class="status"><span>9:41</span><span class="center">Purchases</span></div>
+        <div class="content purchases-content">
+          <div id="purchaseDeletedToast" class="toast">Purchase deleted (all tickets cancelled). Navigated back from Tickets.</div>
+          <div id="purchasesRefreshedToast" class="toast refund-log">Refunded purchases:</div>
+          <div class="top-buttons"><button>Back</button><button>Sort: Purchase</button></div>
+          <div class="card">
+            <h3>Sort / Filters</h3>
+            <div class="actions"><button>By Screening</button><button>By Purchase</button></div>
+          </div>
+          <div class="card purchase-list-card">
+            <h3>Purchase List</h3>
+            <div class="list">
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Interstellar</div><div class="line-sub">2026-05-16 19:30 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 241</span></div>
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Joker</div><div class="line-sub">2026-05-17 21:00 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 242</span></div>
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Parasite</div><div class="line-sub">2026-05-18 18:20 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 243</span></div>
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Dune</div><div class="line-sub">2026-05-19 20:15 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 244</span></div>
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Whiplash</div><div class="line-sub">2026-05-20 17:40 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 245</span></div>
+              <div class="list-item purchase-row"><div class="purchase-left"><div class="thumb">POSTER</div><div><div class="line-main">Blade Runner 2049</div><div class="line-sub">2026-05-21 22:05 · <span class="badge">↤ swipe</span></div><div class="refund-indicator">Refund enabled</div></div></div><span class="pill">purchase: 246</span></div>
+            </div>
+            <div class="caption">Long press a purchase row to enable swipe, then swipe left to reveal refund.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone" id="ticketsPhone">
+        <div class="status"><span>9:41</span><span class="center">Tickets</span></div>
+        <div class="content">
+          <div id="ticketsRefreshedToast" class="tickets-refreshed">PDF shared. Tickets screen refreshed.</div>
+          <div class="top-buttons"><button>Back</button><button id="openPdfBtn">Pdf</button></div>
+          <div class="card" id="ticketsDataCard">
+            <h3>Ticket List (QR + Data)</h3>
+
+            <div class="ticket-row" data-ticket-id="T-241-1">
+              <div class="ticket-main">
+                <div><div class="poster">POSTER</div><div class="qr"></div></div>
+                <div>
+                  <div class="line-main">Interstellar <span class="badge">ticket T-241-1</span></div>
+                  <div class="line-sub">Seat: B12</div>
+                  <div class="line-sub">Row: B</div>
+                  <div class="line-sub">Date: 2026-05-16 19:30</div>
+                  <div class="line-sub">Venue: downtown_cinema</div>
+                </div>
+              </div>
+              <div class="ticket-reveal"><span class="line-sub">Long press revealed delete action</span><button class="delete-btn">Delete</button></div>
+            </div>
+
+            <div class="ticket-row" data-ticket-id="T-241-2">
+              <div class="ticket-main">
+                <div><div class="poster">POSTER</div><div class="qr"></div></div>
+                <div>
+                  <div class="line-main">Interstellar <span class="badge">ticket T-241-2</span></div>
+                  <div class="line-sub">Seat: B13</div>
+                  <div class="line-sub">Row: B</div>
+                  <div class="line-sub">Date: 2026-05-16 19:30</div>
+                  <div class="line-sub">Venue: downtown_cinema</div>
+                </div>
+              </div>
+              <div class="ticket-reveal"><span class="line-sub">Long press revealed delete action</span><button class="delete-btn">Delete</button></div>
+            </div>
+
+            <div class="caption">Long press a ticket row to reveal delete icon/line. When all tickets are deleted, show purchase-deleted confirmation and navigate back to Purchases.</div>
+          </div>
+
+          <div id="pdfPanel" class="pdf-panel">
+            <div class="top-buttons" style="margin-bottom:10px;"><button id="sharePdfBtn">Share</button><button id="closePdfBtn">Close</button></div>
+            <div class="pdf-canvas">
+              <div class="pdf-page">
+                <div class="line-main">YourTickets-tickets.pdf</div>
+                <div class="line-sub">PDF preview opened from TicketsVC Pdf action.</div>
+                <div class="line-sub">Share action is available from this PDF view only.</div>
+                <div class="pdf-ticket">
+                  <div class="pdf-qr"></div>
+                  <div>
+                    <div class="line-main">Interstellar</div>
+                    <div class="line-sub">Seat B12 · Row B</div>
+                    <div class="line-sub">2026-05-16 19:30 · downtown_cinema</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pdf-page">
+                <div class="line-main">Ticket Summary</div>
+                <div class="pdf-ticket">
+                  <div class="pdf-qr"></div>
+                  <div>
+                    <div class="line-main">Interstellar</div>
+                    <div class="line-sub">Seat B13 · Row B</div>
+                    <div class="line-sub">2026-05-16 19:30 · downtown_cinema</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <script>
+    (function () {
+    var ticketRows = document.querySelectorAll('.ticket-row');
+    var purchaseRows = document.querySelectorAll('.purchase-row');
+    var purchasesPhone = document.getElementById('purchasesPhone');
+    var ticketsPhone = document.getElementById('ticketsPhone');
+    var purchaseDeletedToast = document.getElementById('purchaseDeletedToast');
+      var purchasesRefreshedToast = document.getElementById('purchasesRefreshedToast');
+      var refundedEntries = [];
+    var openPdfBtn = document.getElementById('openPdfBtn');
+    var closePdfBtn = document.getElementById('closePdfBtn');
+    var sharePdfBtn = document.getElementById('sharePdfBtn');
+    var pdfPanel = document.getElementById('pdfPanel');
+    var ticketsDataCard = document.getElementById('ticketsDataCard');
+    var ticketsRefreshedToast = document.getElementById('ticketsRefreshedToast');
+
+    function showPurchaseDeletedFlow() {
+      purchaseDeletedToast.classList.add('show');
+      purchasesPhone.classList.add('focus');
+      ticketsPhone.classList.remove('focus');
+    }
+
+    function remainingRows() {
+      return document.querySelectorAll('.ticket-row').length;
+    }
+
+    purchaseRows.forEach(function (row) {
+      var startX = null;
+      var holdTimer = null;
+        var deleted = false;
+      row.addEventListener('pointerdown', function (event) {
+        startX = event.clientX;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(function () {
+          row.classList.add('swipable');
+          if (navigator.vibrate) {
+            navigator.vibrate(10);
+          }
+        }, 350);
+      });
+        row.addEventListener('pointerup', function (event) {
+        clearTimeout(holdTimer);
+          if (deleted) {
+            return;
+          }
+        if (startX === null) return;
+        var dx = event.clientX - startX;
+        if (dx < -35 && row.classList.contains('swipable')) {
+            if (!row.classList.contains('swiped')) {
+              // First swipe after long press only arms refund.
+              row.classList.add('swiped');
+            } else {
+              // Second swipe confirms delete/refund.
+              deleted = true;
+              var movieNameEl = row.querySelector('.line-main');
+              var purchaseIdEl = row.querySelector('.pill');
+              var movieName = movieNameEl ? movieNameEl.textContent.trim() : 'Unknown movie';
+              var purchaseId = purchaseIdEl ? purchaseIdEl.textContent.replace('purchase:', '').trim() : 'N/A';
+
+              setTimeout(function () {
+                row.remove();
+                refundedEntries.push('- ' + purchaseId + ' · ' + movieName);
+                if (purchasesRefreshedToast) {
+                  purchasesRefreshedToast.textContent = 'Refunded purchases:\n' + refundedEntries.join('\n');
+                  purchasesRefreshedToast.classList.add('show');
+                }
+              }, 150);
+            }
+        } else if (dx > 20 && row.classList.contains('swipable')) {
+          row.classList.remove('swiped');
+        }
+        startX = null;
+      });
+      ['pointerleave', 'pointercancel'].forEach(function (evt) {
+        row.addEventListener(evt, function () {
+          clearTimeout(holdTimer);
+        });
+      });
+    });
+
+    if (openPdfBtn && pdfPanel) {
+      openPdfBtn.addEventListener('click', function () {
+        pdfPanel.classList.add('show');
+        if (ticketsDataCard) ticketsDataCard.style.display = 'none';
+      });
+    }
+    if (closePdfBtn && pdfPanel) {
+      closePdfBtn.addEventListener('click', function () {
+        pdfPanel.classList.remove('show');
+        if (ticketsDataCard) ticketsDataCard.style.display = 'block';
+      });
+    }
+    if (sharePdfBtn) {
+      sharePdfBtn.addEventListener('click', function () {
+        sharePdfBtn.textContent = 'Shared';
+        if (pdfPanel) pdfPanel.classList.remove('show');
+        if (ticketsDataCard) ticketsDataCard.style.display = 'block';
+        if (ticketsRefreshedToast) ticketsRefreshedToast.classList.add('show');
+      });
+    }
+
+    ticketRows.forEach(function (row) {
+      var timer = null;
+
+      row.addEventListener('pointerdown', function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          row.classList.toggle('reveal');
+          if (navigator.vibrate) {
+            navigator.vibrate(12);
+          }
+        }, 350);
+      });
+
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (evt) {
+        row.addEventListener(evt, function () {
+          clearTimeout(timer);
+        });
+      });
+
+      var deleteButton = row.querySelector('.delete-btn');
+      if (deleteButton) {
+        deleteButton.addEventListener('click', function () {
+          row.remove();
+          if (remainingRows() === 0) {
+            showPurchaseDeletedFlow();
+          }
+        });
+      }
+    });
+    })();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,29 @@
+Feature: k8infra API smoke migration to RestAssured
+
+Contract IDs
+- `CID-LOGIN-HELLOWORLD`
+- `CID-MBOOKS-LOCATIONS`
+
+Functional requirements
+- Add a Java RestAssured smoke suite under `k8infra`.
+- Coverage must include:
+  - `POST /login/HelloWorld`
+  - `GET /login/admin`
+  - `GET /login/activeSessions`
+  - `GET /mbooks-1/rest/book/locations`
+  - `GET /mbooks-1/rest/book/hello`
+- Preserve iOS-compatible login HMAC behavior used by Python smoke tests.
+- Support config overrides via system properties and env vars.
+
+Acceptance criteria
+- RestAssured smoke tests run with `mvn test` in `k8infra/api-smoke-restassured`.
+- Existing smoke scenarios from Python scripts are represented in Java tests.
+- `k8infra` docs point to RestAssured as primary framework.
+- Python scripts are marked as legacy fallback.
+
+Definition of Done
+- [ ] Spec + implementation + tested evidence present.
+- [ ] `@testing-engineer` verification completed.
+- [ ] `@security-specialist` verification completed.
+- [ ] `@performance-engineer` verification completed.
+

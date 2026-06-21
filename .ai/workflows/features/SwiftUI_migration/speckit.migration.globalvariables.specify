@@ -1,0 +1,472 @@
+Feature: Replace iOS-wide Global Variables with DataManagers
+
+🧠 Overview
+
+The iOS app currently uses module-level global variables (declared at file scope,
+outside any class) to share data between view controllers. These globals are
+initialised once, mutated in place, and partially cleaned up in `deinit`.
+
+This feature replaces them with typed, observable DataManager singletons backed
+by Combine `@Published` properties so that any VC or SwiftUI view can subscribe
+and react reactively — without coupling to static state.
+
+───────────────────────────────────────────────────
+🔎 Current Global Variables (as-found in codebase)
+───────────────────────────────────────────────────
+
+| Variable              | Type                    | Declared in           | Shared across                          | Has static fetch fn? |
+|-----------------------|-------------------------|-----------------------|----------------------------------------|----------------------|
+| `TableData_`          | `[MoviesData]`          | MoviesVC.swift:16     | MoviesVC, AdminUpdateVC                | No (manual append)   |
+| `ScreenData_`         | `[ScreenData]`          | AdminVC.swift:14      | AdminVC, AdminUpdateVC                 | No (manual append)   |
+| `ScreenData_2`        | `[Admin_ScreenData]`    | MoviesVC.swift:14     | MoviesVC, AdminUpdateVC                | No (manual append)   |
+| `PlacesData_`         | `[PlacesData]`          | MapViewController:14  | MapViewController, VenuesVC, VenuesMigration | No              |
+| `PlacesData2_`        | `[PlacesData]`          | MapViewController:15  | VenuesVC (map mode), VenuesMigration   | No                   |
+| `BasketData_`         | `[Int: BasketData]`     | BasketVC.swift:19     | BasketVC, HomeVC                       | No                   |
+| `SeatsData_`          | `[SeatsData]`           | PopOver.swift:19      | PopOver, BasketVC, SeatsData.swift     | Yes — `SeatsData.addData(_:)` |
+| `TicketsData_`        | `[TicketsData]`         | PopOver.swift:23      | PopOver, BasketVC                      | No                   |
+| `tickets`             | `[String: String]`      | PopOver.swift:24      | PopOver, BasketVC                      | No (seat→ticket map) |
+
+Flags declared at file scope (related, but NOT data lists — kept as-is for now):
+
+| Variable           | Type   | Declared in       | Notes                              |
+|--------------------|--------|-------------------|------------------------------------|
+| `adminPage`        | Bool   | AdminVC.swift:16  | Mode flag; see speckit.migration.specify |
+| `adminUpdatePage`  | Bool   | AdminVC.swift:17  | Mode flag                          |
+| `mapViewPage`      | Bool   | MapViewController:16 | Mode flag                       |
+| `endOfFile`        | Bool   | MoviesVC.swift:17 | Pagination sentinel                |
+| `veil`             | Bool   | MoviesVC.swift:18 | UI state                           |
+| `shouldShowSearchResults` | Bool | MoviesVC.swift:19 | Search UI state               |
+| `addMovie` etc.    | String | AdminVC.swift:18+ | Admin form state                   |
+
+Data models with static fetch functions (leave model + static fn unchanged):
+
+| Model            | Static fn              | Behaviour                                          |
+|------------------|------------------------|----------------------------------------------------|
+| `MoviesData`     | `addData()`            | Fetches movies, caches images via `Data.imageFromUrl` |
+| `SeatsData`      | `addData(_:)`          | Fetches seats for a screeningDateId; writes `SeatsData_` |
+
+───────────────────────────────────────────────────
+🎯 Goals
+───────────────────────────────────────────────────
+
+1. Replace each global list/dictionary with a `@Published` property on a
+   dedicated DataManager class (ObservableObject).
+2. DataManagers are instantiated once and injected via `AppServices`
+   (existing `HasAppServices` protocol pattern).
+3. View controllers observe via Combine `sink`; SwiftUI views observe via
+   `@ObservedObject` / `@EnvironmentObject`.
+4. Preserve all current API call sites — only the storage location changes.
+5. Keep models (`MoviesData`, `SeatsData`, etc.) and their static fetch
+   functions untouched; the static fns write into the DataManager instead
+   of the bare global.
+6. `deinit` cleanup moves from "removeAll on global" to "manager.reset()".
+7. Mode flags (`adminPage`, `mapViewPage`, `adminUpdatePage`) are NOT in scope
+   for this feature — they are addressed in speckit.migration.specify.
+
+───────────────────────────────────────────────────
+❗ Functional Requirements
+───────────────────────────────────────────────────
+
+## DataManagers
+
+REQ-DM-1: Create `SwiftLoginScreen/DataManagers/MoviesDataManager.swift`
+
+  ```swift
+  final class MoviesDataManager: ObservableObject {
+      @Published var movies: [MoviesData] = []
+      @Published var adminScreenings: [Admin_ScreenData] = []
+
+      func reset() {
+          movies.removeAll()
+          adminScreenings.removeAll()
+      }
+  }
+  ```
+
+  Replaces: `TableData_` (→ `movies`), `ScreenData_2` (→ `adminScreenings`)
+
+REQ-DM-2: Create `SwiftLoginScreen/DataManagers/VenuesDataManager.swift`
+
+  ```swift
+  final class VenuesDataManager: ObservableObject {
+      @Published var venues: [PlacesData] = []
+      @Published var filteredVenues: [PlacesData] = []   // was PlacesData2_
+
+      func reset() {
+          venues.removeAll()
+          filteredVenues.removeAll()
+      }
+  }
+  ```
+
+  Replaces: `PlacesData_` (→ `venues`), `PlacesData2_` (→ `filteredVenues`)
+
+REQ-DM-3: Create `SwiftLoginScreen/DataManagers/AdminDataManager.swift`
+
+  ```swift
+  final class AdminDataManager: ObservableObject {
+      @Published var screenings: [ScreenData] = []
+
+      func reset() {
+          screenings.removeAll()
+      }
+  }
+  ```
+
+  Replaces: `ScreenData_` (→ `screenings`)
+
+REQ-DM-4: Create `SwiftLoginScreen/DataManagers/BasketDataManager.swift`
+
+  ```swift
+  final class BasketDataManager: ObservableObject {
+      @Published var items: [Int: BasketData] = [:]
+      @Published var seats: [SeatsData] = []
+      @Published var tickets: [TicketsData] = []
+      @Published var ticketMap: [String: String] = [:]   // was `tickets [String:String]`
+
+      func reset() {
+          items.removeAll()
+          seats.removeAll()
+          tickets.removeAll()
+          ticketMap.removeAll()
+      }
+  }
+  ```
+
+  Replaces: `BasketData_` (→ `items`), `SeatsData_` (→ `seats`),
+            `TicketsData_` (→ `tickets`), `tickets` dict (→ `ticketMap`)
+
+REQ-DM-5: Register all DataManagers in `AppServices.swift`:
+
+  ```swift
+  let movies  = MoviesDataManager()
+  let venues  = VenuesDataManager()
+  let admin   = AdminDataManager()
+  let basket  = BasketDataManager()
+  ```
+
+REQ-DM-6: All existing view controllers that use the old globals MUST be
+  updated to access the manager via `appServices.*`:
+
+  | Old global      | New access                                   |
+  |-----------------|----------------------------------------------|
+  | `TableData_`    | `appServices.movies.movies`                  |
+  | `ScreenData_2`  | `appServices.movies.adminScreenings`         |
+  | `ScreenData_`   | `appServices.admin.screenings`               |
+  | `PlacesData_`   | `appServices.venues.venues`                  |
+  | `PlacesData2_`  | `appServices.venues.filteredVenues`          |
+  | `BasketData_`   | `appServices.basket.items`                   |
+  | `SeatsData_`    | `appServices.basket.seats`                   |
+  | `TicketsData_`  | `appServices.basket.tickets`                 |
+  | `tickets`       | `appServices.basket.ticketMap`               |
+
+REQ-DM-7: `SeatsData.addData(_:)` and `MoviesData.addData()` static functions
+  MUST be updated to write into the DataManager instead of the bare global:
+
+  ```swift
+  // SeatsData.addData
+  guard let app = UIApplication.shared.delegate as? AppDelegate else { return }
+  app.services.basket.seats.removeAll()
+  // ... append to app.services.basket.seats instead of SeatsData_
+  ```
+
+REQ-DM-8: `deinit` in each VC MUST call the manager's `reset()` method
+  (or keep the list-specific `removeAll()` call on the manager property)
+  instead of calling `removeAll()` on the bare global.
+
+REQ-DM-9: The old bare global declarations MUST be deleted from their source
+  files once all consumers are migrated. Remove in this order:
+    1. `SeatsData_` / `TicketsData_` / `tickets` from PopOver.swift
+    2. `BasketData_` from BasketVC.swift
+    3. `PlacesData_` / `PlacesData2_` from MapViewController.swift
+    4. `ScreenData_` from AdminVC.swift
+    5. `TableData_` / `ScreenData_2` from MoviesVC.swift
+
+REQ-DM-10: SwiftUI views (VenuesMigration) MUST be updated to read from
+  `VenuesDataManager` via `@ObservedObject` / `@EnvironmentObject`:
+
+  ```swift
+  // Before (VenuesMigration.swift)
+  PlacesData_.removeAll()
+  PlacesData_.append(contentsOf: locations)
+
+  // After
+  @EnvironmentObject var venuesManager: VenuesDataManager
+  venuesManager.venues = locations
+  ```
+
+───────────────────────────────────────────────────
+🔗 Architecture Constraints
+───────────────────────────────────────────────────
+
+- DataManagers live in `SwiftLoginScreen/DataManagers/` (new folder)
+- Each DataManager is `final class` conforming to `ObservableObject`
+- DataManagers are held by `AppServices` (not AppDelegate directly)
+- UIKit VCs observe via `AnyCancellable` stored in `var cancellables = Set<AnyCancellable>()`
+- SwiftUI views use `@ObservedObject` injected from the UIKit hosting controller
+- No new third-party dependencies — Combine only
+- Models (`MoviesData`, `SeatsData`, `BasketData`, `TicketsData`, `PlacesData`,
+  `ScreenData`, `Admin_ScreenData`) are NOT refactored in this ticket
+- Static fetch functions on models (`MoviesData.addData()`, `SeatsData.addData()`)
+  are preserved; only their write target changes
+- `tickets [String:String]` dict in PopOver is renamed `ticketMap` in the manager
+  to avoid collision with `TicketsData` array property name
+
+───────────────────────────────────────────────────
+📁 Files to Create / Modify
+───────────────────────────────────────────────────
+
+New:
+- SwiftLoginScreen/DataManagers/MoviesDataManager.swift
+- SwiftLoginScreen/DataManagers/VenuesDataManager.swift
+- SwiftLoginScreen/DataManagers/AdminDataManager.swift
+- SwiftLoginScreen/DataManagers/BasketDataManager.swift
+
+Modified:
+- SwiftLoginScreen/AppServices.swift
+    - Add four DataManager properties
+
+- SwiftLoginScreen/MoviesVC.swift
+    - Remove `var TableData_`, `var ScreenData_2`, `var endOfFile`, `var veil`,
+      `var shouldShowSearchResults` global declarations
+    - Replace all usages with `appServices.movies.*`
+    - Update `deinit` to call `appServices.movies.reset()`
+    - Subscribe to `appServices.movies.$movies` for table view reload if needed
+
+- SwiftLoginScreen/AdminVC.swift
+    - Remove `var ScreenData_` global declaration
+    - Replace usages with `appServices.admin.screenings`
+    - Update `deinit`
+
+- SwiftLoginScreen/AdminUpdateVC.swift
+    - Replace `ScreenData_` with `appServices.admin.screenings`
+    - Replace `ScreenData_2` with `appServices.movies.adminScreenings`
+
+- SwiftLoginScreen/MapViewController.swift
+    - Remove `var PlacesData_`, `var PlacesData2_` global declarations
+    - Replace with `appServices.venues.venues` / `appServices.venues.filteredVenues`
+    - Update `deinit`
+
+- SwiftLoginScreen/VenuesVC.swift
+    - Replace `PlacesData_` / `PlacesData2_` with manager properties
+
+- SwiftLoginScreen/VenuesMigration/VenuesMigration.swift
+    - Replace bare globals with `venuesManager` injected via EnvironmentObject
+
+- SwiftLoginScreen/BasketVC.swift
+    - Remove `var BasketData_` global declaration
+    - Replace `BasketData_` / `SeatsData_` / `TicketsData_` / `tickets` with manager
+
+- SwiftLoginScreen/PopOver.swift
+    - Remove `var SeatsData_`, `var TicketsData_`, `var tickets` global declarations
+    - Replace with `appServices.basket.*`
+
+- SwiftLoginScreen/HomeVC.swift
+    - Replace `BasketData_.count` check with `appServices.basket.items.count`
+
+- SwiftLoginScreen/SeatsData.swift
+    - Update `addData()` to write into `AppDelegate.shared.services.basket.seats`
+
+───────────────────────────────────────────────────
+🔄 Migration Order (phased, to avoid breakage)
+───────────────────────────────────────────────────
+
+Phase 1 — BasketDataManager (highest-risk, most shared):
+  BasketData_, SeatsData_, TicketsData_, tickets dict
+
+Phase 2 — VenuesDataManager:
+  PlacesData_, PlacesData2_
+
+Phase 3 — MoviesDataManager:
+  TableData_, ScreenData_2
+
+Phase 4 — AdminDataManager:
+  ScreenData_
+
+Phase 5 — Delete old global declarations once each phase is verified
+
+───────────────────────────────────────────────────
+🌐 API Integration Pattern (NEW)
+───────────────────────────────────────────────────
+
+Current codebase uses this pattern:
+
+1. **API access**: `UIViewController` subclasses use `appServices.*` injected
+   via `HasAppServices` protocol to call async endpoints:
+
+   ```swift
+   class VenuesVC: UIViewController, HasAppServices {
+       var appServices: AppServices!
+
+       func addLocation() {
+           Task { @MainActor [weak self] in
+               guard let self else { return }
+               do {
+                   let data = try await self.appServices.mbooks.locations()
+                   // process response...
+               } catch {
+                   NSLog("VenuesVC.addLocation: %@", error.localizedDescription)
+               }
+           }
+       }
+   }
+   ```
+
+2. **Available services** (in AppServices / AppDelegate.services):
+   - `mbooks: MbooksService` — cinema booking backend
+   - `loginGateway: LoginGatewayService` — authentication
+   - `images: ImageResourceService` — image fetching + caching
+   - `rapidMovieDatabase: RapidMovieDatabaseService` — external movie data
+
+3. **Response handling**: JSON parsing via SwiftyJSON:
+
+   ```swift
+   let data = try await self.appServices.mbooks.locations()
+   let json = try JSON(data: data)
+   if let list = json["locations"].object as? NSArray {
+       for item in list {
+           // ... parse item, instantiate model, append to global
+       }
+   }
+   ```
+
+**NEW PATTERN: DataManager integration**
+
+Each API endpoint that populates a global MUST be refactored to:
+
+1. **Call the API via AppServices** (unchanged)
+2. **Parse response** (unchanged)
+3. **Write into DataManager** instead of bare global
+
+REQ-API-1: VCs calling APIs that populate data MUST:
+  - Access the DataManager via `self.appServices.<manager>.<property>`
+  - Publish to the `@Published` property directly or call a manager method
+  - Example: Instead of `PlacesData_.append()`, do:
+    ```swift
+    let data = try await self.appServices.mbooks.locations()
+    let json = try JSON(data: data)
+    if let list = json["locations"].object as? NSArray {
+        var locations: [PlacesData] = []
+        for item in list {
+            if let location = PlacesData.fromJSON(item as! NSDictionary) {
+                locations.append(location)
+            }
+        }
+        // Write to manager's @Published property
+        self.appServices.venues.venues = locations
+    }
+    ```
+
+REQ-API-2: Static fetch functions on data models (`SeatsData.addData()`,
+  `MoviesData.addData()`) MUST be updated to write into the manager:
+
+  Before:
+  ```swift
+  class SeatsData {
+      class func addData(_ screeningDateId: Int) {
+          SeatsData_.removeAll()
+          Task { @MainActor in
+              // ... fetch and append to SeatsData_
+          }
+      }
+  }
+  ```
+
+  After:
+  ```swift
+  class SeatsData {
+      class func addData(_ screeningDateId: Int) {
+          Task { @MainActor in
+              guard let app = UIApplication.shared.delegate as? AppDelegate else { return }
+              app.services.basket.seats = []  // reset via manager
+              do {
+                  let data = try await app.services.mbooks.seats(screeningDateId: myString)
+                  let json = try JSON(data: data)
+                  if let list = json["seatsforscreen"].object as? NSArray {
+                      var seats: [SeatsData] = []
+                      for item in list {
+                          if let dataBlock = item as? NSDictionary {
+                              seats.append(SeatsData(add: dataBlock))
+                          }
+                      }
+                      app.services.basket.seats = seats
+                  }
+              } catch {
+                  NSLog("SeatsData.addData: %@", error.localizedDescription)
+              }
+          }
+      }
+  }
+  ```
+
+REQ-API-3: Each DataManager MAY expose convenience methods to reduce
+  boilerplate in VCs (optional, for phase 2+):
+
+  ```swift
+  class VenuesDataManager: ObservableObject {
+      @Published var venues: [PlacesData] = []
+      @Published var filteredVenues: [PlacesData] = []
+
+      func fetchVenues(from service: MbooksService) {
+          Task { @MainActor in
+              do {
+                  let data = try await service.locations()
+                  let json = try JSON(data: data)
+                  if let list = json["locations"].object as? NSArray {
+                      var locations: [PlacesData] = []
+                      for item in list {
+                          if let location = PlacesData.fromJSON(item as! NSDictionary) {
+                              locations.append(location)
+                          }
+                      }
+                      self.venues = locations
+                  }
+              } catch {
+                  NSLog("VenuesDataManager.fetchVenues: %@", error.localizedDescription)
+              }
+          }
+      }
+
+      func reset() {
+          venues.removeAll()
+          filteredVenues.removeAll()
+      }
+  }
+  ```
+
+  Then in VC:
+  ```swift
+  self.appServices.venues.fetchVenues(from: self.appServices.mbooks)
+  ```
+
+REQ-API-4: Error handling MUST be preserved; errors are logged and the
+  manager property remains unchanged (or is set to empty if preferred):
+  - On `.mbooks.*` failure: log, keep existing data or set to []
+  - On JSON parse failure: log, keep existing data or set to []
+  - No silent failures; all errors go to NSLog with context
+
+REQ-API-5: Main-actor calls MUST be preserved; all writes to `@Published`
+  properties happen on the main thread via `@MainActor` or `DispatchQueue.main`
+
+REQ-API-6: Image fetching (via `appServices.images.getData(...)`) is NOT
+  refactored in this ticket; VCs continue to call it directly as today
+
+───────────────────────────────────────────────────
+📊 Success Criteria (updated with API integration)
+───────────────────────────────────────────────────
+
+- [ ] No bare global array/dictionary variables (suffix `_`) remain in the codebase
+      except mode-flag booleans (out of scope)
+- [ ] All four DataManagers exist under SwiftLoginScreen/DataManagers/
+- [ ] AppServices holds and vends all four DataManagers
+- [ ] All VC usages compile and reference manager properties via appServices
+- [ ] SeatsData.addData() and MoviesData.addData() still work correctly
+      (data appears in UI) after migrating write target to manager
+- [ ] All API calls (mbooks.*, images.*, etc.) are routed through appServices
+      and responses are written into the appropriate DataManager
+- [ ] SwiftUI VenuesMigration reads from VenuesDataManager (no bare global)
+- [ ] deinit blocks call manager.reset() instead of global.removeAll()
+- [ ] Error handling is preserved; all errors logged with NSLog
+- [ ] All @Published property writes occur on @MainActor
+- [ ] No regression in: movies list, basket, seat selection, payment, admin flows,
+      image loading, API error handling

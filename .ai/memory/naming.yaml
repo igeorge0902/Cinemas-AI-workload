@@ -1,0 +1,208 @@
+# Naming Conventions & Key Identifiers
+# Durable names, paths, and immutable identifiers only
+# Last Updated: May 16, 2026
+
+document_scope:
+  purpose: "Keep stable package names, path names, headers, schemas, and reserved identifiers in one place."
+  intentionally_excludes:
+    - "method-by-method inventories"
+    - "large UI controller catalogs"
+    - "concrete secret values or environment-specific credentials"
+  canonical_sources:
+    architecture_and_contracts: ".ai/agents/AGENTS.md"
+    implementation_patterns: ".ai/skills/skills-github.md"
+    routing_and_edit_guidance: ".ai/retrieval/instructions.md"
+
+packages:
+  backend_services:
+    dalogin:
+      base: "com.dalogin"
+      stable_subpackages:
+        - "com.dalogin.filters"
+        - "com.dalogin.servlets"
+        - "com.dalogin.client"
+        - "com.dalogin.listeners"
+        - "com.dalogin.utils"
+    mbooks:
+      base: "com.jeet"
+      stable_subpackages:
+        - "com.jeet.rest"
+        - "com.jeet.service"
+        - "com.jeet.booking"
+        - "com.jeet.db"
+        - "com.jeet.broadcasting"
+        - "com.jeet.api"
+    mbook:
+      base: "com.jeet"
+      note: "Shares base package with mbooks for historical compatibility."
+    simple_service_webapp:
+      base: "com.simple"
+      stable_subpackages:
+        - "com.simple.rest"
+
+http_headers:
+  request_headers:
+    X-Token: "Immutable session header name"
+    X-HMAC-HASH: "Immutable HMAC signature header name"
+    X-Device: "Immutable device identity header name"
+    X-Micro-Time: "Immutable client timestamp header name"
+    uuid: "Immutable user/device UUID header name"
+    Ciphertext: "Immutable encrypted-body/header name used by protected flows"
+    token2: "Immutable internal gateway-to-downstream token name"
+    TIME_: "Immutable internal timestamp name; underscore suffix is intentional"
+    XSRF-TOKEN: "Immutable CSRF cookie/header name"
+  response_headers:
+    APIKEY: "Immutable response header used by web payment/session flow"
+
+databases:
+  login_:
+    note: "Underscore suffix is intentional and client/server-visible in configuration."
+    primary_tables:
+      - user_
+      - device_
+      - session_login
+      - voucher_
+  book:
+    primary_tables:
+      - movie
+      - venue
+      - screen
+      - screening_date
+      - seat
+      - ticket
+      - purchase
+
+url_paths:
+  dalogin:
+    - "/login/HelloWorld"
+    - "/login/CheckOut"
+    - "/login/GetAllPurchases"
+    - "/login/ManagePurchases"
+    - "/login/logout"
+    - "/login/admin"
+    - "/login/film-review/"
+  mbooks:
+    - "/mbooks-1/rest/book/movies"
+    - "/mbooks-1/rest/book/locations"
+    - "/mbooks-1/rest/book/venue/v2/{movieId}"
+    - "/mbooks-1/rest/book/venue/movies"
+    - "/mbooks-1/rest/book/dates/{locationId}/{movieId}"
+    - "/mbooks-1/rest/book/seats/{screeningDateId}"
+    - "/mbooks-1/rest/book/payment/clientToken"
+    - "/mbooks-1/rest/book/payment/fullcheckout2"
+    - "/mbooks-1/rest/book/purchases"
+    - "/mbooks-1/rest/book/purchases/tickets"
+    - "/mbooks-1/rest/book/managepurchases"
+    - "/mbooks-1/rest/book/deletepurchases"
+    - "/mbooks-1/ws"
+  mbook:
+    - "/mbook-1/rest/user/profile"
+    - "/mbook-1/rest/device/list"
+    - "/mbook-1/ws"
+  simple_service_webapp:
+    - "/simple-service-webapp/rest/images/movie/{movieId}"
+    - "/simple-service-webapp/rest/images/venue/{venueId}"
+    - "/simple-service-webapp/rest/images/*"
+
+entity_classes:
+  login_schema:
+    - "User"
+    - "Device"
+    - "Session"
+    - "Voucher"
+  book_schema:
+    - "Movie"
+    - "Venue"
+    - "Screen"
+    - "ScreeningDate"
+    - "Seat"
+    - "Ticket"
+    - "Purchase"
+    - "Location"
+
+cache_regions:
+  read_write_cached:
+    - movies
+    - venues
+    - location
+    - ticket
+  intentionally_not_cached:
+    - Seat
+    - ScreeningDate
+    - Screen
+
+environment_variable_names:
+  service_location:
+    - WILDFLY_URL
+    - BOOTSTRAP_URL
+  database:
+    - QUARKUS_DATASOURCE_JDBC_URL
+    - QUARKUS_DATASOURCE_USERNAME
+    - QUARKUS_DATASOURCE_PASSWORD
+  observability:
+    - QUARKUS_OTEL_ENABLED
+    - QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
+    - QUARKUS_OTEL_EXPORTER_OTLP_PROTOCOL
+  security:
+    - AES_SALT
+    - AES_IV
+    - BRAINTREE_MERCHANT_ID
+    - BRAINTREE_PUBLIC_KEY
+    - BRAINTREE_PRIVATE_KEY
+  note: "Keep actual values in environment, manifests, or secrets; do not duplicate them here."
+
+constants:
+  seat_availability:
+    AVAILABLE: "'0'"
+    RESERVED: "'1'"
+    note: "String semantics are part of the existing contract."
+  pagination:
+    DEFAULT_PAGE_SIZE: "10"
+    FIRST_PAGE: "1"
+  braintree:
+    environment: "Sandbox"
+    sdk_versions:
+      JS: "1.44.1"
+      iOS: "5.26.0"
+      Java: "3.36.0"
+  timestamps:
+    orderId_format: "milliseconds since epoch"
+
+reserved:
+  removed_names:
+    serverURL: "Replaced by URLManager-based configuration"
+    GeneralRequestManager: "Replaced by APIClient + BackendServices"
+    CORSFilter: "Dead code path; Apache handles CORS"
+  deprecated_patterns:
+    callback_blocks: "Prefer async/await in iOS code"
+    ".jsp_files": "Use .html resources in Quarkus-served UI"
+    hardcoded_urls: "Use URLManager or environment-based configuration"
+
+service_contracts:
+  dalogin_to_mbooks:
+    header_names:
+      - X-Token
+      - Ciphertext
+      - uuid
+      - TIME_
+    path_prefix: "/mbooks-1/rest/book/"
+  ios_to_backend:
+    header_names:
+      - X-HMAC-HASH
+      - X-Micro-Time
+      - X-Device
+      - uuid
+      - X-Token
+  web_ui_to_backend:
+    key_names:
+      - APIKEY
+      - seatsToBeReserved
+      - payment_method_nonce
+      - orderId
+
+references:
+  api_reference: ".ai/memory/api.yaml"
+  k8s_reference: ".ai/memory/k8s.yaml"
+  testing_reference: ".ai/memory/testing.yaml"
+  code_patterns: ".ai/skills/skills-github.md"
+

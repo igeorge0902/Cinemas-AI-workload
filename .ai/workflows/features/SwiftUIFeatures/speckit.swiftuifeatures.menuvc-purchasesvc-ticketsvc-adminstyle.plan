@@ -1,0 +1,127 @@
+Implementation Plan: MenuVC + PurchasesVC + TicketsVC iOS alignment
+
+## Objective
+Implement the approved admin-style redesign for `MenuVC`, `PurchasesVC`, and `TicketsVC` while preserving current navigation, backend contracts, and runtime behavior.
+
+## Inputs
+- Design reference: `.ai/workflows/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
+- Gap analysis: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.analyze.md`
+- Feature spec: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.specify`
+
+## Phase 1: Menu profile page clarity
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+
+**Work:**
+1. Keep top actions (`Back`, `Purchases`, role-dependent `Admin`) and existing routes.
+2. Present profile page structure in grouped admin-style sections.
+3. Keep backend-driven profile image usage and fallback placeholder behavior.
+4. Remove session-value emphasis from redesign UI copy (username/email/profile image remain primary).
+
+**Acceptance:**
+- Menu screen reads as profile-oriented admin-style page.
+- Existing profile fetch and image load behavior remains unchanged.
+
+## Phase 2: Purchases list UX alignment
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/Storyboard.storyboard` (if needed for constraints)
+
+**Work:**
+1. Keep sort controls and table data behavior unchanged.
+2. Keep movie pictures visible in each purchase row.
+3. Clarify swipe refund affordance in-row (no separate `Details` CTA).
+4. Implement long-press-to-enable-swipe behavior for row refund interaction.
+5. Keep list area close to bottom and internally scrollable.
+6. Add non-blocking overlay feedback bubble for refunded entries (purchase id + movie name accumulation).
+
+**Acceptance:**
+- Row refund interaction is discoverable and follows long-press-then-swipe flow.
+- Purchases list remains scrollable and fully interactive.
+- Refund feedback bubble does not block scrolling/swiping.
+
+## Phase 3: Tickets data, QR, and PDF-view flow
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/TicketsVC.swift`
+
+**Work:**
+1. Keep Tickets title/back/pdf affordances consistent with existing behavior.
+2. Keep ticket rows readable with QR + ticket metadata.
+3. Keep long-press ticket delete reveal interaction as approved design direction.
+4. Preserve actual app flow where Share action is available from PDF view state.
+5. Model PDF open/share/close as in-screen flow in redesign artifacts while keeping real contract unchanged.
+6. Remove any redesign implication that canceling one ticket deletes whole purchase unless explicitly implemented in app logic.
+
+**Acceptance:**
+- Tickets UI reflects QR + metadata clearly.
+- PDF interaction flow matches real behavior expectations.
+- No behavior drift implied in redesign artifacts.
+
+## Phase 4: Backend/data contract preservation
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/DataManagers/AuthDataManager.swift`
+- `SwiftCinemas/SwiftLoginScreen/DataManagers/CheckoutDataManager.swift`
+- `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+
+**Work:**
+1. Keep all existing methods/endpoints and payload contracts unchanged.
+2. Bind UI fields only to existing backend-provided fields.
+3. Where backend does not provide direct UI state (gesture/overlay/preview hints), use local UI state/mock representation.
+
+**Acceptance:**
+- No new backend endpoints/functions introduced.
+- Required fields come from existing data contracts or approved local mock/UI state.
+
+## Phase 4.5: Reusable component side-deliverable (CustomCells track)
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift`
+- `SwiftCinemas/SwiftLoginScreen/FeedCells.swift`
+- `SwiftCinemas/SwiftLoginScreen/UIViewExt.swift`
+- `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/TicketsVC.swift`
+
+**Work:**
+1. Reuse existing CustomCells/shared layout helper patterns for repeated list-row/button visuals.
+2. Extract repeated row/button styling where practical.
+3. Keep behavior contracts unchanged while introducing reusable UI composition.
+
+**Acceptance:**
+- Reusable list-cell/button side-track is implemented for this feature.
+- No regression in menu -> purchases -> tickets flow.
+
+## Phase 5: Verification
+
+**Build gate:**
+- Build `SwiftCinemas.xcworkspace` with the existing iOS scheme used in current checks.
+
+**Regression scope:**
+1. Menu profile load: username/email/profile image behavior.
+2. Purchases flow: sort, row visuals, long-press + swipe refund interaction.
+3. Tickets flow: ticket data/QR rendering, pdf open/share/close behavior.
+4. Contract check: no endpoint/function additions; only existing services used.
+
+## Risks and mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Gesture complexity in Purchases rows | High | Keep state machine simple: long-press enables swipe, second swipe confirms refund |
+| Prototype vs UIKit behavior drift | Medium | Validate each interaction against current VC logic before implementation |
+| Reusable component refactor side effects | Medium | Introduce reusable wrappers incrementally and verify screen by screen |
+| Data contract assumptions | High | Map every UI field to existing DataManager/BackendServices models first |
+
+## Done criteria
+
+- [ ] Menu profile page styling is aligned and session emphasis removed.
+- [ ] Purchases rows show movie images and use long-press-then-swipe refund UX.
+- [ ] Purchases overlay refund bubble is gray, cumulative, and non-blocking.
+- [ ] Tickets shows QR+data and PDF share flow in line with current app behavior.
+- [ ] Reusable list-cell/button side-deliverable is completed.
+- [ ] No new backend functions/endpoints were added.
+- [ ] Build/regression checks pass for menu -> purchases -> tickets flow.
+

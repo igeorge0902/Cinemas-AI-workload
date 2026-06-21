@@ -1,0 +1,169 @@
+Implementation Plan: AdminVC + AdminUpdateVC iOS alignment
+
+## Objective
+Implement the approved admin redesign in UIKit while preserving existing flow contracts.
+
+## Inputs
+- Design reference: `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+- Gap analysis: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md`
+
+## Phase 1: Structure and layout parity
+
+### 1.1 AdminVC storyboard reflow
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/Storyboard.storyboard`
+
+**Work:**
+1. Move `Screening Date` block above capacity fields.
+2. Convert `NrOfRows` + `NrOfSeatsInRow` into one horizontal row.
+3. Remove narrow fixed-width behavior on capacity inputs.
+4. Keep existing outlets, actions, and segue IDs unchanged.
+
+**Acceptance:**
+- Screen order matches prototype.
+- No Auto Layout warnings.
+
+### 1.2 AdminUpdateVC storyboard parity
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/Storyboard.storyboard`
+
+**Work:**
+1. Maintain existing update form semantics while matching grouped section flow.
+2. Keep category field and messaging aligned with optional behavior.
+3. Remove prototype-rejected visual artifacts (pencil emphasis for this redesign pass).
+
+**Acceptance:**
+- Update screen structure matches approved prototype intent.
+- All existing outlets stay connected.
+
+## Phase 2: Button placement and reusable styling
+
+### 2.1 AdminVC actions
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/AdminVC.swift`
+
+**Work:**
+1. Keep top nav via shared helper.
+2. Replace frame-based bottom `Save` button with safe-area-aware layout.
+
+### 2.2 AdminUpdateVC actions
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+
+**Work:**
+1. Replace hardcoded frame-based top and bottom buttons.
+2. Use shared top navigation styling for `Back` + `Clear`.
+3. Anchor `Save` + `Delete` with constraint-based bottom layout.
+
+**Acceptance:**
+- No overlap/tap issues across target simulator sizes.
+- Top buttons visually match redesign baseline.
+
+## Phase 3: Optional category semantics
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/AdminVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+
+**Work:**
+1. Preserve existing non-empty-only validation behavior.
+2. Ensure empty category never blocks create/update.
+3. Update label/help text to indicate optional category.
+
+**Acceptance:**
+- Empty category submits successfully.
+- Invalid non-empty category still shows validation.
+
+## Phase 3.5: Backend prefill binding for AdminUpdateVC
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/DataManagers/AdminScreeningsDataManager.swift`
+- `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+
+**Work:**
+1. Bind AdminUpdateVC field prefill from `AdminDataManager.screeningsForAdminUpdate` selected context.
+2. Ensure selected record hydration uses existing backend fetch paths:
+   - `adminMoviesOnVenues()`
+   - `adminMoviesOnVenuesCategorized(query:)`
+   - `adminMoviesOnVenuesSearch(query:)`
+3. Keep movie/venue fields locked (grayed) and changeable only by popover selection.
+
+**Acceptance:**
+- Admin update fields load with existing backend record values before editing.
+- No endpoint/path contract changes are introduced.
+
+## Phase 4: Popover alignment for admin select flows
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/VenuesVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/DataManagers/AdminScreeningsDataManager.swift`
+- `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+
+**Work:**
+1. Keep existing popover presentation contract (size, anchor, no-arrow style).
+2. Align list styling to admin design language:
+   - movie select: poster + title in admin create mode
+   - movie select update: compact movie-name-only rows
+   - venue select: admin list with explicit original/new indicators below venue name while capacity remains visible
+3. Do not change selection notifications/contracts.
+
+**Acceptance:**
+- Popovers match approved prototype style.
+- Existing selection callbacks continue to work.
+
+## Phase 4.5: Reusable component side-deliverable (CustomCells track)
+
+**Files:**
+- `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift`
+- `SwiftCinemas/SwiftLoginScreen/FeedCells.swift`
+- `SwiftCinemas/SwiftLoginScreen/UIViewExt.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminVC.swift`
+- `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
+
+**Work:**
+1. Reuse existing CustomCells/shared layout helper patterns for repeated admin row/button visuals.
+2. Replace one-off admin row/button styling where feasible with shared reusable building blocks.
+3. Keep original admin behavior, action wiring, and payload contracts unchanged.
+
+**Acceptance:**
+- Reusable row/button side-track is implemented for admin screens.
+- No regression in admin create/update/delete flows.
+
+## Phase 5: Compile and regression verification
+
+**Build gate:**
+- Build `SwiftCinemas.xcworkspace` with the existing project scheme used in prior iOS checks.
+
+**Regression scope:**
+1. Admin create flow: select movie, select venue, set date, rows/seats, save.
+2. Admin update flow: select existing movie entry, change venue/date/category, save/delete/clear.
+   - Verify prefill comes from backend-sourced screening context.
+   - Verify movie update list displays movie names only (no venue prefix).
+   - Verify changed venue state shows original/new marker below name and still shows capacity.
+3. Category optional path for both create and update.
+
+## Risks and mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Storyboard constraint churn | Medium | Apply changes in one pass per screen and verify per-device sizes before further edits |
+| Button overlap/tap issues | High | Use safe-area constraint layout, avoid frame math in `viewWillAppear` |
+| Popover behavior regression | High | Keep current notification and selection contracts unchanged |
+| Visual drift from approved prototype | Medium | Compare each completed phase against prototype section-by-section |
+
+## Done criteria
+
+- [ ] AdminVC order and capacity row match prototype.
+- [ ] AdminUpdateVC visual structure and actions match prototype.
+- [ ] Category is explicitly optional in UI and behavior.
+- [ ] Popovers align with admin style and mode-specific list behavior.
+- [ ] AdminUpdateVC fields prefill from existing backend screening data.
+- [ ] Admin update movie selector shows movie names only.
+- [ ] Reusable list-cell/button component side-deliverable is completed for admin screens.
+- [ ] Build passes and admin create/update/delete/clear flows remain functional.
+
+

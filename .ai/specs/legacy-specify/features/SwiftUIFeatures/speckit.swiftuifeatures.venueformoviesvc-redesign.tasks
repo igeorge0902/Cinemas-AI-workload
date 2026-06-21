@@ -1,0 +1,45 @@
+Phase 1 - Speckit artifact setup (`@ios-dev`)
+
+- [x] Create feature spec: `speckit.swiftuifeatures.venueformoviesvc-redesign.specify`.
+- [x] Create feature plan: `speckit.swiftuifeatures.venueformoviesvc-redesign.plan`.
+- [x] Create feature tasks: `speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`.
+- [x] Create visual prototype: `prototypes/venueformoviesvc-redesign.prototype.html`.
+
+Phase 1A - Replacement mode and compile gate (`@ios-dev`)
+
+- [x] Apply code replacement only for `VenueForMoviesVC` scope in this feature pass.
+- [x] After each replacement chunk, run compile check and resolve build errors before continuing.
+- [x] Do not begin next screen redesign until `VenueForMoviesVC` compiles cleanly.
+
+Phase 2 - VenueForMoviesVC list polish (`@ios-dev`)
+
+- [x] Apply expanded-list inspired row visual hierarchy in `VenueForMoviesVC`.
+- [x] Keep one-row-per-item vertical list presentation.
+- [x] Ensure list remains scrollable and touch-friendly.
+
+Phase 3 - Metadata wiring (`@ios-dev`)
+
+- [x] Show `category` in row cell from existing movies endpoint data.
+- [x] Show `screeningDate` in row cell from existing screening-date endpoint data.
+- [x] Add fallback labels (`Category: N/A`, `Date: TBA`) for missing fields.
+
+Phase 4 - Contract and flow preservation (`@ios-dev`)
+
+- [x] Keep existing Home -> Venues -> MapView -> VenueForMovies navigation behavior.
+- [x] Keep existing selection/navigation handlers unchanged in semantics.
+- [x] Confirm no backend task/endpoint contract changes are introduced.
+
+Phase 5 - Stability and performance (`@ios-dev`)
+
+- [x] Verify smooth scrolling with enriched row metadata.
+- [x] Verify no repeated heavy setup in lifecycle callbacks.
+- [x] Verify image/metadata updates remain reuse-safe for list cells.
+
+Phase 6 - Manual verification handoff (`@user`)
+
+- [ ] Visual verify expanded-list style in VenueForMovies list.
+- [ ] Verify category appears for each row (or fallback).
+- [ ] Verify screening date appears for each row (or fallback).
+- [ ] Verify navigation from list behaves as before.
+- [ ] Verify UIKit-only implementation (no SwiftUI introduced).
+

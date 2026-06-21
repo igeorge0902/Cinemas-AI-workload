@@ -1,0 +1,21 @@
+Feature Plan: migrate k8infra API smoke tests to RestAssured
+
+Objective
+- Replace Python smoke scripts in `k8infra` with Java RestAssured tests.
+- Keep smoke coverage parity for login/admin/activeSessions and mbooks smoke endpoints.
+- Make RestAssured the primary framework from now on.
+
+Role ownership
+- Implementation: `@testing-engineer`, `@backend-dev`
+- Client contract verification: `@frontend-dev`, `@ios-dev`
+- Security review: `@security-specialist`
+- Performance baseline: `@performance-engineer`
+
+Implementation outline
+1. Create Maven test module in `k8infra/api-smoke-restassured`.
+2. Add shared support for config + HMAC login + session propagation.
+3. Port `test-login.py` behavior to `LoginApiSmokeTest`.
+4. Port `test-login-admin.py` behavior to `AdminApiSmokeTest`.
+5. Update `k8infra` docs to use RestAssured commands as primary.
+6. Keep Python scripts as temporary fallback, marked deprecated.
+

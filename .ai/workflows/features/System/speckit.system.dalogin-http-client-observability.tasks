@@ -1,0 +1,54 @@
+Phase 1 — Design decisions (`@backend-dev` + `@security-specialist`)
+- [ ] Confirm two-filter strategy: `ClientCallRequestFilter` (START) + `ClientCallResponseFilter` (END/ERROR).
+- [ ] Confirm `LOG-HTTP-CLIENT` as the dedicated category name.
+- [ ] Confirm `http-client.log` as the dedicated file.
+- [ ] Define masking rules for token2, uuid, Ciphertext, nonce, Cookie values.
+- [ ] Define RequestFilter DEBUG log format (header names only, no values).
+- [ ] Reference this feature from `speckit.system.backend-logging-observability.tasks` as dalogin outbound-call closure dependency.
+- [ ] Confirm OpenTelemetry alignment: logs complement spans and avoid duplicate verbose payload logging.
+
+Phase 2 — ClientResponseFilter (`@backend-dev`)
+- [ ] Implement `ClientCallResponseFilter implements ClientResponseFilter`.
+- [ ] Capture: target URI, HTTP method, response status.
+- [ ] Emit INFO on 2xx/3xx, WARN on 4xx, ERROR on 5xx.
+- [ ] Register `ClientCallResponseFilter` in `ServiceClient` constructor alongside `RequestFilter`.
+- [ ] Verify filter fires for all 8 outbound call paths.
+- [ ] Ensure exception path logging exists for client/network failures before HTTP response is available.
+
+Phase 3 — ClientRequestFilter START events (`@backend-dev`)
+- [ ] Implement `ClientCallRequestFilter implements ClientRequestFilter`.
+- [ ] Emit one START event per outbound request with: downstream service alias, HTTP method, sanitized path/template.
+- [ ] Confirm no parameter/header values (orderId, nonce, uuid, token2, cookies) appear in START logs.
+- [ ] Include stable identification fields: `service`, `downstreamPathTemplate` (trace/correlation context via OpenTelemetry).
+
+Phase 4 — RequestFilter DEBUG tracing (`@backend-dev`)
+- [ ] Add DEBUG log in `RequestFilter.filter()` listing header names added (not values).
+- [ ] Log whether Ciphertext fallback to token2 was used (boolean flag only, not value).
+- [ ] Log cookie names forwarded (not values).
+
+Phase 5 — Security review (`@security-specialist` + `@backend-dev`)
+- [ ] Validate token2, Ciphertext, uuid, nonce are never in any log message.
+- [ ] Validate Cookie values are not logged.
+- [ ] Validate latency and status codes do not expose info usable for timing attacks.
+
+Phase 6 — Log routing (`@backend-dev` + `@devops`)
+- [ ] Add `http-client.log` file handler in `dalogin-quarkus` Quarkus logging config.
+- [ ] Route `LOG-HTTP-CLIENT` category logger to `http-client.log`.
+- [ ] Confirm no cross-mixing with Hibernate, SQL, or other category streams.
+- [ ] Verify rotation/retention policy for `http-client.log` is documented.
+
+Phase 7 — Verification (`@testing-engineer` + `@performance-engineer`)
+- [ ] Verify all 8 ServiceClient call paths produce START + END structured log events.
+- [ ] Verify 5xx and exception paths produce ERROR events.
+- [ ] Verify RequestFilter DEBUG output for header injection.
+- [ ] Verify masking rules in logs match SEC-001/002/003.
+- [ ] Capture overhead baseline (latency delta with/without logging).
+- [ ] Produce evidence bundle: sample logs per call path + negative-path samples + routing proof.
+- [ ] Verify log records are informative but concise (operation + downstream + status), complementing OTel traces.
+
+Phase 8 — Documentation (`@backend-dev`)
+- [ ] Update `dalogin-quarkus/README.md` with LOG-HTTP-CLIENT category and file routing.
+- [ ] Document ServiceClient call map (servlet → method → downstream path).
+- [ ] Update observability docs with `http-client.log` stream reference.
+- [ ] Add quick troubleshooting section: how to enable DEBUG safely and where to inspect masked header traces.
+

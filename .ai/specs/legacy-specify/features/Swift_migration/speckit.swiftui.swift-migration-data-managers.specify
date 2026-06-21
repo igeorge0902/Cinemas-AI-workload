@@ -1,0 +1,333 @@
+# Swift iOS Data Manager Migration - Specification
+
+**Feature:** iOS Data Manager Pattern Refactoring
+**Prefix:** `REQ-SWIFT-MIG-*`
+**Status:** Draft - Ready for Implementation
+**Priority:** High
+**Complexity:** Medium
+**Time Estimate:** 14.5 hours implementation + 3 hours testing
+
+---
+
+## Overview
+
+Currently, ViewControllers in SwiftCinemas directly access networking layers and manage raw data parsing. This creates tight coupling, difficult testing, and scattered error handling logic. The iOS Data Manager Migration refactors all network logic into centralized **shared static data managers**, each responsible for a specific business domain.
+
+**Goal:** Remove endpoint orchestration/parsing code from ViewControllers while preserving all existing functionality and the current `AppDelegate`-owned injection layout (`HasAPIClient`, `injectAPIClientIfNeeded`, `HasAppServices`).
+
+---
+
+## Problem Statement
+
+### Current Architecture Issues
+1. **Scattered Networking:** Each ViewController imports `BackendServices` and manages async calls directly
+2. **Redundant Code:** Multiple VCs repeat the same API call patterns (movies fetch, venue queries, etc.)
+3. **Mixed Concerns:** VCs responsible for both UI logic AND data fetching/parsing
+4. **Hard to Test:** Can't unit test VCs without spinning up real network infrastructure
+5. **Error Handling Duplicated:** Each VC implements its own error interpretation and UI feedback
+6. **Type Unsafe:** Raw JSON parsing scattered throughout, prone to decoding errors
+
+### Target Architecture Benefits
+1. **Separation of Concerns:** VCs handle UI only; managers handle data/networking
+2. **Reusability:** Multiple VCs can share the same manager instance
+3. **Testability:** Managers can be unit tested with mocks; VCs can be tested with stubbed managers
+4. **Consistency:** All network errors handled uniformly, logged centrally
+5. **Type Safety:** Models defined once, used consistently
+6. **Maintainability:** New developers see data flow immediately; debugging is isolated
+
+---
+
+## Target Architecture
+
+### Naming Convention
+All data manager classes follow the pattern: **`XyzDataManager`**
+
+Examples:
+- `MoviesDataManager` — movies list, details, search
+- `SeatsDataManager` — seat availability, reservations
+- `VenuesDataManager` — venues, screens, schedules
+- `DatesDataManager` — screening dates, times
+- `LocationsDataManager` — cinema locations, maps
+- `AuthDataManager` — login, signup, token refresh
+- `CheckoutDataManager` — payment, purchases, refunds
+- `AdminDataManager` — admin-only operations
+
+### Base Protocol: `SharedDataManager`
+```swift
+protocol SharedDataManager {
+    associatedtype Model
+
+    static var shared: Self { get }
+
+    // All methods are:
+    // - async throws (native Swift concurrency)
+    // - return typed models (not raw Data)
+    // - log errors with domain prefix (e.g., "[Movies]")
+    // - execute on @MainActor or as specified
+}
+```
+
+### Data Flow Pattern
+```
+ViewController
+    ↓
+[calls]
+    ↓
+DataManager.shared.fetchXyz(params...)
+    ↓
+[async/await]
+    ↓
+BackendServices.mbooks.getMovies(...)
+    ↓
+[returns raw response]
+    ↓
+[DataManager parses & validates]
+    ↓
+[returns typed model: [Movie]]
+    ↓
+ViewController receives model, updates UI
+```
+
+### Error Handling Pattern
+1. DataManager catches network/decode errors
+2. DataManager logs with prefix: `NSLog("[Movies] fetch failed: %@", error)`
+3. DataManager rethrows as `AppError` or custom domain error
+4. ViewController catches and displays user-friendly alert
+
+---
+
+## Scope
+
+### In Scope
+- ✅ Create 8 data managers (Movies, Seats, Dates, Venues, Locations, Auth, Checkout, Admin)
+- ✅ Migrate 20 ViewControllers to use managers
+- ✅ Remove unused extensions left behind by VC/network migration cleanup
+- ✅ Update existing Speckit constitution
+- ✅ Create implementation guide and examples
+- ✅ No changes to `BackendServices` or networking layer
+- ✅ No changes to data models or Realm storage
+- ✅ No changes to Storyboards or UI layout
+
+### Out of Scope
+- ❌ Migrate to SwiftUI (remains UIKit)
+- ❌ Add new API endpoints (use existing only)
+- ❌ Implement caching strategies beyond Realm
+- ❌ Introduce a new DI framework/container (keep existing protocol-based injection from `AppDelegate.services`)
+- ❌ Change Braintree payment flow
+- ❌ Modify authentication headers
+- ❌ Mandatory test implementation/execution in this migration (deferred until further notice)
+
+---
+
+## Requirements
+
+### R01: Data Manager Base Protocol
+- **REQ-SWIFT-MIG-001:** All data managers implement `SharedDataManager` protocol
+- **REQ-SWIFT-MIG-002:** Each manager provides `static let shared` singleton instance
+- **REQ-SWIFT-MIG-003:** All public methods use `async throws` (native Swift concurrency)
+- **REQ-SWIFT-MIG-004:** All methods return strongly-typed models (never raw `Data` or `[String: Any]`)
+- **REQ-SWIFT-MIG-005:** Errors logged with domain prefix before rethrow (e.g., `"[Movies]"`)
+
+### R02: Movies Manager
+- **REQ-SWIFT-MIG-010:** `MoviesDataManager.fetchMovies()` → `[Movie]`
+- **REQ-SWIFT-MIG-011:** `MoviesDataManager.searchMovies(query:)` → `[Movie]`
+- **REQ-SWIFT-MIG-012:** `MoviesDataManager.getMovieDetail(id:)` → `Movie`
+- **REQ-SWIFT-MIG-013:** Movies cached in Realm; invalidate on fetch
+- **REQ-SWIFT-MIG-014:** Return empty array `[]` on network error (silent fallback for browsing)
+
+### R03: Seats Manager
+- **REQ-SWIFT-MIG-020:** `SeatsDataManager.fetchSeats(screeningId:)` → `[Seat]`
+- **REQ-SWIFT-MIG-021:** `SeatsDataManager.reserveSeats(screeningId:seats:)` → `[Seat]` (updated)
+- **REQ-SWIFT-MIG-022:** Pessimistic locking honored by backend
+- **REQ-SWIFT-MIG-023:** Throw `AppError.networkFailure` on conflict/timeout
+
+### R04: Venues Manager
+- **REQ-SWIFT-MIG-030:** `VenuesDataManager.fetchVenues()` → `[Venue]`
+- **REQ-SWIFT-MIG-031:** `VenuesDataManager.getScreens(venueId:)` → `[Screen]`
+- **REQ-SWIFT-MIG-032:** `VenuesDataManager.getSeatsForScreen(screenId:date:)` → `[Seat]`
+
+### R05: Dates Manager
+- **REQ-SWIFT-MIG-040:** `DatesDataManager.fetchDates(venueId:movieId:)` → `[ScreeningDate]`
+- **REQ-SWIFT-MIG-041:** Dates returned in ascending order
+
+### R06: Locations Manager
+- **REQ-SWIFT-MIG-050:** `LocationsDataManager.fetchLocations()` → `[Location]`
+- **REQ-SWIFT-MIG-051:** Support map coordinate lookups
+
+### R07: Auth Manager
+- **REQ-SWIFT-MIG-060:** `AuthDataManager.login(username:password:)` → `SessionToken`
+- **REQ-SWIFT-MIG-061:** `AuthDataManager.signup(user:)` → `User`
+- **REQ-SWIFT-MIG-062:** `AuthDataManager.refreshToken()` → `SessionToken`
+- **REQ-SWIFT-MIG-063:** Throw `AppError.authRequired` on 401/403
+- **REQ-SWIFT-MIG-064:** Update session headers automatically via `SessionHeaderProvider`
+
+### R08: Checkout Manager
+- **REQ-SWIFT-MIG-070:** `CheckoutDataManager.getClientToken()` → `BraintreeClientToken`
+- **REQ-SWIFT-MIG-071:** `CheckoutDataManager.submitPayment(nonce:amount:)` → `Purchase`
+- **REQ-SWIFT-MIG-072:** `CheckoutDataManager.fetchPurchases()` → `[Purchase]`
+- **REQ-SWIFT-MIG-073:** Handle Braintree errors gracefully; provide user feedback
+
+### R09: Admin Manager
+- **REQ-SWIFT-MIG-080:** `AdminDataManager.updateMovie(movie:)` → `Movie`
+- **REQ-SWIFT-MIG-081:** `AdminDataManager.updateVenue(venue:)` → `Venue`
+- **REQ-SWIFT-MIG-082:** `AdminDataManager.updateScreen(screen:)` → `Screen`
+- **REQ-SWIFT-MIG-083:** Throw `AppError.forbidden` if user lacks admin role
+
+### R10: ViewController Migration
+- **REQ-SWIFT-MIG-090:** All ViewControllers use `XyzDataManager.shared` for domain data operations instead of direct endpoint invocations via service instances
+- **REQ-SWIFT-MIG-091:** No `@State` or networking logic remains in ViewController code
+- **REQ-SWIFT-MIG-092:** Error handling centralized (managers log; VCs display alerts)
+- **REQ-SWIFT-MIG-093:** Remove direct endpoint invocations from VCs (for example `app.services.mbooks.*`, `app.services.loginGateway.*`) but keep protocol-based injection wiring
+- **REQ-SWIFT-MIG-094:** Replace callback-based patterns with `async/await`
+
+### R11: Testing
+- **REQ-SWIFT-MIG-100:** Unit tests are deferred and optional until further notice; they do not block implementation sign-off
+- **REQ-SWIFT-MIG-101:** Integration tests are deferred and optional until further notice; they do not block implementation sign-off
+- **REQ-SWIFT-MIG-102:** Appium E2E execution is deferred and optional until further notice; it does not block implementation sign-off
+- **REQ-SWIFT-MIG-103:** Manual functional verification remains required for migrated flows
+- **REQ-SWIFT-MIG-104:** No regression in movie browsing, seat selection, or payment (validated by implementation review/manual checks while test phase is deferred)
+
+### R12: Documentation
+- **REQ-SWIFT-MIG-110:** Implementation guide with code examples
+- **REQ-SWIFT-MIG-111:** ViewController migration patterns (before/after)
+- **REQ-SWIFT-MIG-112:** Architecture decision records (ADRs)
+- **REQ-SWIFT-MIG-113:** Quick reference for developers
+- **REQ-SWIFT-MIG-114:** Speckit constitution updated with pattern documentation
+
+### R13: Non-Regression
+- **REQ-SWIFT-MIG-120:** All existing functionality preserved
+- **REQ-SWIFT-MIG-121:** No changes to API contracts (HTTP methods, paths, headers)
+- **REQ-SWIFT-MIG-122:** No changes to data models or Realm schema
+- **REQ-SWIFT-MIG-123:** No changes to Storyboards or UI layout
+- **REQ-SWIFT-MIG-124:** No changes to Backend services
+- **REQ-SWIFT-MIG-125:** Preserve existing ownership/injection structure: `AppDelegate` -> `AppServices`, `HasAPIClient`/`injectAPIClientIfNeeded`, and `HasAppServices`
+
+### R14: Cleanup
+- **REQ-SWIFT-MIG-130:** Remove unused extensions and extension members made obsolete by manager migration
+- **REQ-SWIFT-MIG-131:** Remove extension code only after confirming no active call sites remain in migrated flows
+
+---
+
+## Acceptance Criteria
+
+### Functional AC
+- ✅ All 8 data managers created and compile without warnings
+- ✅ All 20 ViewControllers refactored and compile without warnings
+- ✅ Movie browsing works (list, search, detail)
+- ✅ Seat selection works (venue → date → screen → seats)
+- ✅ Checkout flow works (client token → payment submission → purchase)
+- ✅ Login and signup work with new auth manager
+- ✅ Admin operations work (if user has role)
+- ✅ Image caching continues to work with Realm
+- ✅ All session headers injected correctly (X-Token, uuid, etc.)
+
+### Code Quality AC
+- ✅ No compiler errors or warnings
+- ✅ All data managers have type-safe APIs (no raw JSON in VCs)
+- ✅ Error handling centralized (domain-prefixed logs + AppError)
+- ✅ Optional (deferred): Unit test coverage targets documented
+- ✅ Optional (deferred): Integration test strategy documented
+- ✅ Memory profiling shows no leaks (Instruments check)
+- ✅ No circular dependencies (managers don't import VCs)
+
+### Testing AC
+- ✅ Testing tasks are explicitly deferred/optional and are not required for implementation completion until further notice
+- ✅ Manual smoke tests on real device/simulator pass
+- ✅ Core migrated flows remain functionally intact by review and manual verification
+
+### Documentation AC
+- ✅ Implementation guide explains base protocol and patterns
+- ✅ Before/after examples show VC migration clearly
+- ✅ Quick reference covers common tasks and pitfalls
+- ✅ README updated with architecture overview
+- ✅ Speckit constitution updated with pattern documentation
+- ✅ New developers can understand patterns in < 1 hour
+
+---
+
+## Implementation Timeline
+
+| Phase | Task | Hours | Owner |
+|-------|------|-------|-------|
+| 1 | Create base `SharedDataManager` protocol | 1 | iOS Dev |
+| 2a | Create `MoviesDataManager` | 1.5 | iOS Dev |
+| 2b | Create `SeatsDataManager` | 1 | iOS Dev |
+| 2c | Create `DatesDataManager`, `VenuesDataManager`, `LocationsDataManager` | 2 | iOS Dev |
+| 3 | Create `AuthDataManager`, `CheckoutDataManager` | 1.5 | iOS Dev |
+| 4 | Create `AdminDataManager` | 0.5 | iOS Dev |
+| 5 | Optional (deferred) test implementation | 2 | iOS Dev |
+| 6 | Migrate ViewControllers (bulk refactor) | 3 | iOS Dev |
+| 7 | Optional (deferred) integration testing + bug fixes | 1.5 | iOS Dev + QA |
+| 8 | Performance profiling & optimization | 1 | iOS Dev |
+
+**Total:** 14.5 hours implementation + 3 hours testing = **17.5 hours**
+
+---
+
+## Risk & Mitigation
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|-----------|
+| Incomplete VC migration | Medium | High | Grep for direct endpoint invocations (`app.services.<service>.<endpoint>`); code review checklist; keep injection helpers intact |
+| Regression in checkout | Low | High | Manual flow verification each migration; optional Appium if re-enabled |
+| Memory leaks from singletons | Low | High | Profile with Instruments; use `[weak self]` in closures |
+| Auth header loss | Low | High | Verify `SessionHeaderProvider` auto-injected in managers |
+| JSON decode failures | Medium | Medium | Manager-level defensive parsing + manual scenario checks |
+| Circular dependencies | Low | Medium | Strict rule: managers don't import VCs |
+
+---
+
+## Success Metrics
+
+### Quantitative
+- 8/8 data managers implemented
+- 20/20 ViewControllers refactored
+- Deferred test status documented (unit/integration/Appium)
+- 0 compiler warnings
+- 0 memory leaks detected (Instruments)
+- < 5% performance delta (load times, memory)
+
+### Qualitative
+- New developers understand data manager pattern in < 1 hour
+- Code reviews show consistent use of managers
+- Support tickets indicate no confusion about where to put network code
+- Team confidence in iOS architecture increased
+
+---
+
+## Rollback Plan
+
+If critical issues discovered after implementation:
+
+1. **Partial rollback:** Revert specific VC if issues isolated (git revert commit)
+2. **Full rollback:** `git revert` all manager + VC changes; keep managers in codebase for future attempt
+3. **Time estimate:** < 1 hour to revert; 1 hour to validate rollback
+
+No database or backend changes required (purely client-side refactor).
+
+---
+
+## Related Documents
+
+- **Overview:** `00-MIGRATION-OVERVIEW.md`
+- **Implementation Guide:** `01-IMPLEMENTATION-GUIDE.md`
+- **Ready-to-Use Code:** `02-READY-TO-IMPLEMENT.md`
+- **ViewController Examples:** `03-ViewController-Migration-Examples.md`
+- **Quick Reference:** `04-Quick-Reference.md`
+- **README Index:** `README.md`
+
+---
+
+## Approval Sign-Off
+
+- [ ] Architecture Lead: _____________________ Date: _____
+- [ ] iOS Tech Lead: _____________________ Date: _____
+- [ ] QA Lead: _____________________ Date: _____
+- [ ] Project Manager: _____________________ Date: _____
+
+---
+
+**Status:** ✅ Ready for Implementation
+**Version:** 1.0
+**Last Updated:** May 5, 2026
+

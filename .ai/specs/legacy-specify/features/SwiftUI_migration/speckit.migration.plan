@@ -1,0 +1,79 @@
+Architecture Plan
+
+1. Mode Abstraction (NEW)
+
+enum VenuesMode {
+    case standard
+    case admin
+    case map
+}
+
+2. ViewModel Expansion
+
+VenuesViewModel will manage:
+
+- Venues (standard mode)
+- Locations (admin/map modes)
+- Selected venue/location
+- Map region
+- Annotation state
+
+3. Global State Strategy
+
+Phase 1 (Compatibility):
+- Continue using:
+  - PlacesData_
+  - PlacesData2_
+
+Phase 2 (Migration):
+- Move data into ViewModel
+- Replace globals with observable state
+
+4. Notification Strategy
+
+Phase 1:
+- Keep NotificationCenter
+
+Phase 2:
+- Replace with:
+  - @EnvironmentObject
+  - Shared observable state
+
+5. Map Integration
+
+- Use SwiftUI Map (iOS 14+)
+
+Backed by:
+- MKCoordinateRegion
+- MKPointAnnotation
+
+6. View Composition
+
+VenuesView
+ ├── Header (Back button)
+ ├── Content (switch by mode)
+ │     ├── StandardListView
+ │     ├── AdminListView
+ │     └── MapView
+ └── DetailsPanel (standard mode only)
+ StandardListView
+    - Displays venues from ViewModel
+    - Navigates to VenuesDetailsVC on selection
+        - Shows location details on the VenuesView on selection at the bottom
+
+7. Data Flow
+
+Standard:
+API → ViewModel → View
+
+Admin/Map:
+Global arrays → ViewModel → View
+
+8. UIKit Bridge
+
+- Inject:
+  - VenuesInput
+  - VenuesMode
+- Maintain storyboard segue compatibility
+- Ensure VenuesViewModel can be initialized with mode and data source
+- Use feature flags or conditional logic to handle mode-specific behavior during migration

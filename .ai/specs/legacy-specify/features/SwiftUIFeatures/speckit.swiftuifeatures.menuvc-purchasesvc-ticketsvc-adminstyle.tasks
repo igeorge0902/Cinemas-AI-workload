@@ -1,0 +1,111 @@
+# MenuVC + PurchasesVC + TicketsVC alignment tasks
+
+## Guardrails (UIKit, design-only)
+
+- [ ] **G.1 Keep scope to redesign alignment only**
+  - No feature expansion beyond approved design behavior.
+  - Keep existing routes, payload keys, notifications, and backend service contracts intact.
+
+## Phase 0: Field mapping prerequisite
+
+- [ ] **0.1 Use field mapping baseline**
+  - Required input: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.uikit-field-mapping-implementation-plan.md`
+  - Map every implemented UI field to backend or local/mock source before coding.
+
+- [ ] **0.2 Respect source classification**
+  - Backend-mapped fields must use existing DataManager/BackendServices methods only.
+  - Local/mock fields must remain local UI state and must not trigger new endpoint/function work.
+
+## Phase 1: Menu profile page clarity
+
+- [ ] **1.1 Keep Menu routes/actions intact** in `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+  - Preserve `Back`, `Purchases`, and role-dependent `Admin` action wiring.
+
+- [ ] **1.2 Profile page visual structure** in `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+  - Align profile data section to grouped admin-style card hierarchy.
+  - Keep backend-driven username/email/profile image behavior.
+
+- [ ] **1.3 Remove session emphasis in redesign UI**
+  - Do not surface session value as a primary profile field in redesign artifacts.
+
+## Phase 2: Purchases list UX alignment
+
+- [ ] **2.1 Keep purchases data/sort behavior unchanged** in `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+  - Preserve sorting and existing data-source behavior.
+
+- [ ] **2.2 Show movie images in purchase rows** in `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+  - Keep row image loading behavior visible in redesigned row style.
+
+- [ ] **2.3 Long-press + swipe refund interaction** in `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+  - Long-press enables swipe state.
+  - Swipe interaction reveals/executes refund semantics per approved UX.
+
+- [ ] **2.4 Scroll + bottom-near list area behavior**
+  - Ensure list remains scrollable and close to bottom content edge.
+
+- [ ] **2.5 Refund feedback bubble behavior**
+  - Use non-blocking gray overlay bubble.
+  - Show cumulative refunded entries with purchase ID + movie name.
+
+## Phase 3: Tickets + PDF flow alignment
+
+- [ ] **3.1 Keep ticket data + QR readability** in `SwiftCinemas/SwiftLoginScreen/TicketsVC.swift`
+  - Ticket metadata and QR remain clear in redesigned card/list layout.
+
+- [ ] **3.2 Keep long-press delete reveal behavior**
+  - Align UI affordance with approved redesign interaction.
+
+- [ ] **3.3 Keep PDF/share behavior aligned to app reality**
+  - Share action represented from PDF view flow.
+  - Avoid implying whole-purchase delete from single ticket cancel unless implemented.
+
+## Phase 4: Backend/data contract preservation
+
+- [ ] **4.1 Preserve existing DataManager/BackendServices usage**
+  - `SwiftCinemas/SwiftLoginScreen/DataManagers/AuthDataManager.swift`
+  - `SwiftCinemas/SwiftLoginScreen/DataManagers/CheckoutDataManager.swift`
+  - `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`
+
+- [ ] **4.2 No new endpoints/functions**
+  - Bind required fields only to current contracts.
+  - Use local UI mock/state where backend does not provide interaction-state data.
+
+## Phase 4.5: Reusable components side-deliverable
+
+- [ ] **4.5.1 Reuse existing CustomCells/layout helpers**
+  - `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift`
+  - `SwiftCinemas/SwiftLoginScreen/FeedCells.swift`
+  - `SwiftCinemas/SwiftLoginScreen/UIViewExt.swift`
+
+- [ ] **4.5.2 Apply reusable row/button patterns across target VCs**
+  - `SwiftCinemas/SwiftLoginScreen/MenuVC.swift`
+  - `SwiftCinemas/SwiftLoginScreen/PurchasesVC.swift`
+  - `SwiftCinemas/SwiftLoginScreen/TicketsVC.swift`
+
+## Phase 5: Verification
+
+- [ ] **5.1 Build gate**
+  - Build workspace and confirm no compile errors.
+
+- [ ] **5.2 Menu flow check**
+  - Verify profile data + image behavior and top actions.
+
+- [ ] **5.3 Purchases flow check**
+  - Verify sorting, images, long-press + swipe refund UX, scroll behavior.
+  - Verify gray cumulative refund bubble remains non-blocking.
+
+- [ ] **5.4 Tickets flow check**
+  - Verify ticket data/QR rendering and PDF open/share/close behavior.
+
+- [ ] **5.5 Contract check**
+  - Verify no new backend methods/endpoints were introduced.
+
+- [ ] **5.6 Reusable deliverable check**
+  - Confirm reusable list-cell/button side-track is completed.
+
+## Constraints
+
+- Keep payload keys and route/segue contracts unchanged.
+- Keep notification contracts unchanged.
+- Keep backend headers/auth contracts unchanged.
+

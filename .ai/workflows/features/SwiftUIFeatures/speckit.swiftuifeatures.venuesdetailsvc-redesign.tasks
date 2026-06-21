@@ -1,0 +1,42 @@
+Phase 1 - Speckit artifact setup (`@ios-dev`)
+
+- [x] Create feature spec: `speckit.swiftuifeatures.venuesdetailsvc-redesign.specify`.
+- [x] Create feature plan: `speckit.swiftuifeatures.venuesdetailsvc-redesign.plan`.
+- [x] Create tasks file: `speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`.
+- [x] Create visual prototype: `prototypes/venuesdetailsvc-redesign.prototype.html`.
+
+Phase 1A - Replacement mode and compile gate (`@ios-dev`)
+
+- [x] Apply code replacement only for `VenuesDetailsVC` scope in this feature pass.
+- [x] After each replacement chunk, run compile check and resolve build errors before continuing.
+- [x] Do not begin next screen redesign until `VenuesDetailsVC` compiles cleanly.
+
+Phase 2 - VenuesDetailsVC layout refactor (`@ios-dev`)
+
+- [x] Keep top movie media area rectangular in `VenuesDetailsVC`.
+- [x] Introduce scroll-offset driven blur mapping over hero media.
+- [x] Ensure details text block appears before actions.
+- [x] Convert action area to vertically aligned button stack.
+- [x] Keep back affordance visible and consistent.
+
+Phase 3 - Preserve action contracts (`@ios-dev`)
+
+- [x] Keep existing selectors wired: `book`, `dates`, `map`, `movieDetail`, `selectCalendar`, `navigateBack`.
+- [x] Keep existing segues/popovers and payload contracts unchanged.
+- [x] Keep existing data-manager reads/writes unchanged.
+
+Phase 4 - Stability and performance (`@ios-dev`)
+
+- [x] Verify one-time setup guards still prevent duplicate subviews/player setup.
+- [x] Verify no repeated observation/layout churn during repeated open/close cycles.
+- [x] Verify blur updates are clamped and do not cause scroll jank.
+
+Phase 5 - Manual verification handoff (`@user`)
+
+- [x] Visual verify against `image1.png` direction and prototype hierarchy.
+- [x] Verify scroll-up blur and content reveal behavior.
+- [x] Verify text-first and vertical-buttons ordering.
+- [x] Verify Book -> Seats popover still opens and behaves.
+- [x] Verify Dates popover, Map, Movie Detail, Calendar, Back all still work.
+- [x] Verify UIKit-only implementation (no SwiftUI introduced).
+

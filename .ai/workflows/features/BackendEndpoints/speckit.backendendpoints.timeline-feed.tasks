@@ -1,0 +1,73 @@
+Phase 0 — Requirement alignment (`@business-analyst` + `@backend-dev`)
+
+- [ ] Confirm final endpoint naming, filter semantics, and acceptance criteria with consumers.
+- [ ] Confirm movie/actor content rules and publish/expire lifecycle expectations.
+
+Phase 1 — Contract and DTO (`@backend-dev` + `@business-analyst`)
+
+- [ ] Add endpoint contract to `BookController` for `GET /rest/book/timeline-feed`.
+- [ ] Define response DTO for timeline items and feed page envelope (`items`, `nextCursor`).
+- [ ] Add query param defaults/validation for `limit`, `kind`, `cursor`.
+- [ ] Add `400` JSON error behavior for invalid parameters.
+- [ ] Reference `CID-MBOOKS-TIMELINE` in spec/tasks and keep `.github/references/CONTRACTS_INDEX.md` updated.
+
+Phase 2 — Database schema and migration (`@database-dev` + `@backend-dev`)
+
+- [ ] Add new booking DB table: `timeline_content`.
+- [ ] Add required columns and constraints for movie/actor news content.
+- [ ] Add indexes for keyset scan and kind filtering.
+- [ ] Add seed data for both `movie` and `actor` kinds.
+
+Phase 3 — DAO keyset pagination (`@database-dev` + `@backend-dev`)
+
+- [ ] Add DAO query using keyset pagination (`publish_at`, `id`).
+- [ ] Enforce visibility constraints (`is_active`, publish/expire window).
+- [ ] Apply optional `kind` filter and `limit` cap.
+- [ ] Return one extra row to compute `nextCursor` safely.
+
+Phase 4 — Service wiring and cursor handling (`@backend-dev`)
+
+- [ ] Add `BookingHandlerImpl` method for timeline feed retrieval.
+- [ ] Implement cursor encode/decode helpers (opaque token format).
+- [ ] Map DB rows to API DTO fields.
+- [ ] Guarantee deterministic ordering for all pages.
+
+Phase 5 — Controller response assembly (`@backend-dev`)
+
+- [ ] Return JSON with `items` and `nextCursor`.
+- [ ] Return empty `items` + `nextCursor=null` when no more content.
+- [ ] Keep content type aligned with existing JSON endpoints.
+
+Phase 6 — Tests (`@testing-engineer` + `@backend-dev` + `@database-dev`)
+
+- [ ] Add tests for first page retrieval.
+- [ ] Add tests for next page retrieval using returned cursor.
+- [ ] Add tests for invalid/malformed cursor -> `400`.
+- [ ] Add tests for `kind` filter behavior.
+- [ ] Add tests for expired/inactive records exclusion.
+
+Phase 7 — Consumer contract verification (`@frontend-dev` + `@ios-dev`)
+
+- [ ] Validate response field names and types against Web consumer expectations.
+- [ ] Validate response field names and types against iOS consumer expectations.
+- [ ] Confirm pagination semantics are clear for both clients.
+
+Phase 8 — Observability and docs (`@backend-dev` + `@devops`)
+
+- [ ] Add endpoint metric/log fields (`limit`, `kind`, `cursorPresent`, `resultCount`).
+- [ ] Document endpoint contract and curl examples in `mbooks-quarkus/README.md`.
+- [ ] Add rollout verification note for minikube environment.
+- [ ] Ensure module README and contract index entries match implemented endpoint path and status.
+
+Phase 9 — Security checks (`@security-specialist` + `@backend-dev`)
+
+- [ ] Validate cursor token hardening and malformed token handling (`400`, no internal error leak).
+- [ ] Validate response does not expose non-contract/internal fields.
+- [ ] Validate endpoint behavior under unexpected/invalid query inputs.
+
+Phase 10 — Performance checks (`@performance-engineer` + `@database-dev` + `@backend-dev`)
+
+- [ ] Run baseline load test for first-page timeline query.
+- [ ] Run deep-page cursor test to verify stable latency and no duplicate rows.
+- [ ] Capture and document p95 latency target for default `limit=20`.
+

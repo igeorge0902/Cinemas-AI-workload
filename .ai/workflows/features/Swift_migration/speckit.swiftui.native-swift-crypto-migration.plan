@@ -1,0 +1,78 @@
+# Native Swift Crypto Migration - Implementation Plan
+
+**Feature:** Replace CryptoJS/JavaScriptCore with Native Swift Crypto
+**Spec:** `speckit.swiftui.native-swift-crypto-migration.specify`
+**Status:** Completed
+**Risk Level:** Medium (managed)
+
+---
+
+## Objective (Delivered)
+
+Deliver native Swift cryptography for active iOS auth/signing/ciphertext flows while preserving backend wire compatibility.
+
+---
+
+## Execution Summary
+
+### Phase 1: Baseline and Compatibility Vectors
+**Status:** Completed
+- Active call sites were identified across login/signup/HMAC/AES paths.
+- Contract-sensitive formatting expectations were preserved (request string composition, encoding, digest representation).
+
+### Phase 2: Native Crypto Facade
+**Status:** Completed
+- Implemented native helper surface in `SwiftCinemas/SwiftLoginScreen/CryptoJS.swift` as `NativeCrypto`.
+- Included hashing, HMAC, and AES utilities required by active flows.
+- Product decision: no migration toggle; full cutover with git rollback path.
+
+### Phase 3: Call-Site Migration
+**Status:** Completed
+- `LoginVC.swift` and `SignupVC.swift` now hash with `NativeCrypto.sha3Hex`.
+- `ciphertext.swift` now uses native AES helper.
+- `AuthDataManager.swift` and `Networking/BackendServices.swift` share native HMAC signing logic via `NativeCrypto.loginHMAC`.
+- Sensitive signing-secret logging removed from active path.
+
+### Phase 4: Legacy Dependency Cleanup
+**Status:** Completed
+- No active `JavaScriptCore` crypto dependency in production path.
+- Legacy CryptoJS `.js` files removed from app target Resources build phase.
+- Project retains legacy JS files in source tree only as non-runtime artifacts.
+
+### Phase 5: Verification and Handoff
+**Status:** Completed
+- Build + integration testing performed against migrated login flow.
+- Password-hash parity issue identified and resolved by switching to Keccak-compatible SHA3 behavior.
+- Final migration documentation updated.
+
+---
+
+## Key Technical Decisions
+
+1. **Keccak compatibility:** Legacy `CryptoJS.SHA3` contract required Keccak variants rather than NIST SHA3 variants.
+2. **Single signing implementation:** Sign-in and sign-up HMAC use one shared native helper.
+3. **No toggle rollout:** Team explicitly chose full replacement without runtime fallback toggle.
+
+---
+
+## Deliverables Completed
+
+- Native crypto facade in app code (`NativeCrypto`).
+- Active-path migration for hash/HMAC/AES call sites.
+- Runtime cleanup of bundled CryptoJS JavaScript resources.
+- Updated migration spec/tasks/plan artifacts.
+
+---
+
+## Residual Follow-Up (Optional)
+
+- Remove legacy `.js` source files from repository if archival retention is not required.
+- Add dedicated automated parity vector tests in `SwiftCinemasTests` for long-term regression protection.
+
+---
+
+## Plan Versioning
+
+**Version:** 1.0
+**Last Updated:** June 9, 2026
+**Status:** Closed - Implemented

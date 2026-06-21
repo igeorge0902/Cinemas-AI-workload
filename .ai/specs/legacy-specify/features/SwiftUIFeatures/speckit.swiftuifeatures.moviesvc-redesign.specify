@@ -1,0 +1,114 @@
+Feature: MoviesVC monochrome redesign based on image0 (UIKit)
+
+Overview
+- Redesign `MoviesVC` visual layout using `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html` as the primary visual target, derived from `.specify/features/SwiftUIFeatures/image0.png`.
+- Use monochrome palette only (black/white/gray).
+- Add favoriting interaction for each movie card/row.
+- Display ratings sourced from a mocked external API fixture.
+- Remove footer navigation from this screen.
+
+Scope
+- In scope: `MoviesVC` layout refresh, mocked ratings presentation, favorite toggle UI/state, no footer navigation in MoviesVC, category chips fed from backend movie payload when available with iOS static fallback values.
+- Out of scope: real external ratings integration, SwiftUI migration.
+
+Functional requirements
+
+REQ-MVC-RD-1 Design baseline from reference
+- MoviesVC layout must follow the information hierarchy and structure direction of `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`.
+- `.specify/features/SwiftUIFeatures/image0.png` remains the upstream inspiration source.
+- Final implementation may adapt spacing and sizing for UIKit constraints and device classes.
+
+REQ-MVC-RD-2 Monochrome theme
+- MoviesVC uses a monochrome visual language: black, white, and gray tones only.
+- No accent colors for primary UI surfaces, controls, or typography in this feature.
+
+REQ-MVC-RD-2A Screen background and colors
+- Screen background: white (#FFFFFF).
+- Navigation buttons (Back): black (#000000), left-aligned.
+- All other interactive buttons (favorites, category chips, CTA): grayscale only (black, white, gray range).
+- Text rendering: use NSAttributedString for all labels, supporting configurable font family + size.
+
+REQ-MVC-RD-2B Icon requirements
+- Favorite toggle icon: heart (outline ☆ unfavorited, filled ★ favorited) or star equivalent; 32x32px, monochrome.
+- Category chip icons: none required (text-only chips).
+- Navigation: existing back button remains as text "Back" in black pill.
+- Placeholder for missing movie poster: film reel icon or placeholder gradient; 52x52px rounded.
+
+REQ-MVC-RD-3 Favorites capability
+- Each movie item exposes a favorite toggle control.
+- Favorite state must be visible in both selected and unselected states.
+- Favorite interaction must be local and non-blocking.
+
+REQ-MVC-RD-4 External ratings (mocked)
+- Ratings are displayed for each movie using mocked external API data.
+- Mock source must be a static JSON fixture bundled in app resources.
+- If a rating is unavailable in fixture, UI shows a neutral fallback label (e.g., `N/A`).
+
+REQ-MVC-RD-5 No footer navigation
+- MoviesVC must not render footer navigation controls.
+- Existing navigation flows to/from MoviesVC remain unchanged outside footer removal.
+
+REQ-MVC-RD-5A Search bar retained
+- Existing MoviesVC search bar must remain available for movie search interactions.
+- Search behavior and existing search entry flow must remain functional after redesign.
+
+REQ-MVC-RD-5B Segmented control removal
+- Existing segmented control in MoviesVC must be removed from the redesigned screen.
+- Segmented-control-based category switching is replaced by category chips from design.
+
+REQ-MVC-RD-5C Categories from backend baseline with iOS fallback
+- Available categories must be displayed as per `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`.
+- Backend remains the source of truth. If category values are missing from current backend responses, iOS must use static fallback chip values.
+- Missing category data must not block movie rendering or interaction.
+
+REQ-MVC-RD-6 List/grid content presentation
+- Movie title remains visible and readable in monochrome mode.
+- Rating and favorite indicator must be visible without requiring secondary navigation.
+
+REQ-MVC-RD-7 Loading and error handling for ratings fixture
+- Ratings fixture load failures must not block movie list rendering.
+- On fixture read/parse failure, movies render with fallback rating display.
+
+REQ-MVC-RD-8 UIKit-only constraint
+- Feature implementation must use UIKit components only.
+- Do not introduce SwiftUI views, wrappers, or hosting controllers for this scope.
+
+REQ-MVC-RD-9 Logging and diagnostics
+- Log fixture load success/failure and mapped rating count.
+- Do not log sensitive headers, auth tokens, or secrets.
+
+Non-functional requirements
+
+REQ-MVC-RD-NF-1 Readability
+- Contrast and typography must remain readable under monochrome styling.
+
+REQ-MVC-RD-NF-2 Deterministic mapping
+- Ratings from fixture must map deterministically by agreed movie key (e.g., movieId).
+
+REQ-MVC-RD-NF-3 Performance
+- Ratings hydration from local fixture should not introduce visible UI jank in MoviesVC.
+
+Acceptance criteria
+- [ ] MoviesVC visual redesign aligns to `movies-redesign2.prototype.html` (derived from `image0.png`) information hierarchy.
+- [ ] UI uses monochrome palette only.
+- [ ] Existing search bar remains present and usable in MoviesVC.
+- [ ] Segmented control is removed from MoviesVC.
+- [ ] Category chips are rendered as per design using backend-provided values when available, otherwise iOS static fallback values.
+- [ ] Favorite toggle exists and state is visible per movie.
+- [ ] Ratings are shown from static JSON fixture mock.
+- [ ] Missing ratings show fallback (`N/A`) without blocking list.
+- [ ] Footer navigation is absent from MoviesVC.
+- [ ] UIKit-only implementation (no SwiftUI).
+- [ ] Prototype document is attached for review.
+
+Known issue / deferred hardening (FIX LATER)
+- Current legacy path contains `category_!` force-unwrap risk before first category selection in section 1 (primary repro: `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift:254`).
+- This redesign scope tracks the issue as deferred safety hardening backlog and does not change runtime behavior in this spec phase.
+- Backlog references:
+  - `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10)
+  - `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-safety.analyze.md`
+
+Reference files
+- `.specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`
+- `.specify/features/SwiftUIFeatures/image0.png`
+- `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift`

@@ -1,0 +1,308 @@
+# 🎯 Feature Spec: Cinema Booking Flow (AngularJS Web App)
+# based on dalogin-quarkus
+# based on Film Review Template App
+
+
+## 1. Feature Overview
+
+The **Cinema Booking Flow** enables users to:
+
+1. Authenticate (login)
+2. Browse available movies
+3. Select a movie
+4. Choose a venue (cinema)
+5. Select seats
+6. Confirm and book tickets
+
+This feature integrates with backend services:
+
+* Auth: `/login`
+* Movies & Booking: `/mbooks-1`
+* Images: `/simple-service-webapp`
+* User: `/mbook-1`
+
+Adjust apache headers for CORS as needed.
+- https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.0/fonts
+- https://fonts.gstatic.com
+- added to CSP style-src and font-src in apache-config (quarkus-backend.yaml)
+- load template images from:
+    -src/main/resources/META-INF/resources/film-review/images
+---
+
+
+# 2. Scope
+
+## ✅ Included
+
+* Login
+* Password change
+* Movie listing
+* Venue selection
+* Date selection
+* Seat selection
+* Ticket booking
+* UI templates for all steps
+* Payment gateway UI (if external)
+* Admin features
+
+* Real-time seat updates (future)
+
+---
+
+# 3. User Stories
+
+## 3.1 Login
+
+**As a user**
+I want to log in
+So that I can access movie booking
+
+**Acceptance Criteria**
+
+* Valid credentials → redirect to the film-review template based app
+* Invalid credentials → error message shown
+
+---
+
+## 3.2 Browse Movies
+
+**As a user**
+I want to see available movies
+So that I can choose one
+Select categories to narrow down choices
+
+**Acceptance Criteria**
+
+* Movies are loaded from API
+* Each movie shows title + image
+* Clicking a movie navigates to venues
+* From movies thumbnails, user can also navigate to movie details page
+
+---
+
+## 3.3 Select Venue
+
+**As a user**
+I want to see venues for a movie
+So that I can choose where to watch it
+
+**Acceptance Criteria**
+
+* Venues filtered by movieId
+* Display name, address, showtimes
+* Clicking venue navigates to date selection
+* Clicking date navigates to seat selection
+
+---
+
+## 3.4 Select Seats
+
+**As a user**
+I want to select seats
+So that I can reserve my spot
+
+**Acceptance Criteria**
+
+* Seat grid is displayed
+* Seats show states:
+  * available
+  * taken
+  * selected
+* Cannot select taken seats
+* Multiple seats selectable
+
+---
+
+## 3.5 Book Ticket
+
+**As a user**
+I want to confirm my booking
+So that I can reserve tickets
+
+**Acceptance Criteria**
+
+* Selected seats are shown in summary
+* Booking API is called
+* Success → confirmation shown
+* Failure → error message shown
+
+---
+
+## 3.6 Change Password
+
+**As a user**
+I want to change my password
+So that I can secure my account
+
+**Acceptance Criteria**
+
+* Old password required
+* New password validated
+* Success and error states handled
+
+---
+
+# 4. UI Specification
+
+## 4.1 Pages
+
+### Login Page
+
+* Username input
+* Password input
+* Login button
+* Change password link
+
+---
+
+### Movies Page
+
+* Grid/list layout
+* Movie poster
+* Movie title
+* Clickable items
+
+---
+
+### Venues Page
+
+* List layout
+* Venue name
+* Address
+* Showtimes
+
+---
+
+### Seats Page
+
+* Grid layout
+* Color coding:
+
+  * Green → available
+  * Red → taken
+  * Highlight → selected
+
+---
+
+### Booking Page
+
+* Summary:
+
+  * Movie
+  * Venue
+  * Seats
+* Confirm button
+
+---
+
+# 5. Technical Specification
+
+## 5.1 Routing
+
+- dalogin-quarkus/README.md
+- mbooks-quarkus/README.md
+- mbook-quarkus/README.md
+- simple-service-webapp-quarkus/README.md
+- load the new templates and assets from src/main/resources/META-INF/resources/film-review
+- load https://milo.crabdance.com/login/film-review the index.html
+- Canonical film-review route format: `#/...` (plain hash), not `#!/...`
+- Canonical URL example: `https://milo.crabdance.com/login/film-review/#/venues-list`
+- Legacy login/register scripts are loaded from `/login/film-review/jsR/...`
+- remove the old templates and assets
+- remove any unused code related to the old templates
+- remove any unused files related to the old templates
+ - place all the js files in the same folder for simplicity
+ - remove any unused js files
+- adjust the API calls to match the new backend services
+
+---
+
+## 5.2 State Management
+
+Use `StateService`:
+
+Stores:
+
+* selectedMovie
+* selectedVenue
+* selectedSeats
+
+---
+
+## 5.3 API Endpoints
+
+- dalogin-quarkus/README.md
+- mbooks-quarkus/README.md
+- mbook-quarkus/README.md
+- simple-service-webapp-quarkus/README.md
+
+---
+
+# 7. Validation Rules
+
+* Login: required fields
+* Password: min length, match confirmation
+* Seat selection: at least 1 seat required
+* Booking: prevent duplicate submission
+
+---
+
+# 8. Error Handling
+
+* API failures → user-friendly messages
+* Network issues → retry option
+* Invalid routes → redirect to login
+
+---
+
+# 9. Non-Functional Requirements
+
+* Responsive UI
+* Fast loading (<2s for movie list)
+* No page crashes
+* Maintainable AngularJS code
+
+---
+
+# 10. Edge Cases
+
+* No movies available
+* No venues for selected movie
+* No seats available
+* Session expired
+* User refreshes page mid-flow
+
+---
+
+# 11. Success Criteria
+
+* User completes full booking flow without errors
+* Navigation works across all steps
+* API integration stable
+* UI reflects correct data at all times
+
+---
+
+# 12. Future Enhancements
+
+* Real-time seat updates (WebSocket)
+- backend support needed later
+* Payment integration
+- already
+* User purchase history
+* Admin dashboard
+
+---
+
+# 📌 Summary
+
+This feature defines the **core business flow of the cinema platform**:
+
+👉 From login → movie → venue → dates → seat → booking
+
+Ensuring:
+
+* Correct navigation
+* Stable API integration
+* Clean UI templates
+* Predictable state handling

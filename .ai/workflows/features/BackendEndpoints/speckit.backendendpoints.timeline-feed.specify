@@ -1,0 +1,138 @@
+Feature: Timeline Feed endpoint (backend-only)
+
+Overview
+- Add a new endpoint in `mbooks-quarkus` to serve timeline/news content for infinite scrolling.
+- Feed content includes featured movie news and actor news.
+- Scope ends at API and data layer; no UI implementation is included in this feature.
+
+Contract IDs
+- `CID-MBOOKS-TIMELINE`
+
+Role collaboration
+- Implementation: `@backend-dev`, `@database-dev`
+- Consumer contract checks: `@frontend-dev`, `@ios-dev`
+- Test ownership: `@testing-engineer`
+- Security review: `@security-specialist`
+- Performance validation: `@performance-engineer`
+- Requirement/acceptance alignment: `@business-analyst`
+
+Functional requirements
+
+REQ-TF-1 Endpoint contract
+- Method: `GET`
+- Path: `/rest/book/timeline-feed`
+- Produces: `application/json`
+- Query params:
+  - `limit` optional integer, default `20`, allowed range `1..50`
+  - `cursor` optional opaque token
+  - `kind` optional enum: `all`, `movie`, `actor` (default `all`)
+
+REQ-TF-2 Response schema
+- Success code: `200`
+- Body:
+  - `items`: array of feed records
+  - `nextCursor`: string or `null`
+- Item fields:
+  - `id` (number)
+  - `kind` (`movie` | `actor`)
+  - `title` (string)
+  - `summary` (string)
+  - `body` (string)
+  - `movieId` (number|null)
+  - `actorName` (string|null)
+  - `imageUrl` (string|null)
+  - `featured` (boolean)
+  - `publishAt` (ISO-8601)
+
+REQ-TF-3 Ordering and pagination
+- Feed order MUST be deterministic: `publishAt DESC`, then `id DESC`.
+- Pagination MUST be keyset/cursor-based, not offset-based.
+- `nextCursor` MUST represent the last record from current page.
+- Requesting next page with returned cursor MUST not duplicate already returned rows.
+
+REQ-TF-4 Content visibility
+- Only active and currently valid content is returned:
+  - `is_active = true`
+  - `publish_at <= now`
+  - `expire_at is null OR expire_at > now`
+
+REQ-TF-5 Filtering
+- `kind=movie` returns only movie news.
+- `kind=actor` returns only actor news.
+- `kind=all` returns both.
+
+REQ-TF-6 Validation/error behavior
+- Invalid `limit`, invalid `kind`, or malformed `cursor` returns `400` with JSON error.
+- Unexpected backend failures return `500` using existing global error behavior.
+
+REQ-TF-7 Client parity requirement
+- Contract must remain client-neutral and stable for both Angular WebUI and Swift iOS consumption.
+- Any contract field change requires update note in README and consumers.
+
+Database requirements
+
+REQ-TF-DB-1 New table
+- Add table `timeline_content` in booking DB.
+
+REQ-TF-DB-2 Columns
+- `id` BIGINT/INT PK
+- `kind` VARCHAR (enum domain: movie/actor)
+- `title` VARCHAR
+- `summary` VARCHAR
+- `body` TEXT
+- `movie_id` INT NULL
+- `actor_name` VARCHAR NULL
+- `image_url` VARCHAR NULL
+- `featured` BOOLEAN default false
+- `publish_at` TIMESTAMP
+- `expire_at` TIMESTAMP NULL
+- `is_active` BOOLEAN default true
+- `created_at` TIMESTAMP
+- `updated_at` TIMESTAMP
+
+REQ-TF-DB-3 Indexes
+- Index for timeline scan: `(is_active, publish_at DESC, id DESC)`
+- Index for kind filter: `(kind, is_active, publish_at DESC, id DESC)`
+
+REQ-TF-DB-4 Migration seed
+- Provide initial seed rows for both `movie` and `actor` kinds to enable endpoint verification.
+
+Architecture boundaries
+- `BookController`: parse query params, call service, format response.
+- `BookingHandlerImpl`: business logic, cursor decode/encode orchestration.
+- `DAO`: keyset query and DB interactions.
+
+Non-functional requirements
+
+REQ-TF-NF-1 Performance
+- Default page query should complete under 250 ms on local/minikube baseline data.
+
+REQ-TF-NF-2 Observability
+- Expose request metrics (count/latency) for endpoint.
+- Log `limit`, `kind`, `cursorPresent`, `resultCount`.
+
+REQ-TF-NF-3 Determinism
+- Same dataset and same cursor must produce stable ordering and results.
+
+REQ-TF-NF-4 Security
+- Cursor parsing MUST reject malformed or tampered tokens with `400` and no stack trace leakage.
+- Response MUST expose only defined API fields (no internal DB-only columns).
+
+REQ-TF-NF-5 Performance validation
+- Include a lightweight load/stress verification for cursor pagination (first page and deep page).
+
+Acceptance criteria
+- [ ] `GET /rest/book/timeline-feed` returns newest-first items with `nextCursor`.
+- [ ] Cursor-based pagination returns non-overlapping pages.
+- [ ] Filters (`all`, `movie`, `actor`) work correctly.
+- [ ] Invalid cursor/params return `400` JSON error.
+- [ ] Only active, publishable, non-expired content is returned.
+- [ ] New DB table and indexes exist in booking DB migration.
+- [ ] Endpoint contract is documented in `mbooks-quarkus/README.md` with curl examples.
+
+Definition of Done
+- [ ] Feature has spec, implementation, and tests completed.
+- [ ] `@testing-engineer` verification completed.
+- [ ] `@security-specialist` verification completed.
+- [ ] `@performance-engineer` verification completed.
+

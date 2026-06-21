@@ -1,0 +1,61 @@
+Feature Plan: VenuesDetailsVC redesign with scroll blur and vertical controls (UIKit)
+
+Objective
+- Redesign `VenuesDetailsVC` based on `.specify/features/SwiftUIFeatures/image1.png` direction while keeping all existing functions/flows unchanged.
+- Keep rectangular movie media region.
+- Add scroll-up blur progression over hero image/video.
+- Reorder content: details text first, then vertically aligned action buttons.
+
+Constraints
+- UIKit-only implementation.
+- Do not alter action method contracts or segue identifiers.
+- Do not alter auth/header/payload contract behavior.
+- Keep current data manager and payment/date/map flows intact.
+
+Role ownership
+- Primary iOS implementation: `@ios-dev`
+- Contract regression checks: `@backend-dev`
+- Manual flow verification: `@testing-engineer`
+
+Target files
+- `SwiftCinemas/SwiftLoginScreen/VenuesDetailsVC.swift`
+- `.specify/features/SwiftUIFeatures/prototypes/venuesdetailsvc-redesign.prototype.html`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.specify`
+- `.specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`
+
+High-level architecture
+1. Hero media region
+   - Keep top rectangular movie area (image/video).
+   - Keep existing media pipeline with minimal structure changes.
+2. Scroll container and blur bridge
+   - Introduce/confirm scroll tracking callback.
+   - Map upward scroll offset to blur intensity (0 -> max) over hero area.
+   - Clamp values to avoid overdraw spikes.
+3. Vertical content hierarchy
+   - Place description/details text block first in content stack.
+   - Place action buttons in vertical column below text.
+   - Preserve original action handlers and labels.
+4. Navigation and actions preservation
+   - Keep `book`, `dates`, `map`, `movieDetail`, `selectCalendar`, `navigateBack` intact.
+   - Keep existing popover behavior for dates/seats.
+5. Stability/performance guardrails
+   - Ensure one-time setup guards stay in place.
+   - Avoid repeated player creation and duplicate subviews.
+
+Interaction behavior
+- Scroll up gradually blurs hero background and reveals a focused control region.
+- Text panel remains ahead of button stack for readability and flow.
+- Buttons stay vertically aligned with comfortable spacing.
+- Existing user journeys remain unchanged.
+
+Verification strategy
+- Manual visual verify: rectangle hero, blur progression, text-before-buttons, vertical button stack.
+- Manual flow verify: book/dates/map/movie detail/calendar/back all still work.
+- Log verify: no new noisy layout observation loops introduced by redesign.
+- Compile verify: no Swift errors in `VenuesDetailsVC.swift`.
+
+Definition of done
+- Speckit artifacts (`.specify`, `.plan`, `.tasks`, prototype) are complete and aligned.
+- UIKit redesign direction approved from prototype review.
+- Existing VenuesDetailsVC behavior preserved.
+

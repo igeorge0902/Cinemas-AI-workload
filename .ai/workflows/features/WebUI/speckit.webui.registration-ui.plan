@@ -1,0 +1,133 @@
+# 🌐 WebUI Registration UI Plan (Film-Review context)
+
+## 🎯 Objective
+
+Move registration from legacy standalone `/login/register.html` into the Film-Review Angular flow (`/login/film-review/#/register`) while keeping existing backend contracts unchanged and preserving current HMAC/session behavior.
+
+This plan is for scoped integration and contract-safe migration, not auth-stack redesign.
+
+## 👥 Role Ownership
+
+- Film-Review routes/templates/controller wiring: `@frontend-dev`
+- Registration/voucher/activation contract confirmation: `@backend-dev`
+- User/email precheck behavior validation: `@backend-dev`
+- Data contract checks for uniqueness/precondition semantics: `@database-dev`
+- Runtime route exposure and rollout checks: `@devops`
+- Shared endpoint parity impact checks: `@ios-dev`
+
+---
+
+## 1) Baseline and Source of Truth
+
+Primary implementation files:
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/app.js`
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/templates/login.html`
+- `dalogin-quarkus/src/main/resources/META-INF/resources/register.html`
+- `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/jsR/register.js`
+
+Current state:
+- Film-Review app has no `/register` route in `app.js`.
+- Film-Review login template still points to `/login/register.html`.
+- Legacy registration logic exists outside Film-Review route/template context.
+
+Rule:
+- Running servlet/controller code is source of truth if docs differ.
+
+---
+
+## 2) Target Registration Architecture (Film-Review first)
+
+- Add Film-Review Angular route: `#/register`.
+- Add Film-Review template under `film-review/templates` (same visual family as `login.html`).
+- Keep registration flow in Film-Review Angular app context (not standalone `ng-app="hmac"` page).
+- Keep legacy page temporarily for backward compatibility, but treat Film-Review route as primary entry.
+
+---
+
+## 3) Endpoint Contract Matrix (No contract changes)
+
+- Username availability: `GET /mbook-1/rest/newuser/{newuser}` (`200` available, `412` taken) — trigger when username length >= 2
+- Email availability: `GET /mbook-1/rest/newemail/{newemail}` (`200` available, `412` taken) — trigger only for full valid email format
+- Voucher validation: `POST /login/voucher`
+- Register (voucher): `POST /login/register`
+- Register (no voucher): `POST /login/registerWithoutVoucher`
+- Activation link handling: `GET /login/activation?activation=...`
+- Activation resend handling: `POST /login/activation`
+
+Expected UI error/success mapping:
+- `200` success
+- `300` activation-related flow
+- `412` precondition failures
+- `502` registration failure
+
+---
+
+## 4) Phased Implementation Strategy
+
+### Phase P1 — Film-Review route/template migration
+Focus: in-app registration experience and navigation integration.
+- Add `/register` route in Film-Review `app.js`.
+- Create Film-Review registration template with login-style parity.
+- Update login template Sign Up link to `#/register`.
+
+Exit criteria:
+- Registration opens from Film-Review login and renders fully in Film-Review context.
+
+### Phase P2 — Endpoint wiring and form behavior
+Focus: reuse contracts with clear endpoint-specific handling.
+- Wire username/email prechecks.
+- Apply precheck trigger rules: username starts at 2 chars; email starts only on full email format.
+- Add debounced precheck UX states (`checking`, `available`, `taken`, `unknown`) and ensure availability responses update inline field state.
+- Wire voucher-first mode and no-voucher mode.
+- Wire register submit with existing payload/header expectations.
+- Gate submit button until all required values are valid (including precheck pass states).
+- Preserve token/session behavior on successful responses.
+
+Exit criteria:
+- All registration API calls execute from Film-Review flow with expected status handling.
+
+### Phase P3 — Activation/error hardening and compatibility
+Focus: activation paths, response mapping, and rollback-safe behavior.
+- Add activation handling hooks (link/resend flows where applicable).
+- Normalize user-visible message mapping for `200/300/412/502`.
+- Keep legacy route available during transition window.
+
+Exit criteria:
+- Activation and error handling are consistent; migration does not break existing login/session flows.
+
+---
+
+## 5) Validation Scope
+
+- Field-level: username/email/password required; voucher required only in voucher mode.
+- Async prechecks: debounce/trigger strategy for username/email checks to avoid noisy calls.
+- Precheck UX behavior: show threshold/format hints and transient checking state before result.
+- Submit gating: block submit until required values are valid (`username>=2 + available`, `full email + available`, password present, voucher present when enabled) and prechecks are not `checking`.
+- Sensitive-data safety: no raw password logging in browser console.
+- Route consistency: use plain hash routing (`#/register`).
+
+---
+
+## 6) Deliverables
+
+- Film-Review registration template under `film-review/templates`.
+- Film-Review route/controller wiring for registration in `film-review/app.js`.
+- Updated registration link in `film-review/templates/login.html`.
+- Endpoint mapping and phase-aligned task checklist artifacts.
+
+---
+
+## 7) Definition of Done (Plan-level)
+
+- [ ] Registration template is under Film-Review template context.
+- [ ] Film-Review login links to `#/register`, not `/login/register.html`.
+- [ ] Username/email precheck contracts are used without backend changes.
+- [ ] Username precheck starts at 2+ characters; email precheck runs only for full valid email.
+- [ ] Debounced precheck UX states (`checking`, `available`, `taken`, `unknown`) are visible and consistent.
+- [ ] Username/email validation responses update inline field state in the form.
+- [ ] Register button remains disabled until all required values are valid and prechecks are not in-flight.
+- [ ] Voucher and no-voucher registration modes are endpoint-correct.
+- [ ] Activation-related behavior is handled with existing endpoint contracts.
+- [ ] Response status mapping (`200/300/412/502`) is user-visible and consistent.
+- [ ] Sensitive registration fields are not logged in client console.
+- [ ] Ownership and phase boundaries are explicit.

@@ -1,0 +1,73 @@
+Phase 1 — Logging policy and categories (`@backend-dev` + `@business-analyst`)
+- [x] Define shared logging policy baseline for all backend services.
+- [x] Define category names for endpoint, hibernate transaction, entity, session, SQL, and filter logs.
+- [x] Document default log level behavior and escalation to DEBUG/TRACE.
+- [x] Define system-wide threshold behavior (`quarkus.log.level` + optional app override).
+- [x] Define file-routing policy: separate log files by Hibernate subtype and by new logging category/type.
+
+Phase 2 — DAO proof of concept (`@backend-dev`)
+- [x] Verify that `mbook-quarkus` DAO is called via `@Inject` (CDI proxy) — interceptor prerequisite.
+- [ ] Verify callers of `mbooks-quarkus` `DAO.instance()` in controllers and switch to `@Inject DAO dao` where needed to enable CDI interception.
+- [x] Add `@ObservedLog` annotations to DAO methods in `mbook-quarkus` (annotation-only; no method body changes).
+- [x] Add `@ObservedLog` annotations to DAO methods in `mbooks-quarkus` (annotation-only; no method body changes).
+- [x] Confirm interceptor builds `source` as `ClassName.methodName` from `InvocationContext`.
+- [x] Confirm interceptor captures parameters only when `includeArgs = true` and that sensitive params are redacted.
+- [ ] Validate that collected logs include only events enabled by current system log level.
+- [ ] Document DAO PoC findings and rollout recommendations for non-DAO services.
+
+Phase 3 — Existing logging migration and formatting (`@backend-dev`)
+- [ ] Inventory current service logs and current Hibernate log emitters/handlers.
+- [ ] Reformat existing logs to agreed structured format without removing current coverage.
+- [ ] Reformat existing Hibernate logs to agreed structured format while preserving category identity.
+- [ ] Confirm backward-compatible log field naming for dashboards/queries where required.
+
+Phase 4 — Service logging rollout (`@backend-dev`)
+- [ ] Add endpoint call logs to all backend services.
+- [ ] Add Hibernate transaction summary logs where transactional flows exist.
+- [ ] Add entity operation logs where meaningful.
+- [ ] Add servlet/JAX-RS filter logs for auth/cookie/request processing.
+- [ ] Add session state logs in services managing login/session flows.
+- [x] Route newly added categories to dedicated log files per category/type policy.
+- [ ] Reconcile service-scope specifics:
+  - `simple-service-webapp-quarkus` is in workspace and in scope for endpoint/filter logging.
+  - `dalogin-quarkus` outbound HTTP-call logging is delivered by `speckit.system.dalogin-http-client-observability.*` and referenced from this feature.
+
+Phase 5 — SQL and Hibernate detail levels (`@backend-dev` + `@performance-engineer`)
+- [ ] Implement short SQL info logging.
+- [ ] Implement longer SQL debug logging.
+- [ ] Implement SQL/transaction error logging.
+- [x] Keep Hibernate log types split into separate files (transaction, SQL, statistics, and other configured types).
+- [ ] Review Hibernate and SQL logging overhead under normal load.
+
+Phase 6 — Security review (`@security-specialist` + `@backend-dev`)
+- [x] Identify sensitive fields/headers/cookies to redact or suppress.
+- [ ] Validate auth/session logs do not leak secrets or token material.
+- [ ] Validate payment-related logs do not expose nonces or credential-like values.
+
+Phase 7 — Grafana log visualization (`@devops` + `@backend-dev`)
+- [ ] Add log ingestion backend for Grafana queries (expected: Loki or equivalent).
+- [ ] Route backend service logs into Grafana-queryable datasource.
+- [ ] Add dashboard panels or Explore views for service, level, and category.
+- [ ] Add panels/queries for endpoint failures, filter rejections, slow SQL, and session events.
+- [ ] Verify file-split log streams remain queryable by category without cross-mixing.
+
+Phase 8 — Verification (`@testing-engineer` + `@performance-engineer`)
+- [ ] Verify each service emits expected structured logs for representative flows.
+- [ ] Verify Grafana can query/filter logs by service, level, and category.
+- [ ] Verify DAO PoC annotation/interceptor behavior across INFO/DEBUG/TRACE level switches.
+- [ ] Verify separate files are used for Hibernate types and new category logs.
+- [ ] Verify default logging volume is acceptable.
+- [ ] Capture baseline performance impact of new logging configuration.
+
+Phase 8.1 — Evidence capture for closure (`@testing-engineer` + `@backend-dev`)
+- [ ] Attach sample START/END/ERROR logs per category (`LOG-ENDPOINT`, `LOG-HIBERNATE-TX`, `LOG-ENTITY`, `LOG-SESSION`, `LOG-SQL`, `LOG-FILTER`).
+- [ ] Attach one negative-path sample (4xx/5xx or exception) per service where applicable.
+- [ ] Attach routing evidence that each category writes to its dedicated file.
+- [ ] Attach acceptance matrix mapping `specify` acceptance criteria to evidence artifacts.
+
+Phase 9 — Documentation (`@backend-dev` + `@devops`)
+- [ ] Update per-module READMEs with logging categories and level controls.
+- [ ] Document annotation/interceptor usage guidelines for classes that must emit logs.
+- [ ] Document log file routing map (existing + Hibernate + new categories).
+- [ ] Update observability docs with Grafana log-visualization setup.
+- [ ] Document how to temporarily enable DEBUG/TRACE for investigations.
