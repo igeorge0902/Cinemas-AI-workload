@@ -1,0 +1,229 @@
+.ai/skills/html-prototype-uikit-redesign/examples.md
+  s_be623d5f196e2d::t_e958b00350d9ae 1-2,4,6-7,16-17,19,21-22,36-37
+  s_be623d5f196e2d::t_889f3143c9e103 3,5,8-15,18,20,23-35
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.uikit-field-mapping-implementation-plan.md
+  s_be623d5f196e2d::t_b594aac6725f5a 1-54
+.ai/workflows/features/SwiftUIFeatures/prototypes/current-adminupdate.svg
+  s_be623d5f196e2d::t_4419d3e2365bbd 1-37
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.plan
+  s_be623d5f196e2d::t_f0415e482da2b4 1-127
+.ai/workflows/features/SwiftUIFeatures/prototypes/uikit-vs-prototype-comparison.md
+  s_be623d5f196e2d::t_37134465f2b587 1-82
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.uikit-draft.md
+  s_be623d5f196e2d::t_a2f8489db6d24b 1-65
+.ai/memory/api.yaml
+  s_be623d5f196e2d::t_eadbb3dfdebee1 2-223
+.ai/specs/legacy-specify/memory/testing.yaml
+  s_be623d5f196e2d::t_e9c9c7d474e0ad 1-12
+.ai/workflows/features/System/speckit.system.dalogin-logging-migration.plan.md
+  s_8da4acdc5334ad::t_824170d52f6b4f 10-32,79
+  s_8da4acdc5334ad::t_9adad446847cc7 4,33-62,102
+.ai/skills/skills-github.md
+  s_b5e0f3d03996fd::t_322b72da01ddb1 9-19
+  s_b5e0f3d03996fd::t_5381eebd1e93ea 297-474
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.specify
+  s_be623d5f196e2d::t_4e1f63a85c40b2 1-82
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md
+  s_be623d5f196e2d::t_cc16c74cdb9da8 107-112,142
+  s_be623d5f196e2d::t_6ffc8bec4d589e 13-18
+  s_be623d5f196e2d::t_725083d0d57550 113-121,143-159
+.ai/agents/agents-role.yaml
+  s_be623d5f196e2d::t_deeed8e9a78876 2-201
+.ai/workflows/check_ai_layout.py
+  s_be623d5f196e2d::t_a6363542d272d7 1-114
+.ai/workflows/features/System/speckit.system.dalogin-logging-migration.tasks
+  s_8da4acdc5334ad::t_1a38cb6eddd14b 8-10,15
+  s_8da4acdc5334ad::t_c20a3a6df16603 12,21-35
+.ai/memory/k8s.yaml
+  s_be623d5f196e2d::t_5d1505dc1b7361 2-191
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.plan
+  s_be623d5f196e2d::t_e266cfa64a9c34 111-135,146,166
+  s_be623d5f196e2d::t_ab1ba29d6688d6 7-110,144-145,164-165
+.ai/specs/legacy-specify/memory/constitution.md
+  s_be623d5f196e2d::t_f38d7926bd1642 1-16
+.ai/workflows/features/System/speckit.system.backend-logging-observability.plan
+  s_8da4acdc5334ad::t_b210973e748d47 8-76
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.tasks
+  s_be623d5f196e2d::t_c850454c8dfa9a 9-18
+.ai/workflows/features/System/speckit.system.dalogin-http-client-observability.plan
+  s_8da4acdc5334ad::t_fc04c179eaa401 6,37-56,65
+  s_8da4acdc5334ad::t_893ec6768bbe1c 9-33,61-64,66-68
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.analyze.md
+  s_be623d5f196e2d::t_6c5458595a8ea7 14-23,85-94
+  s_be623d5f196e2d::t_012107368da0b1 70-81,95-110
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.plan
+  s_be623d5f196e2d::t_5464d9eee87537 7-110,144-145,164-165
+  s_be623d5f196e2d::t_2ed8f030e898e3 111-135,146,166
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.analyze.md
+  s_be623d5f196e2d::t_cb79aa0416f803 14-23,85-91,94
+  s_be623d5f196e2d::t_235ced49b93af6 1-13,24-84,92-93,96-120
+.ai/workflows/features/Swift_migration/speckit.swiftui.native-swift-crypto-migration.specify
+  s_b0dc28f5c555a3::t_0f0e57ca2556dc 1-4,6-7,9-11,13,15,22,25-27,29,36,39-41,43-44,59,65,69-70,74-75,80-81,85-87,89,95-101,108-112,114-115
+  s_b0dc28f5c555a3::t_c1d30ce9c7638c 60,64,103-104
+  s_5ac1a28e2dcfe4::t_5a68af77b91fec 5,8,12,14,16-21,23-24,28,30-35,37-38,42,45-58,61-63,66-68,71-73,76-79,82-84,88,90-94,107,113
+  s_b0dc28f5c555a3::t_8fa78c7851e736 102,105-106
+.ai/memory/constitution.md
+  s_be623d5f196e2d::t_801944e2a5a5cc 15-286
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.tasks
+  s_be623d5f196e2d::t_34b0cafb94a0e9 61-109
+.ai/workflows/features/System/speckit.system.dalogin-http-client-observability.tasks
+  s_8da4acdc5334ad::t_871be7dd4a4a35 2,8,18-21
+  s_8da4acdc5334ad::t_68690cdfce0082 7,16,38-53
+  s_8da4acdc5334ad::t_d4434fae82665c 35
+.ai/memory/naming.yaml
+  s_be623d5f196e2d::t_6dca923b6b505b 2-207
+.ai/skills/swift-rest-contract-tests/examples.md
+  s_b5e0f3d03996fd::t_3f01215fc812ae 1-35
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.specify
+  s_be623d5f196e2d::t_d98aff0d191a7f 13-16,57-60,64-82,92
+  s_be623d5f196e2d::t_dc4c38ddf5bc76 47-48,85
+  s_be623d5f196e2d::t_d3f9987e9f0ea2 61-63,83
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.specify
+  s_be623d5f196e2d::t_2fe67ea914df88 30-32,65-66
+  s_be623d5f196e2d::t_1d77162ca6f288 1-29,33-46,53-64,68-74,78-82
+  s_be623d5f196e2d::t_509d89327f4a3f 47-52,67,75-77
+.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html
+  s_be623d5f196e2d::t_32ecc904451c3e 19,31-32,41,126-150,181,189,199,250-257,261-268,305,309-315,318,324-325,333-343
+  s_be623d5f196e2d::t_b8707ac2fc9660 15,28-29,68-69,72-74,78-88,157,160-161,168,171-173,179,182,204,210-221,223-235,237,239-240,276-279,281-283,293-300,354-408
+  s_be623d5f196e2d::t_e7ad0d9a83cf52 30,35-40,71,89-125,192-197,208,242-249,258-260,269-271,280,284-291,301-304,307-308,316-317,319-323,327-330,345-353
+  s_be623d5f196e2d::t_901c62a9e562ed 51-64
+  s_be623d5f196e2d::t_c4c786241adfe7 1-14,16-18,20-27,33-34,65-67,70,75-77,152-156,158-159,162-167,169-170,174-178,180,184-188,190-191,198,200-203,205-206,209,222,236,238,241,272-275,409-411
+.ai/memory/testing.yaml
+  s_be623d5f196e2d::t_dea32685d5050c 2,5-25,30-31,34-37,42-157
+  s_be623d5f196e2d::t_00fe9524c25454 3,27-29,32-33,39-41
+.ai/memory/system.map.yaml
+  s_be623d5f196e2d::t_2e488d5177750b 1-42
+.gitignore
+  s_8da4acdc5334ad::t_bce05537ff7ed2 10
+.ai/workflows/features/Swift_migration/IMPLEMENTATION-SUMMARY.md
+  h_d154d11af00b83 1-439
+.ai/workflows/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html
+  s_be623d5f196e2d::t_592f5b292b15de 89-102,183,285,325-344
+  s_be623d5f196e2d::t_95b29c45ecf05f 15,28-29,68-69,72-74,78-88,157,160-161,168,171-173,179,182,204,210-221,223-235,237,239-240,276,278,298,377,390,393-394,396,404,407
+  s_be623d5f196e2d::t_b63020f3cb7d8c 1-14,16-18,20-27,33-34,65-67,70,75-77,153-156,158-159,162-167,169-170,174-178,180,184-188,190-191,198,200-203,205-206,222,236,238,241,272-275,409-411
+  s_be623d5f196e2d::t_001ef412c02247 19,32,38,42-50,103-111,140-149,151-152,192-197,207,209,243,277,279-283,286-297,299-301,303-305,307-313,315,318,322-324,345-352,354-376,378-389,391-392,395,397-403,405-406,408
+  s_be623d5f196e2d::t_9b22090cad3559 30,35-37,39-40,71,112-125,208,242,244-249,258-260,269-271,302,314,316,353
+  s_be623d5f196e2d::t_a57ecbcc8f44c0 31,41,126-139,150,181,189,199,250-257,261-268
+  s_be623d5f196e2d::t_c780154bc09d83 284,306,317,319-321
+  s_be623d5f196e2d::t_68d96318b5b9f9 51-64
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.tasks
+  s_be623d5f196e2d::t_af33ffbd7a83ad 3-8,87-97,110-113
+  s_be623d5f196e2d::t_87c6d1fcd43300 9-18
+  s_be623d5f196e2d::t_fbe9098f194031 61-83,108-109
+.ai/specs/legacy-specify/memory/constitution-backup.md
+  s_be623d5f196e2d::t_9a3cf9b12ddda6 15-232
+.ai/workflows/features/Swift_migration/speckit.swiftui.native-swift-crypto-migration.plan
+  s_b0dc28f5c555a3::t_58892e0de0f486 1-4,7-9,11,13-15,17,22,28,35,41,47-49,51,55-57,59,64-66,68,71-75,77
+  s_5ac1a28e2dcfe4::t_fb97c0d5b49534 5-6,10,12,16,18-21,23-27,29-34,36-40,42-46,50,52-54,58,60-63,67,69-70,76,78
+.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html
+  s_be623d5f196e2d::t_3f8be7ecdade6c 28
+  s_be623d5f196e2d::t_5d04c68aa5f2ec 233-247
+  s_be623d5f196e2d::t_b2358045e7d6d2 329
+  s_be623d5f196e2d::t_4283c873736c6b 29,223-227
+  s_be623d5f196e2d::t_5d924332c84faf 341-348
+  s_be623d5f196e2d::t_5f8704a3eb693a 294-300,303-304,307-309,311-313,315-317,319-321,323-328,330-332
+  s_be623d5f196e2d::t_c4e298cd344d2a 76-80,340
+  s_be623d5f196e2d::t_cb703860699980 105-115,301-302,306,310,314,318,322
+  s_be623d5f196e2d::t_3289596a3ef408 139-140,305
+.ai/workflows/features/SwiftUIFeatures/prototypes/current-tickets.svg
+  s_be623d5f196e2d::t_2f9124688efca8 1-37
+.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html
+  s_be623d5f196e2d::t_ddf2c7fa8fceb7 29,223-227
+  s_be623d5f196e2d::t_e17c7380ecca04 233-247,341-344
+  s_be623d5f196e2d::t_daebe0c69ac990 294-300,303-305,307-309,311-313,315-317,319-321,323-332
+  s_be623d5f196e2d::t_5ae9d983d39053 105-115,301-302,306,310,314,318,322
+  s_be623d5f196e2d::t_78e5a7ea134c31 94-104,116-138,257,353-397
+.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.specify
+  s_be623d5f196e2d::t_f76c9143407cf1 61-83
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md
+  s_be623d5f196e2d::t_91120d359fb5bd 101-106,141
+  s_be623d5f196e2d::t_7c048a28b25df6 113-121,143-159
+  s_be623d5f196e2d::t_a6dc7fb63c86f8 107-112,142
+  s_be623d5f196e2d::t_2d2ba770e5f2a2 10-100,139-140
+.ai/skills/swift-rest-contract-tests/SKILL.md
+  s_b5e0f3d03996fd::t_be67f54550081b 1-50
+.ai/workflows/features/Swift_migration/speckit.swiftui.native-swift-crypto-migration.tasks
+  s_b0dc28f5c555a3::t_cc2344ef548e7a 1-3,5-11,17-18,24-29,34-35,40-41,44-49,53,58,62-63,69-70,73-78,83-84,88-93,99-100,104-105,110-114,120-124,129-133,135
+  s_5ac1a28e2dcfe4::t_f30b305058c6aa 4,12-16,19-23,30-33,36-39,42-43,50-52,55-56,59-61,64-68,71-72,79-82,85-87,94-98,101-103,106-109,115-119,125-128,134,136
+.ai/workflows/features/System/speckit.system.backend-logging-observability.tasks
+  s_8da4acdc5334ad::t_acdf02a8564684 1-70
+.ai/workflows/README.md
+  s_be623d5f196e2d::t_8d4ce2e25959f0 1-22
+.ai/skills/README.md
+  s_b5e0f3d03996fd::t_b0a559037b2e0f 3-8
+  s_be623d5f196e2d::t_d3e754e0b4d4e5 16
+  s_b5e0f3d03996fd::t_d359c144cfe0a0 17-19
+.ai/workflows/features/SwiftUIFeatures/prototypes/current-menu.svg
+  s_be623d5f196e2d::t_2dcf42dee6da48 1-22
+.ai/skills/api-smoke-restassured/examples.md
+  s_b5e0f3d03996fd::t_b883aa9fb67ed3 1-28
+.ai/skills/html-prototype-uikit-redesign/SKILL.md
+  s_be623d5f196e2d::t_f243f4eebf419e 1-34,48-49,52,58-62,65-66,68-72,79-83,85-86
+  s_be623d5f196e2d::t_967aeeb3d2fda8 35-47,50-51,53-57,63-64,67,73-78,84
+.ai/skills/swift-datamanager-integration/SKILL.md
+  s_b5e0f3d03996fd::t_b5948601040aa9 1-45
+.ai/retrieval/endpoints/endpoint-analysis-EXECUTIVE-SUMMARY.md
+  s_be623d5f196e2d::t_432ab26a48b781 20-58
+.ai/memory/constitution-backup.md
+  s_be623d5f196e2d::t_0979bc13a7dc93 15-232
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.tasks
+  s_be623d5f196e2d::t_2247832a2a5d6a 1-111
+.ai/README.md
+  s_be623d5f196e2d::t_f5b202061aca3e 1-21,27-32
+  s_be623d5f196e2d::t_54f4f61cf49058 22-26
+.ai/skills/swift-datamanager-integration/examples.md
+  s_b5e0f3d03996fd::t_2e369ee4499ea8 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "9383506c87c6b6dbc15c62bb16fd3b51d1d27a2d",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_5ac1a28e2dcfe4": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1781027188277",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_8da4acdc5334ad": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1782047372641",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_b0dc28f5c555a3": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1781025952178",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_b5e0f3d03996fd": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1779356573017",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_be623d5f196e2d": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1778933385577",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
