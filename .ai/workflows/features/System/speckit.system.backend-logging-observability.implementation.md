@@ -74,6 +74,49 @@ This draft updates the implementation direction to a low-intrusion model using a
 **Review output**
 - dashboard query pack
 - category/file ingestion matrix
+- Kubernetes integration prep completed in `k8infra/quarkus-backend.yaml`:
+  - Loki backend (`loki-config`, `deployment/loki`, `service/loki`)
+  - Promtail sidecars in `mbook` and `mbooks` reading `/work/log/*.log`
+  - Grafana datasource provisioning for Loki + Tempo traces-to-logs mapping
+
+**Ingestion matrix (prepared)**
+
+| Service | File | Loki labels expected |
+|---|---|---|
+| `mbook` | `/work/log/entity.log` | `service="mbook"`, `filename=.../entity.log` |
+| `mbook` | `/work/log/hibernate-tx.log` | `service="mbook"`, `filename=.../hibernate-tx.log` |
+| `mbook` | `/work/log/hibernate-sql.log` | `service="mbook"`, `filename=.../hibernate-sql.log` |
+| `mbook` | `/work/log/hibernate-bind.log` | `service="mbook"`, `filename=.../hibernate-bind.log` |
+| `mbook` | `/work/log/hibernate-transaction.log` | `service="mbook"`, `filename=.../hibernate-transaction.log` |
+| `mbook` | `/work/log/hibernate-cache.log` | `service="mbook"`, `filename=.../hibernate-cache.log` |
+| `mbooks` | `/work/log/entity.log` | `service="mbooks"`, `filename=.../entity.log` |
+| `mbooks` | `/work/log/hibernate-tx.log` | `service="mbooks"`, `filename=.../hibernate-tx.log` |
+| `mbooks` | `/work/log/hibernate-sql.log` | `service="mbooks"`, `filename=.../hibernate-sql.log` |
+| `mbooks` | `/work/log/hibernate-bind.log` | `service="mbooks"`, `filename=.../hibernate-bind.log` |
+| `mbooks` | `/work/log/hibernate-transaction.log` | `service="mbooks"`, `filename=.../hibernate-transaction.log` |
+| `mbooks` | `/work/log/hibernate-cache.log` | `service="mbooks"`, `filename=.../hibernate-cache.log` |
+
+**Grafana Explore query pack (Loki/LogQL)**
+
+```logql
+{service="mbook"}
+```
+
+```logql
+{service="mbooks", filename=~".*hibernate-sql\\.log"}
+```
+
+```logql
+{filename=~".*entity\\.log"} |= "LOG-ENTITY"
+```
+
+```logql
+{service="mbook"} |~ "\\sERROR\\s"
+```
+
+```logql
+sum by (service, level) (count_over_time({service=~"mbook|mbooks"}[5m]))
+```
 
 ## Annotation Model (Example)
 
@@ -274,7 +317,8 @@ quarkus.log.handler.file.log_filter.path=logs/filter.log
 - [ ] Existing + Hibernate logs are structured.
 - [ ] Hibernate subtype logs remain in separate files.
 - [ ] New categories are routed to separate files.
-- [ ] Grafana queries work per service/category/level/file stream.
+- [x] Grafana/Loki plumbing is provisioned in Kubernetes manifests.
+- [ ] Grafana queries work per service/category/level/file stream (runtime validation).
 
 ## Risks and Mitigations
 - **Risk**: too many annotation points.
