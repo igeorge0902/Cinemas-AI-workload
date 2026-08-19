@@ -1,243 +1,191 @@
-# dalogin Outbound HTTP Client Observability — Implementation Draft
+# dalogin Outbound HTTP Client Observability - Implementation Plan
 
 ## Purpose
-Structured logging for all outbound HTTP calls from `dalogin-quarkus` to downstream services,
-using a two-layer minimal-intrusion approach: a JAX-RS `ClientResponseFilter` + one-line START
-log per `ServiceClient` method.
+Implement security-safe, structured observability for outbound HTTP calls in `dalogin-quarkus` and migrate servlet/client/filter logging to `org.jboss.logging.Logger`.
 
-## Why Not a CDI Interceptor Here
+This plan is aligned with:
+- `.ai/workflows/features/System/speckit.system.dalogin-http-client-observability.plan`
+- `.ai/workflows/features/System/speckit.system.dalogin-http-client-observability.specify`
+- `.ai/workflows/features/System/speckit.system.dalogin-http-client-observability.tasks`
+- `.ai/workflows/features/System/speckit.system.dalogin-logging-migration.plan.md`
 
-`ServiceClient` is instantiated with `new ServiceClient(...)` in each servlet — it is not a CDI
-bean. A CDI `@AroundInvoke` interceptor therefore cannot intercept its methods. The chosen
-alternative keeps code changes minimal:
+## Scope
+- Module: `dalogin-quarkus`
+- In scope:
+  - `dalogin-quarkus/src/main/java/com/dalogin/servlets/*`
+  - `dalogin-quarkus/src/main/java/com/dalogin/listeners/*`
+  - `dalogin-quarkus/src/main/java/com/dalogin/client/ServiceClient.java`
+  - `dalogin-quarkus/src/main/java/com/dalogin/client/filter/*`
+  - `dalogin-quarkus/src/main/resources/application.properties`
+- Out of scope:
+  - Functional API behavior changes
+  - Payload schema changes
+  - Logging rollout in non-dalogin services
 
-| Layer | What it covers |
-|---|---|
-| `ClientCallResponseFilter` | Every response (status, latency, URI) — automatic |
-| Inline START log per method | Request dispatch event — one line per method |
-| `RequestFilter` DEBUG log | Header injection trace — one location |
+## Non-negotiable Requirements
+1. Logger API migration target is `org.jboss.logging.Logger`.
+2. Servlet `doGet` and `doPost` must log entry and completion with servlet name at DEBUG level.
+3. `ServiceClient` must log request URI/path/params and response status at DEBUG level.
+4. `payment_method_nonce` must be masked/truncated if referenced.
+5. Request and response bodies must not be logged anywhere (including DEBUG).
+6. Filter completion log must be DEBUG and use format:
+   `HTTP request completed: method={}, uri={}, status={}`
 
----
+## Current Call Inventory (must all be covered)
+- `/login/CheckOut` GET -> `ServiceClient.clientToken()` -> `GET /mbooks-1/rest/book/payment/clientToken`
+- `/login/CheckOut` POST -> `ServiceClient.checkOut()` -> `POST /mbooks-1/rest/book/payment/fullcheckout2`
+- `/login/GetAllPurchases` GET -> `ServiceClient.callGetPurchases()` -> `GET /mbooks-1/rest/book/purchases`
+- `/login/ManagePurchases` GET -> `ServiceClient.callGetTickets()` -> `GET /mbooks-1/rest/book/purchases/tickets`
+- `/login/ManagePurchases` POST -> `ServiceClient.managePurchases()` -> `POST /mbooks-1/rest/book/managepurchases`
+- `/login/ManagePurchases` POST -> `ServiceClient.deletePurchases()` -> `POST /mbooks-1/rest/book/deletepurchases`
+- (internal) `ServiceClient.callGetData()` -> `GET /mbook-1/rest/user/{user}/{token1}`
+- (internal) `ServiceClient.callGetDevice()` -> `GET /mbook-1/rest/device/{uuid}`
 
-## Full Call Chain
+## Implementation Design
 
-```
-Browser/iOS
-    │
-    ▼
-dalogin Servlet (CheckOut, GetAllPurchases, ManagePurchases, …)
-    │  builds authAttributes: uuid, token2, TIME_
-    ▼
-ServiceClient(baseUrl, request, attributes)
-    │  registers RequestFilter + ClientCallResponseFilter
-    ▼
-RequestFilter.filter()
-    │  adds X-Token, Ciphertext (or token2 fallback), uuid, TIME_, Cookies
-    ▼
-JAX-RS HTTP call  →→→  mbook-1 or mbooks-1
-    ▼
-ClientCallResponseFilter.filter()
-    │  captures URI, method, status, latency
-    ▼
-Response returned to Servlet → written to browser/iOS
-```
+### 1) Logger API migration
+- Replace all `org.apache.log4j.Logger` imports in servlets/listeners/client/filters.
+- Use class loggers via `org.jboss.logging.Logger`.
+- Keep existing semantic messages where useful; convert message style to structured key/value placeholders.
 
----
+### 2) Servlet observability (entry + completion)
+For each servlet `doGet` and `doPost`:
+- Add entry DEBUG log with:
+  - `servletName`
+  - `method`
+  - `uri`
+- Add completion DEBUG log in `finally` with:
+  - `method`, `uri`, `status`
+- Do not log request body or response body.
 
-## Servlet → ServiceClient → Downstream Call Map
-
-| Servlet | HTTP | ServiceClient method | Downstream path |
-|---|---|---|---|
-| `CheckOut` | GET | `clientToken()` | GET `/mbooks-1/rest/book/payment/clientToken` |
-| `CheckOut` | POST | `checkOut()` | POST `/mbooks-1/rest/book/payment/fullcheckout2` |
-| `GetAllPurchases` | GET | `callGetPurchases()` | GET `/mbooks-1/rest/book/purchases` |
-| `ManagePurchases` | GET | `callGetTickets()` | GET `/mbooks-1/rest/book/purchases/tickets` |
-| `ManagePurchases` | POST | `managePurchases()` | POST `/mbooks-1/rest/book/managepurchases` |
-| `ManagePurchases` | POST | `deletePurchases()` | POST `/mbooks-1/rest/book/deletepurchases` |
-| (internal) | GET | `callGetData()` | GET `/mbook-1/rest/user/{user}/{token1}` |
-| (internal) | GET | `callGetDevice()` | GET `/mbook-1/rest/device/{uuid}` |
-
----
-
-## Layer 1: ClientCallResponseFilter (Example)
-
-Registered in `ServiceClient` constructor alongside `RequestFilter`.
-Fires automatically for every call — no per-method changes needed.
-
+Suggested completion line:
 ```java
-public class ClientCallResponseFilter implements ClientResponseFilter {
-
-    private static final Logger LOG = Logger.getLogger("LOG-HTTP-CLIENT");
-
-    @Override
-    public void filter(ClientRequestContext req, ClientResponseContext res) throws IOException {
-        int status  = res.getStatus();
-        String uri  = req.getUri().getPath();
-        String method = req.getMethod();
-        // latency: set as property in ClientCallStartFilter (see below)
-        long start  = (long) req.getProperty("call.start");
-        long duration = System.currentTimeMillis() - start;
-
-        String msg = "END " + method + " " + uri
-                   + " status=" + status
-                   + " durationMs=" + duration;
-
-        if (status >= 500) {
-            LOG.error(msg);
-        } else if (status >= 400) {
-            LOG.warn(msg);
-        } else {
-            LOG.info(msg);
-        }
-    }
-}
+log.debugf("HTTP request completed: method=%s, uri=%s, status=%d",
+    method, uri, status);
 ```
 
-A companion `ClientCallStartFilter` sets the start timestamp before the call:
+### 2.1) Servlet listener observability
+For `ServletContextListener`, `HttpSessionListener`, and `HttpSessionAttributeListener` classes:
+- Add DEBUG lifecycle logs (init/destroy/create/invalidate/attribute-change) with class name and event type.
+- Keep payload and credential-like values out of listener logs.
 
-```java
-public class ClientCallStartFilter implements ClientRequestFilter {
-    @Override
-    public void filter(ClientRequestContext ctx) throws IOException {
-        ctx.setProperty("call.start", System.currentTimeMillis());
-    }
-}
-```
+### 3) ServiceClient request/response summary logs
+For each outbound method in `ServiceClient`:
+- Before dispatch: log request summary at DEBUG with
+  - downstream alias
+  - HTTP method
+  - URI/path
+  - sanitized params map (names and masked values only)
+- After response: log response summary at DEBUG with
+  - downstream alias
+  - status
+  - URI/path
+- Never log request or response payload bodies.
 
-Registration in `ServiceClient` constructor:
+Parameter sanitation policy:
+- `token2`, `Ciphertext`, `uuid`: omit or redact (`***`).
+- `payment_method_nonce`: masked/truncated (`abcd...wxyz` at most).
+- Cookies: names only.
 
-```java
-target.register(new RequestFilter(request, attributes));
-target.register(new ClientCallStartFilter());
-target.register(new ClientCallResponseFilter());
-```
+### 4) Client filter instrumentation
+Use two filters for consistent outbound telemetry:
+- `ClientCallRequestFilter` for START event + start timestamp property.
+- `ClientCallResponseFilter` for END/ERROR event + status + duration.
 
----
+Severity policy:
+- 2xx/3xx -> DEBUG
+- 4xx -> WARN
+- 5xx -> ERROR
+- transport/SSL exceptions -> ERROR
 
-## Layer 2: Inline START log per ServiceClient method (Example)
+### 5) RequestFilter safe debug traces
+In `RequestFilter.filter()`:
+- DEBUG log must include only header names and fallback flags.
+- Must indicate Ciphertext fallback as boolean/enum only.
+- Must not include token/cookie/header values.
 
-One line added at the top of each method. No parameter values in the message.
+### 6) Log category and routing
+- Category for outbound HTTP observability: `LOG-HTTP-CLIENT`.
+- Route this category to dedicated `http-client.log`.
+- Keep stream separate from default app logs and Hibernate/SQL logs.
 
-```java
-private static final Logger LOG = Logger.getLogger("LOG-HTTP-CLIENT");
+## Phased Execution Plan
 
-public Response clientToken() {
-    LOG.info("START GET /rest/book/payment/clientToken");
-    purchasesService = target.proxy(Purchases.class);
-    return purchasesService.clientToken();
-}
+### Phase A - API migration
+- Migrate logger imports to `org.jboss.logging.Logger` in servlets/listeners/client/filters.
+- Build and verify no `org.apache.log4j.Logger` imports remain under `dalogin-quarkus/src/main/java`.
 
-public Response checkOut(HttpServletRequest request) {
-    LOG.info("START POST /rest/book/payment/fullcheckout2");
-    purchasesService = target.proxy(Purchases.class);
-    return purchasesService.checkOut(
-        request.getParameter("orderId"),
-        request.getParameter("seatsToBeReserved"),
-        request.getParameter("payment_method_nonce")
-    );
-}
-```
+### Phase B - Servlet logs
+- Implement entry/completion DEBUG logs for `doGet`/`doPost` methods.
+- Ensure completion log always runs (`finally` block).
+- Add DEBUG logs to servlet listeners (`context`, `session`, `attribute` lifecycle events).
 
----
+### Phase C - ServiceClient logs
+- Add request summary and response status logs in all 8 call paths.
+- Add helper sanitizers for sensitive parameters.
 
-## Layer 3: RequestFilter DEBUG header trace (Example)
+### Phase D - Filters
+- Implement/register `ClientCallRequestFilter` and `ClientCallResponseFilter`.
+- Add RequestFilter DEBUG header-name trace and fallback indicators.
 
-Only logs header **names** and a boolean for the Ciphertext fallback. No values.
+### Phase E - Routing
+- Configure `LOG-HTTP-CLIENT` -> `http-client.log` in runtime logging config.
+- Verify no category cross-mixing.
 
-```java
-@Override
-public void filter(ClientRequestContext requestContext) throws IOException {
-    // ... existing header injection code ...
+### Phase F - Verification and evidence
+- Validate success, 4xx, 5xx, and exception paths.
+- Validate masking and no-body-logging constraints.
+- Capture evidence bundle for all call paths.
 
-    if (LOG.isDebugEnabled()) {
-        String ciphertextFallback = (request.getHeader("Ciphertext") == null) ? "token2-fallback" : "from-request";
-        List<String> cookieNames = Arrays.stream(request.getCookies() != null ? request.getCookies() : new Cookie[0])
-            .map(Cookie::getName)
-            .collect(Collectors.toList());
-        LOG.debug("RequestFilter injected: X-Token, Ciphertext[" + ciphertextFallback + "]"
-                + " attrs=" + attributes.keySet()
-                + " cookies=" + cookieNames);
-    }
-}
-```
+## Log Fields (target)
 
----
+### Servlet completion
+- `event=HTTP_REQUEST_COMPLETED`
+- `servletName`
+- `method`
+- `uri`
+- `status`
 
-## Log Output Shape (Structured)
+### Servlet listener lifecycle
+- `event` (`CONTEXT_INIT`, `CONTEXT_DESTROY`, `SESSION_CREATED`, `SESSION_DESTROYED`, `SESSION_ATTR_CHANGED`)
+- `listenerName`
+- `sessionId` (when applicable)
+- `attributeName` (for attribute events, no value)
 
-```json
-// START (inline in ServiceClient method)
-{ "level": "INFO", "category": "LOG-HTTP-CLIENT",
-  "source": "ServiceClient.checkOut", "event": "START",
-  "method": "POST", "path": "/rest/book/payment/fullcheckout2" }
+### ServiceClient request
+- `event=OUTBOUND_START`
+- `clientMethod`
+- `downstream`
+- `method`
+- `uri`
+- `path`
+- `params` (sanitized)
 
-// END (ClientCallResponseFilter)
-{ "level": "INFO", "category": "LOG-HTTP-CLIENT",
-  "source": "ClientCallResponseFilter", "event": "END",
-  "method": "POST", "path": "/mbooks-1/rest/book/payment/fullcheckout2",
-  "status": 200, "durationMs": 342 }
+### ServiceClient response
+- `event=OUTBOUND_END` or `event=OUTBOUND_ERROR`
+- `clientMethod`
+- `downstream`
+- `method`
+- `uri`
+- `status`
 
-// ERROR (ClientCallResponseFilter on 5xx)
-{ "level": "ERROR", "category": "LOG-HTTP-CLIENT",
-  "source": "ClientCallResponseFilter", "event": "END",
-  "method": "POST", "path": "/mbooks-1/rest/book/payment/fullcheckout2",
-  "status": 500, "durationMs": 120 }
-
-// DEBUG (RequestFilter)
-{ "level": "DEBUG", "category": "LOG-HTTP-CLIENT",
-  "source": "RequestFilter", "event": "HEADERS-INJECTED",
-  "headers": ["X-Token", "Ciphertext", "uuid", "token2", "TIME_"],
-  "ciphertextSource": "token2-fallback",
-  "cookies": ["XSRF-TOKEN", "JSESSIONID"] }
-```
-
-> **Security:** token2, Ciphertext, uuid, nonce, and Cookie **values** never appear in any log message.
-
----
-
-## Log Routing Config (dalogin-quarkus)
-
-```xml
-<!-- log4j.xml — add a dedicated appender for LOG-HTTP-CLIENT -->
-<appender name="HTTP_CLIENT_FILE" class="org.apache.log4j.RollingFileAppender">
-    <param name="File" value="logs/http-client.log"/>
-    <param name="MaxFileSize" value="10MB"/>
-    <param name="MaxBackupIndex" value="5"/>
-    <layout class="org.apache.log4j.PatternLayout">
-        <param name="ConversionPattern" value="%d{ISO8601} %-5p [%c] %m%n"/>
-    </layout>
-</appender>
-
-<logger name="LOG-HTTP-CLIENT" additivity="false">
-    <level value="INFO"/>
-    <appender-ref ref="HTTP_CLIENT_FILE"/>
-</logger>
-```
-
----
-
-## Sensitive Field Masking Rules
-
-| Field | Rule |
-|---|---|
-| `token2` | Never in any log. Used internally in `RequestFilter` only. |
-| `Ciphertext` | Log only whether fallback was used — not the value. |
-| `uuid` | Present in `attributes` map — never logged in START/END messages. |
-| `payment_method_nonce` | `checkOut()` START log MUST NOT include nonce value. |
-| Cookie values | Log cookie names only (not values). |
-
----
+## Security Guardrails
+- Forbidden in logs: raw `token2`, raw `Ciphertext`, raw `uuid`, raw `payment_method_nonce`, cookie values, request body, response body.
+- Allowed: masked nonce, cookie/header names, boolean fallback indicators.
 
 ## Validation Checklist
-- [ ] All 8 `ServiceClient` methods emit START log (INFO, no param values).
-- [ ] `ClientCallResponseFilter` produces END log for every call.
-- [ ] 5xx responses produce ERROR log; 4xx produce WARN.
-- [ ] `RequestFilter` DEBUG log shows header names and Ciphertext fallback flag, not values.
-- [ ] No sensitive value appears in any `http-client.log` entry.
-- [ ] `http-client.log` file is separate from all other log streams.
+- [ ] All servlet and client/filter classes use `org.jboss.logging.Logger`.
+- [ ] All servlet and listener classes use `org.jboss.logging.Logger`.
+- [ ] All servlet `doGet`/`doPost` methods have entry + completion DEBUG logs.
+- [ ] Servlet listeners emit DEBUG lifecycle logs with safe structure.
+- [ ] Completion line format matches required method/uri/status pattern.
+- [ ] All 8 `ServiceClient` paths emit request + response summary logs.
+- [ ] Request and response bodies are absent from all logs, including DEBUG.
+- [ ] Sensitive fields are redacted/masked according to policy.
+- [ ] `LOG-HTTP-CLIENT` is routed to `http-client.log` without cross-mixing.
+- [ ] 4xx -> WARN and 5xx/exception -> ERROR are verified.
 
-## Open Review Questions
-1. Should START logs include the servlet class name as caller (e.g. `"caller": "CheckOut"`) for richer tracing?
-2. Should the `ClientCallResponseFilter` also log the servlet session ID (not token) for correlation?
-3. Should exception-path logging (SSL errors) in servlets be migrated to `LOG-HTTP-CLIENT` or stay in the servlet's own logger?
-
+## Review Decisions (Resolved)
+1. Request ID is not used in this feature's required log structure.
+2. All `ServiceClient`, servlet, and servlet-listener logs are DEBUG for this observability stream.
+3. Response body logging stays disabled in all environments, including DEBUG.

@@ -17,6 +17,7 @@ This plan is combined with `speckit.system.dalogin-http-client-observability.*` 
   - `dalogin-quarkus/src/main/resources/META-INF/resources/WEB-INF/log4j.xml`
   - `dalogin-quarkus/src/main/resources/META-INF/resources/WEB-INF/log4j.properties`
   - `dalogin-quarkus/src/main/java/com/dalogin/servlets/*`
+  - `dalogin-quarkus/src/main/java/com/dalogin/listeners/*`
   - `dalogin-quarkus/src/main/java/com/dalogin/filters/*`
   - `dalogin-quarkus/src/main/java/com/dalogin/client/*`
 
@@ -29,7 +30,7 @@ This plan is combined with `speckit.system.dalogin-http-client-observability.*` 
 - RestAssured smoke tests are recommended for verification, but are not a hard dependency of this plan.
 
 ## Target State
-1. Code uses one consistent logger API and no new Log4j usages are introduced.
+1. Code uses one consistent logger API (`org.jboss.logging.Logger`) and no new Log4j usages are introduced.
 2. Quarkus logging configuration is the active runtime source of truth for dalogin logging.
 3. Logging categories are routed via Quarkus properties with dedicated files:
    - general app logs
@@ -59,12 +60,15 @@ This plan is combined with `speckit.system.dalogin-http-client-observability.*` 
 - Replace imports from:
   - `org.apache.log4j.Logger`
 - To:
-  - selected project logger API compatible with Quarkus logging runtime
+  - `org.jboss.logging.Logger`
 - Migrate class-by-class in priority order:
   1. `CheckOut`, `GetAllPurchases`, `ManagePurchases`
-  2. `RequestFilter`, `ServiceClient`
-  3. remaining servlets and filters
+  2. listener classes (`CustomServletContextListener`, `CustomHttpSessionListener`, `SessionAttributeListener`)
+  3. `RequestFilter`, `ServiceClient`
+  4. remaining servlets and filters
 - Keep log messages semantically equivalent during migration.
+- Add servlet method-level DEBUG logs in `doGet`/`doPost` with servlet name and method/URI context.
+- Add servlet-listener DEBUG lifecycle logs with safe structured fields.
 
 ### Phase 3 - Category and file routing
 - Define and apply category map:
@@ -75,10 +79,15 @@ This plan is combined with `speckit.system.dalogin-http-client-observability.*` 
 
 ### Phase 4 - Observability hardening
 - Keep START/END/ERROR event structure for downstream calls.
+- In `ServiceClient`, log request URI/path and sanitized params at DEBUG; do not log request/response body.
+- In `ServiceClient`, log response status for every outbound call at DEBUG.
 - Ensure `RequestFilter` logs only header names and fallback flags, never values.
+- Add/align filter completion log format:
+  `HTTP request completed: method={}, uri={}, status={}`.
 - Keep request/response logging concise and meaningful (downstream service, method, status, duration, correlation).
 - Verify masked fields policy:
   - `token2`, `Ciphertext`, `uuid`, `payment_method_nonce`, cookie values.
+  - response body content in all environments (including DEBUG).
 
 ### Phase 5 - Validation and rollout
 - Functional checks:
@@ -99,6 +108,9 @@ This plan is combined with `speckit.system.dalogin-http-client-observability.*` 
 
 ## Definition of Done
 - `org.apache.log4j.Logger` imports removed from `dalogin-quarkus` source.
+- Servlet `doGet`/`doPost` DEBUG logs include servlet name and completion summary.
+- Servlet listener DEBUG lifecycle logs exist with safe structures.
+- `ServiceClient` DEBUG logs include request URI/path/params and response status only (no request/response body logging).
 - Quarkus logging config is the effective source for dalogin module logging behavior.
 - `LOG-HTTP-CLIENT` in dedicated `http-client.log` file.
 - Security redaction checks pass.

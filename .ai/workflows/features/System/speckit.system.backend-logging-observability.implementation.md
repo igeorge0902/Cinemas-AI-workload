@@ -1,4 +1,4 @@
-# Backend Logging Observability - Implementation Plan (Annotation-First Draft)
+# Backend Logging Observability - Implementation Plan (Annotation-First)
 
 ## Purpose
 This draft updates the implementation direction to a low-intrusion model using annotations and interceptors.
@@ -301,24 +301,30 @@ quarkus.log.handler.file.log_filter.enable=true
 quarkus.log.handler.file.log_filter.path=logs/filter.log
 ```
 
-## Category -> File Map (Draft)
-- `LOG-HIBERNATE-TX` -> `hibernate-tx.log`
-- `LOG-SQL` -> `hibernate-sql.log`
-- `LOG-HIBERNATE-STATS` -> `hibernate-stats.log`
-- `LOG-ENTITY` -> `entity.log`
-- `LOG-ENDPOINT` -> `endpoint.log`
-- `LOG-FILTER` -> `filter.log`
-- `LOG-SESSION` -> `session.log`
+## Category -> File Map
+| Category | File | Status |
+|---|---|---|
+| `LOG-HIBERNATE-TX` | `hibernate-tx.log` | ✅ implemented & verified |
+| `LOG-SQL` | `hibernate-sql.log` | ✅ implemented & verified |
+| `LOG-HIBERNATE-BIND` | `hibernate-bind.log` | ✅ implemented & verified |
+| `LOG-HIBERNATE-TRANSACTION` | `hibernate-transaction.log` | ✅ implemented & verified |
+| `LOG-HIBERNATE-CACHE` | `hibernate-cache.log` | ✅ implemented & verified |
+| `LOG-ENTITY` | `entity.log` | ✅ implemented & verified |
+| `LOG-ENDPOINT` | `endpoint.log` | ⏳ routing config defined; instrumentation pending |
+| `LOG-FILTER` | `filter.log` | ⏳ routing config defined; instrumentation pending |
+| `LOG-SESSION` | `session.log` | ⏳ routing config defined; instrumentation pending |
 
 ## Validation Checklist
-- [ ] Annotation contract approved for DAO PoC.
-- [ ] Interceptor emits START/END/ERROR with structured fields.
-- [ ] System threshold filtering works for INFO/DEBUG/TRACE.
-- [ ] Existing + Hibernate logs are structured.
-- [ ] Hibernate subtype logs remain in separate files.
-- [ ] New categories are routed to separate files.
+- [x] Annotation contract approved for DAO PoC.
+- [x] Interceptor emits START/END/ERROR with structured fields.
+- [x] System threshold filtering works for INFO/DEBUG/TRACE.
+- [x] Existing + Hibernate logs are structured.
+- [x] Hibernate subtype logs remain in separate files.
+- [x] New categories are routed to separate files.
 - [x] Grafana/Loki plumbing is provisioned in Kubernetes manifests.
-- [ ] Grafana queries work per service/category/level/file stream (runtime validation).
+- [x] Grafana queries work per service/category/level/file stream (runtime validation).
+
+> **Note:** `LOG-ENDPOINT`, `LOG-SESSION`, and `LOG-FILTER` categories are defined in the routing map and config but not yet instrumented in service code. Evidence for those categories is pending Phase 4 completion for those specific log types.
 
 ## Risks and Mitigations
 - **Risk**: too many annotation points.
@@ -328,7 +334,10 @@ quarkus.log.handler.file.log_filter.path=logs/filter.log
 - **Risk**: routing drift across services.
   - **Mitigation**: central routing map + CI drift check for log categories/files.
 
-## Open Review Questions
-1. Should DAO PoC use method-level annotations only, or class-level defaults plus method overrides?
-2. Should `includeArgs` default to `false` globally for security-by-default?
-3. Should Hibernate statistics stream be enabled by default or only in DEBUG/TRACE environments?
+## Open Review Questions — Resolved
+1. **Should DAO PoC use method-level annotations only, or class-level defaults plus method overrides?**
+   → **Resolved:** Class-level annotation defaults with method-level overrides where needed. Both `mbook-quarkus` and `mbooks-quarkus` use this pattern.
+2. **Should `includeArgs` default to `false` globally for security-by-default?**
+   → **Resolved:** Yes — `includeArgs` defaults to `false`. When enabled, sensitive parameters (uuid, token, password) are redacted by the interceptor before appending to the log event.
+3. **Should Hibernate statistics stream be enabled by default or only in DEBUG/TRACE environments?**
+   → **Resolved:** Hibernate subtype streams (SQL, bind, transaction, cache, tx) are enabled at DEBUG level. Hibernate statistics are not enabled by default; they remain opt-in for DEBUG/TRACE investigation environments.
