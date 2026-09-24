@@ -1,0 +1,391 @@
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-cdi-injection.tasks
+  s_4f070cf415fa68::t_a26af306832771 71
+  s_4f070cf415fa68::t_41f9dc5b23735f 7-8,90-91
+  s_4f070cf415fa68::t_f1df012c105d01 40-46,52-56
+  s_4f070cf415fa68::t_150111c4976b54 57,69,72-74,76
+  s_4f070cf415fa68::t_57cf46eaecbd45 1-6,9,12,18,24,27,29-30,35-39,66-68,82,93-94,96-99
+  s_4f070cf415fa68::t_346bfd8b8b75f4 70,75,79-81
+  s_4f070cf415fa68::t_c0b0355760d9f1 19-23,28
+  s_4f070cf415fa68::t_ddee5f97882a81 11
+  s_4f070cf415fa68::t_35b6c8be38d9b1 47-51
+  s_4f070cf415fa68::t_31788bfa226b42 77-78
+  s_4f070cf415fa68::t_d3d6c60d235d3e 13-17,58-65
+  s_4f070cf415fa68::t_d60994677ebb3f 83-89,92,100-107
+  s_4f070cf415fa68::t_005d22e53238b5 10
+  s_4f070cf415fa68::t_b9c525117c4be1 25-26,31-34
+  s_4f070cf415fa68::t_6e86b472018273 95
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-logging-migration.tasks
+  s_4f070cf415fa68::t_16e2c11b61606d 8,10,12,15,21,30,35
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-login-logout-error-handling.specify
+  s_4f070cf415fa68::t_048f1c7f6a2b5f 1-7,12-69,86-95,101-123,135-153,159-168,171,174-186
+  s_4f070cf415fa68::t_017dd89ec463c6 8-11,154-156,158
+  s_4f070cf415fa68::t_31252a51629ee1 157
+  s_4f070cf415fa68::t_3d78b6d717ebdc 96-100
+  s_4f070cf415fa68::t_83b5708618c756 70-85,124-134,169-170,172-173,187-189
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-persistence-servlet-adaptation.plan
+  s_4f070cf415fa68::t_31252a51629ee1 66
+  s_4f070cf415fa68::t_2dd208fb337499 71,106-109
+  s_4f070cf415fa68::t_746c584c4268ae 1-25,27-34,41-43,46-56,58-59,63-64,72-75,77-105,110-112,119-121
+  s_4f070cf415fa68::t_b9c525117c4be1 65,67-70
+  s_4f070cf415fa68::t_825bafe2eb8d99 37-39,57,76,116-118
+  s_4f070cf415fa68::t_972dce7bb9a3bc 26,35-36,40,44-45,60-62,113-115
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-servlet-request-response.specify
+  s_4f070cf415fa68::t_017dd89ec463c6 197-199
+  s_4f070cf415fa68::t_2dd208fb337499 18,134-138,170-172,202-205
+  s_4f070cf415fa68::t_35a9af8bf35642 22-24
+  s_4f070cf415fa68::t_825bafe2eb8d99 38-40,147-157,209-215
+  s_4f070cf415fa68::t_b9c525117c4be1 124-129,132-133,139-140,200-201,206
+  s_4f070cf415fa68::t_31252a51629ee1 130-131
+  s_4f070cf415fa68::t_fd81c9d6507591 10-13,30-31,44,46-59,61-71,77,88-93,97-98,102-103,182-185
+  s_4f070cf415fa68::t_1371b238d070cd 1-9,14-17,19-21,25-29,32-33,41-43,45,60,72-76,78-87,94-96,99-101,104-123,158-169,173-181,186-196,216-221
+  s_4f070cf415fa68::t_8333b6fae95793 34-37,141-146,207-208
+.ai/skills/README.md
+  s_4f070cf415fa68::t_a3b0bf5f2725e6 20
+  s_4f070cf415fa68::t_6bef02dfc80930 16
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-http-client-observability.plan
+  s_4f070cf415fa68::t_16e2c11b61606d 6,9-13,24,28-33,37-56,59,61-65,69-82,88-90
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-login-logout-error-handling.tasks
+  s_4f070cf415fa68::t_03c66f4b662765 6-8,11-13
+  s_4f070cf415fa68::t_5bda81ffbb84ee 40-46
+  s_4f070cf415fa68::t_017dd89ec463c6 14,18-19,21,23-27
+  s_4f070cf415fa68::t_1373681949450d 1-5,9-10,15-17,20,22,28-39,47-68
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-http-client-observability.tasks
+  s_4f070cf415fa68::t_16e2c11b61606d 2-3,5-28,30-50,52,56-57,59-60,63,65,69-71,74-75,77,80-82,84
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-datasource-legacy-removal.tasks
+  s_4f070cf415fa68::t_31788bfa226b42 62-63
+  s_4f070cf415fa68::t_a26af306832771 53-57
+  s_4f070cf415fa68::t_89139e1d18977a 1-4,13-22,26,28-34,37,49-52,68-69
+  s_4f070cf415fa68::t_b1ea7a8fb973fa 5-10,27,35-36,42-46,60-61
+  s_4f070cf415fa68::t_c1b8d65c6556cf 11-12,23-25,38-41,47-48,58-59,64-67,70-76
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-cdi-injection.specify
+  s_4f070cf415fa68::t_147878e46912ec 125-134
+  s_4f070cf415fa68::t_5e34aea7c642b2 69-75,79-80,161-166,173
+  s_4f070cf415fa68::t_76fda0122783eb 117,121-124,135,185
+  s_4f070cf415fa68::t_8e7babbdb27814 104-116,191,193
+  s_4f070cf415fa68::t_0645b830f91733 168,171,180,182,188,195-202
+  s_4f070cf415fa68::t_732aad72caa683 176,178
+  s_4f070cf415fa68::t_28c1b98079de1d 83-103
+  s_4f070cf415fa68::t_c6ab35eb811881 138-139,143-144,146-152,158
+  s_4f070cf415fa68::t_31252a51629ee1 81
+  s_4f070cf415fa68::t_eb28075b76edf2 33-47
+  s_4f070cf415fa68::t_809ae43860f06a 1-32,48-56,62-68,76-78,82,136-137,145,153-157,159-160,167,169-170
+  s_4f070cf415fa68::t_6efba8dd5f07f3 57,61
+  s_4f070cf415fa68::t_421d5f75fdd354 172,174-175,177,179,181,183-184,186-187,189-190,192,194
+  s_4f070cf415fa68::t_017dd89ec463c6 140-142
+  s_4f070cf415fa68::t_a9d7ad333efc96 58-60,118-120
+.gitignore
+  s_304ea84b518cd5::t_b6bc55cdd05e22 11-13
+  s_304ea84b518cd5::t_cc628f0fcc6a6a 14
+k6/api2.properties.example
+  s_304ea84b518cd5::t_cc628f0fcc6a6a 1-7
+k6/api2.js
+  s_304ea84b518cd5::t_ab1bf2e864a1ab 88-108,110
+  s_304ea84b518cd5::t_cc628f0fcc6a6a 5-16,18-22,30-34,36-38,42-43,46,53-55,61-62,64,66,70-73,75-78,83,85-86,112
+  s_304ea84b518cd5::t_b6bc55cdd05e22 1-4,23-24,35,39-41,44-45,47-49,52,56-60,63,65,67-69,74,79-82,84,87,113
+  s_304ea84b518cd5::t_acd7300f1e2176 17
+  s_304ea84b518cd5::t_e8518458e9a99e 25-29,50-51,109,111
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.bookcontroller-response-records-all.specify
+  h_d154d11af00b83 16,18-22,34-37,44,49-55,89,117,119-144,151,167-170
+  s_4f070cf415fa68::t_e7b46c403de4fe 1,4-15,17,23-33,38-43,45-48,56-88,90-92,96-116,118,145-150,152-156,160-161,163-164,171-184
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-cdi-injection.plan
+  s_4f070cf415fa68::t_2af6c492a71609 147-148,151,157
+  s_4f070cf415fa68::t_b9c525117c4be1 72-73,89-90,93
+  h_d154d11af00b83 145,155
+  s_7ebd2c8d22dc00::t_593fa3a61b6a99 143
+  s_4f070cf415fa68::t_5fa9a3aeca2ec5 113-117,120-121,124-129,131-137
+  s_4f070cf415fa68::t_745d38ecff3e00 100-102
+  s_4f070cf415fa68::t_8ffde1d2280186 60-68
+  s_4f070cf415fa68::t_2591dbca3930db 149-150,152-154,156,158
+  s_4f070cf415fa68::t_f3e72f6c8a3311 7,11
+  s_4f070cf415fa68::t_710eea28a474c7 1-6,12-31,58-59,70,84-85,88,91-92,94-95,97,107-108,112,118,130,139-140
+  s_4f070cf415fa68::t_cadbc4d9ed35ff 86-87,105-106,109-111,119,122-123,138,142,144,146
+  s_4f070cf415fa68::t_a26af306832771 8-10,74-76
+  s_4f070cf415fa68::t_b7265dac497821 96,98-99,103-104
+  s_4f070cf415fa68::t_31252a51629ee1 69
+  s_4f070cf415fa68::t_a28e1ac01d8d5c 71,77-83
+  s_4f070cf415fa68::t_320db3908d5a72 32-57
+  s_4f070cf415fa68::t_40471baad4dcad 141
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-family-split.specify
+  s_4f070cf415fa68::t_224036dc0ddb83 113
+  s_4f070cf415fa68::t_212201252b19b8 169-170
+  s_4f070cf415fa68::t_d2eb53bb71fe47 36,107-112,120,136,143-148
+  s_4f070cf415fa68::t_a81da3de35ad33 102-104
+  s_4f070cf415fa68::t_31252a51629ee1 54,86
+  s_4f070cf415fa68::t_aa8fa3df57464e 46-48
+  s_4f070cf415fa68::t_0aef7b6cf11986 172
+  s_4f070cf415fa68::t_16e2c11b61606d 84-85,87,114-119,163-164
+  s_4f070cf415fa68::t_e869ea2dc64f74 132-135,149,160,173-175
+  s_4f070cf415fa68::t_421d5f75fdd354 157-159,161-162,165,168,171
+  s_4f070cf415fa68::t_67a227905769cd 35,88-89
+  s_4f070cf415fa68::t_9418812b5c4a6e 91-94,137-142,151,166-167
+  s_4f070cf415fa68::t_0483bc9379103e 29-34,41-45,49-53,55-58
+  s_4f070cf415fa68::t_a3170c4e30ab00 72-73,79-83
+  s_4f070cf415fa68::t_d9a6f34dfbee45 90,95-101
+  s_4f070cf415fa68::t_69b88a1c496029 1-28,37-40,59-71,74-78,121-131,150,152-156
+  s_4f070cf415fa68::t_aa4f4fef5bbaaa 105-106
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-login-logout-error-handling.plan
+  s_4f070cf415fa68::t_017dd89ec463c6 14,16,44-46,48-50
+  s_4f070cf415fa68::t_5bda81ffbb84ee 37-41,55-59,72-73,86-91
+  s_4f070cf415fa68::t_c30165642635b4 1-13,17-36,42-43,47,51-54,60-71,74-85,92-94
+  s_4f070cf415fa68::t_31252a51629ee1 15
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-http-client-observability.specify
+  s_4f070cf415fa68::t_16e2c11b61606d 9-11,30,38-40,44,48-50,59-60,63,68-69,71,76
+k6/README.md
+  s_304ea84b518cd5::t_e8518458e9a99e 3-4,20-25,27-28
+  s_304ea84b518cd5::t_cc628f0fcc6a6a 1-2,5-19,26
+.ai/skills/quarkus-local-test-mysql/SKILL.md
+  s_4f070cf415fa68::t_a3c18851cf15a5 176-181,191,194-206
+  s_4f070cf415fa68::t_8cdd294473dd22 215,217-218
+  s_4f070cf415fa68::t_f239595294d103 70-73
+  s_4f070cf415fa68::t_b105efd9fff444 26
+  s_4f070cf415fa68::t_a4a07d287c0436 1-25,27-69,74-112,115-121,124,126-128,132-133,149-175,182-190,192-193,207-214,216,219-220
+  s_4f070cf415fa68::t_eb26d99968efd7 113-114,122-123
+  s_4f070cf415fa68::t_0d62f992d3bd4f 125,129-131,134-148
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-datasource-legacy-removal.plan
+  s_4f070cf415fa68::t_a26af306832771 80-81
+  s_4f070cf415fa68::t_6bdeee2dd61f29 91-93,99-100
+  s_4f070cf415fa68::t_d10e4417efe5ba 34-40
+  s_4f070cf415fa68::t_77cfab7b833878 1-27,32-33,41-43,46-47,49,54-59,64-67,77-79,85-90,98
+  s_4f070cf415fa68::t_9d37d278feecb5 44-45,48,50-53,61,68-69,75-76,82-84
+  h_d154d11af00b83 60,62-63
+  s_4f070cf415fa68::t_ffbeccbf6889ca 28-31,70-74,94-97
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md
+  s_4f070cf415fa68::t_31252a51629ee1 22,332,335,347,425,439-442,521,600,680-681
+  s_4f070cf415fa68::t_746c584c4268ae 1-4,8-21,23-37,40-76,78-144,146-215,235-270,272-276,278-282,284,286-287,290,292,294-296,298,300-301,304-306,308-325,327,329-330,484-520,522-552,554-562,654,667-671,673-675,684-685,688,690-753,755-757,761-768,775,810-833,835-850,852
+  s_4f070cf415fa68::t_b9c525117c4be1 655-665
+  s_4f070cf415fa68::t_72e84056507546 853-881,883-926,928-945
+  s_4f070cf415fa68::t_11584d93b2a9c7 5-7,77,758-760,771,773-774
+  s_4f070cf415fa68::t_0dc3db20c383a2 679,682-683
+  s_4f070cf415fa68::t_2dd208fb337499 423-424,426-438,443-480
+  s_4f070cf415fa68::t_101b5c76f8cebd 769-770
+  s_4f070cf415fa68::t_d1f94ff820b049 145,553,615
+  s_4f070cf415fa68::t_825bafe2eb8d99 772,776-809,882,927
+  h_d154d11af00b83 38-39,672,676-678
+  s_4f070cf415fa68::t_88ac9a1928899a 216-234,283,285,288-289,291,293,297,299,302-303,307,636-643
+  s_4f070cf415fa68::t_30b6f0cdd0bdee 271,277,326,328,331,333-334,336-346,348-422,481-483,563-599,601-614,616-635,644-653,666,686-687,689,754,834,851
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-family-split.plan
+  s_4f070cf415fa68::t_c26fc0e124baa6 63-66,101-102
+  s_4f070cf415fa68::t_79ce8f940cdf5e 33
+  s_4f070cf415fa68::t_395a0429b12681 82-84
+  s_4f070cf415fa68::t_017dd89ec463c6 95-97
+  s_4f070cf415fa68::t_b461c9957a0308 45-48
+  s_7ebd2c8d22dc00::t_15a495c1969401 98
+  s_4f070cf415fa68::t_0316be5b65a7af 23,27
+  s_4f070cf415fa68::t_341719bdf14a94 1-18,22,28,36,49-55,58-62,67-75,78-81,85-86,99
+  s_4f070cf415fa68::t_8d8f602788bd78 29,31-32,34-35
+  s_4f070cf415fa68::t_35a9af8bf35642 19-21
+  s_4f070cf415fa68::t_e2485d268ad135 30,37-39,57,87-89,100
+  s_4f070cf415fa68::t_d02bb79dde584c 40-44,56
+  s_4f070cf415fa68::t_ecfa8a526a0954 77
+  s_4f070cf415fa68::t_f79be189a0afbe 24-26,76,90-94
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-connection-pool-analysis.tasks
+  s_4f070cf415fa68::t_8127faca80fe58 1-18,21-22,25-26,29-30,37-60
+  s_4f070cf415fa68::t_5988c26a608bd9 19-20,23-24,27-28,31-36
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-connection-pool-analysis.plan
+  s_4f070cf415fa68::t_f91184e1f00a2d 1-26,28,31-33,35,37-63
+  h_d154d11af00b83 27,29-30,34,36
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.bookcontroller-response-records-all.plan
+  h_d154d11af00b83 38
+  s_4f070cf415fa68::t_681b7b1a6b73d5 1,4-14,17-19,22-37,39-81,83-96,98-112,114-118,120-121,123-133,135-147,150-160
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-connection-pool-analysis.specify
+  s_4f070cf415fa68::t_d239f5ef1dbc30 1-71
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-persistence-servlet-adaptation.tasks
+  s_4f070cf415fa68::t_5d5f93bd9b16bf 13-14,29-30,74-75
+  s_4f070cf415fa68::t_825bafe2eb8d99 39-40,77-78,103
+  s_4f070cf415fa68::t_b9c525117c4be1 62-68
+  s_4f070cf415fa68::t_31252a51629ee1 35
+  s_4f070cf415fa68::t_2dd208fb337499 69,93
+  s_4f070cf415fa68::t_746c584c4268ae 1-12,15-28,31-34,36-38,41-61,70-73,76,79-92,94-101,104-105
+  s_4f070cf415fa68::t_7c3abdb217eb44 102
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-family-split.tasks
+  s_4f070cf415fa68::t_31788bfa226b42 68
+  s_4f070cf415fa68::t_212201252b19b8 43-44
+  s_4f070cf415fa68::t_b461c9957a0308 10,76
+  s_4f070cf415fa68::t_baa37b830d3ee1 16-17,49-50
+  s_4f070cf415fa68::t_48ed876553edc7 1-3,5-8,13-15,21-31,52-66,69-75,78-82,84-86
+  s_4f070cf415fa68::t_edc481a686e7f2 18-20
+  s_4f070cf415fa68::t_e47aa30d0fc70a 32-37
+  s_4f070cf415fa68::t_e2485d268ad135 9,12,38-40,47-48,83
+  s_4f070cf415fa68::t_421d5f75fdd354 77
+  s_4f070cf415fa68::t_35a9af8bf35642 4
+  s_4f070cf415fa68::t_d02bb79dde584c 11,45-46
+  s_4f070cf415fa68::t_738c091942a217 41-42,51,67
+.ai/specs/legacy-specify/features/System/speckit.system.refactoring-mentions-roadmap.tasks
+  s_4f070cf415fa68::t_3f4af62d9b631d 14-17
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.movies.implementation-example.md
+  s_81662dd672549d::t_6a7b588c6bf210 285
+  s_81662dd672549d::t_d207860f0d9d65 144-150,158,163,177-178,180-182,184-185,191-219,222
+  s_81662dd672549d::t_2347ff5d60764a 160,167,171,175,179,183,188
+  s_81662dd672549d::t_fd36da6d897057 239
+  s_81662dd672549d::t_a6cc4814ed0b33 70-143,151-157,159,161-162,164-166,168-170,172-174,176,190,220-221
+  s_81662dd672549d::t_a0c6a064c2dc59 223
+  s_81662dd672549d::t_3e7406551d15a6 240
+  s_81662dd672549d::t_20baf5ef53d93f 67-69
+  s_81662dd672549d::t_bb285521501692 186-187
+  s_81662dd672549d::t_365bf8d11873cf 189
+  s_81662dd672549d::t_ad3001bb0183db 224-226
+  s_81662dd672549d::t_b93fb33f14b17b 236-238
+  s_81662dd672549d::t_1d877d0822f0e0 241
+  s_81662dd672549d::t_4b3a9b32a832f5 282-284
+  s_81662dd672549d::t_0a06456c763770 286-288
+  h_d154d11af00b83 1,3-6,9-13,16-66,227-231,235,243-245,247-251,254-281,289,293,296-301,303-308,311-318,322-323,325-326,328,330-331,333-334,336-338,342-347,350,352,354,356-359,363-390,393-394,396,398,400,402-405,407-409,412-496
+.ai/specs/legacy-specify/features/System/speckit.system.refactoring-mentions-roadmap.plan
+  s_4f070cf415fa68::t_829524cc428e1b 37,70-81
+  s_4f070cf415fa68::t_39ea8799a9ab8e 12-14,19,27-28,30-34
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-datasource-legacy-removal.specify
+  h_d154d11af00b83 57,77
+  s_4f070cf415fa68::t_22b71974575c18 87-91,97-101
+  s_4f070cf415fa68::t_1f0be5f06a8846 1-33,44-48,50-56,58-63,75-76,78-86,92
+  s_4f070cf415fa68::t_c565097c1271b5 64-74
+  s_4f070cf415fa68::t_421d5f75fdd354 93-96
+  s_4f070cf415fa68::t_3b9c477478e01a 34-43,49
+.ai/agents/AGENTS.md
+  s_4f070cf415fa68::t_b3f47c0ca005fe 485
+.ai/agents/agents-role.yaml
+  s_4f070cf415fa68::t_b03c61896280eb 17
+.ai/memory/api.yaml
+  s_4f070cf415fa68::t_647ebec0ae01b4 3,75-85,90-96,241-242
+.ai/memory/constitution-backup.md
+  s_4f070cf415fa68::t_bdcaec416b9b4a 7,18-24,150,183,240
+.ai/memory/constitution.md
+  s_4f070cf415fa68::t_a6ba6fbc11cd65 7,18-24,150,183,294
+.ai/memory/k8s.yaml
+  s_4f070cf415fa68::t_ddd3f61415a071 3,27-42,100-102,106-109,126,185-187
+.ai/memory/naming.yaml
+  s_4f070cf415fa68::t_078a77a5ec7b68 3,30-35,37,41-48,222
+.ai/memory/system.map.yaml
+  s_4f070cf415fa68::t_02d7783530ef4d 31-36,42-55
+.ai/memory/testing.yaml
+  s_4f070cf415fa68::t_ddcd144cf1bdfe 3,20-21,43,70,73-77,91,124-134,156
+.ai/skills/html-prototype-uikit-redesign/SKILL.md
+  s_4f070cf415fa68::t_6a094e355d1be4 36
+.ai/skills/html-prototype-uikit-redesign/examples.md
+  s_4f070cf415fa68::t_88bd1829828eda 5
+.ai/skills/mbooks-controller-dao-flow/SKILL.md
+  s_4f070cf415fa68::t_9afaea15336dd1 1,4-7,10-16,19-22,25-31,35-177,180-223,227-235
+.ai/skills/swift-datamanager-integration/SKILL.md
+  s_4f070cf415fa68::t_7ed10d474d7274 18
+.ai/skills/swift-rest-contract-tests/SKILL.md
+  s_4f070cf415fa68::t_158c567b7e8456 18
+.ai/specs/README.md
+  s_4f070cf415fa68::t_002b171c6ecf59 1,3-7,20
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.bookcontroller-response-records-all.tasks
+  s_4f070cf415fa68::t_6ef6ee490283aa 1-140
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.trending-movies-response-records.plan
+  s_4f070cf415fa68::t_30b1d9d29d542a 1,4-7,11-12,15-29,31,33-64,66-74,76-109
+.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/FIXED-ASSET-CATALOG.md
+  s_4f070cf415fa68::t_245c4219be85f4 4-6,15-17,20-21,24-27,30,35-38
+.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/README.md
+  s_4f070cf415fa68::t_98cba9a92e8d3b 4,7,10
+.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/uikit-vs-prototype-comparison.md
+  s_4f070cf415fa68::t_d2ae5ed3bb7845 74-75
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md
+  s_4f070cf415fa68::t_43bbe83dfb3488 80-81
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.plan
+  s_4f070cf415fa68::t_5e346ae4d89356 7-8
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.specify
+  s_4f070cf415fa68::t_7e40606ac3f394 15,92
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.tasks
+  s_4f070cf415fa68::t_d3ba87a63f4044 12
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.analyze.md
+  s_4f070cf415fa68::t_2f70ccc314c5c2 111
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.plan
+  s_4f070cf415fa68::t_0b1c35462a35e2 7-9
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.specify
+  s_4f070cf415fa68::t_1e2d9d62dcd53e 14,81
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.menuvc-purchasesvc-ticketsvc-adminstyle.tasks
+  s_4f070cf415fa68::t_32a3b87a73b573 12
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.implementation-plan.md
+  s_4f070cf415fa68::t_68f0d66d1b808b 4-6,71-72
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-safety.analyze.md
+  s_4f070cf415fa68::t_a6863db20154ab 50-51
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-assets-procurement.md
+  s_4f070cf415fa68::t_a831a839e8e09d 148,152,154,200,203-204
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-icon-inventory.md
+  s_4f070cf415fa68::t_52a16857f19f8b 166,168
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-implementation-runbook.md
+  s_4f070cf415fa68::t_151ee02af2ac0f 10-14,32,58,81,102
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.implementation-plan.md
+  s_4f070cf415fa68::t_7ee0a2c502b383 4-6
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.implementation-plan.md
+  s_4f070cf415fa68::t_efc5214602452c 4-6
+.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.implementation-plan.md
+  s_4f070cf415fa68::t_bc87a5f52925a8 4-6
+.ai/specs/legacy-specify/features/Swift_migration/00-DELIVERY-SUMMARY.md
+  s_4f070cf415fa68::t_091d75a8a86533 5
+.ai/specs/legacy-specify/features/Swift_migration/04-Quick-Reference.md
+  s_4f070cf415fa68::t_001d73ebc462cb 241,277
+.ai/specs/legacy-specify/features/Swift_migration/BASKETDATA-ADDITION.md
+  s_4f070cf415fa68::t_1274ec3dec9e06 190-191
+.ai/specs/legacy-specify/features/Swift_migration/COMPLETION-STATUS.md
+  s_4f070cf415fa68::t_1c7ab4e5d39ac7 5,417
+.ai/specs/legacy-specify/features/Swift_migration/IMPLEMENTATION-SUMMARY.md
+  s_4f070cf415fa68::t_479469c4478980 304,421-439
+.ai/specs/legacy-specify/features/Swift_migration/MANIFEST.md
+  s_4f070cf415fa68::t_18e5202e865e20 260
+.ai/specs/legacy-specify/features/Swift_migration/README.md
+  s_4f070cf415fa68::t_e89a698528373e 299,318
+.ai/specs/legacy-specify/features/Swift_migration/START-HERE.md
+  s_4f070cf415fa68::t_5276202997c49a 408
+.ai/specs/legacy-specify/features/Swift_migration/speckit.swiftui.swift-migration-data-managers.review-analyze.md
+  s_4f070cf415fa68::t_d096ff4448a76a 19
+.ai/specs/legacy-specify/features/System/speckit.system.backend-logging-observability.implementation.md
+  s_4f070cf415fa68::t_fe03ab3d96563b 1,77-119,304-315,318-327,337-343
+.ai/specs/legacy-specify/features/System/speckit.system.backend-logging-observability.plan
+  s_4f070cf415fa68::t_069dcab65f4c65 8,24-31,45-48,61,64-70,76
+.ai/specs/legacy-specify/features/System/speckit.system.backend-logging-observability.tasks
+  s_4f070cf415fa68::t_8268bb33c33638 1-6,9-16,19-22,25-33,36-39,43,48-52,55-58,62-67,69-73
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-http-client-observability.implementation.md
+  s_4f070cf415fa68::t_a28ca84672a549 1,4-61,63-64,67-174,177-191
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-logging-migration.plan.md
+  s_4f070cf415fa68::t_d8b1f14e660926 4,10-11,20,27,29,33-34,53,56,66-68,70-71,82-83,85-87,90,111-114
+.ai/skills/skills-github.md
+  h_d154d11af00b83 127
+.ai/specs/legacy-specify/features/BackendEndpoints/speckit.backendendpoints.trending-movies-response-records.specify
+  h_d154d11af00b83 1,4-26,30-70,74-76,78-80,83-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1adc460dfd846f5a172f00e6a52ff44e0b183652",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_304ea84b518cd5": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "41d16526-f475-4684-afca-b7207809a0bb",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_4f070cf415fa68": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "1e357a1c-f397-412d-841e-a4f799814c52",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_7ebd2c8d22dc00": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1790078780450",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_81662dd672549d": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1789669236151",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
