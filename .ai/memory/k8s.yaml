@@ -1,6 +1,6 @@
 # Kubernetes Configuration Reference
 # Durable topology and deployment invariants only
-# Last Updated: May 16, 2026
+# Last Updated: September 19, 2026
 
 document_scope:
   purpose: "Capture stable local-Kubernetes topology, routing boundaries, and invariants for the Cinemas stack."
@@ -23,6 +23,22 @@ cluster:
   namespace:
     name: "default"
     note: "Current local stack runs in a single namespace."
+
+execution_modes:
+  minikube:
+    routing: "Ingress -> Apache -> Quarkus services"
+    use_for:
+      - "integrated HTTPS and reverse-proxy validation"
+      - "cluster deployment and observability validation"
+  local_quarkus_dev:
+    runtime: "Environment-default Java 21 JDK; projects compile for Java 17."
+    prerequisite: "Start MySQL before database-backed applications."
+    launch: "Run mvn quarkus:dev -f pom.xml from the selected Java module."
+    routing: "Direct localhost access to each application's configured port and Quarkus root path."
+    limitations:
+      - "Minikube is not required."
+      - "No Apache reverse proxy is configured in this mode."
+      - "Apache route fan-out, TLS termination, proxy headers, and Apache CORS behavior are unavailable."
 
 application_topology:
   ingress:
@@ -81,9 +97,16 @@ infrastructure:
     otlp_ports:
       - 4317
       - 4318
+  loki:
+    kind: "Log query and storage backend"
+    ingestion: "Promtail sidecars read service log files from /work/log"
   grafana:
     kind: "Observability UI"
     ingress_path: "/grafana/"
+    datasources:
+      - prometheus
+      - tempo
+      - loki
   mysqld_exporter:
     kind: "MySQL metrics sidecar/exporter"
 
@@ -100,6 +123,7 @@ routing_invariants:
   notes:
     - "Breaking proxy order can silently break WebSocket upgrades."
     - "Ingress and Apache together define the externally visible path contract."
+    - "These Apache routing invariants apply to the Minikube stack, not direct quarkus:dev URLs."
 
 observability:
   metrics:
@@ -158,6 +182,9 @@ networking:
   external_flows:
     - "quarkus -> Braintree"
     - "quarkus -> PayPal/Braintree-related services"
+  observability_flows:
+    - "service log files -> Promtail sidecars -> Loki -> Grafana"
+    - "quarkus OTLP spans -> Tempo -> Grafana"
 
 operational_reminders:
   use_canonical_docs_for:
@@ -189,4 +216,3 @@ references:
     - "mysql_8/login.sql"
     - "mysql_8/book.sql"
   observability_docs: "k8infra/system-documentation.html"
-

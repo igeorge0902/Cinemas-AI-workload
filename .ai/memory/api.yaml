@@ -1,6 +1,6 @@
 # API Reference: Cinemas Microservices
 # Durable endpoint and header contracts only
-# Last Updated: May 16, 2026
+# Last Updated: September 19, 2026
 
 document_scope:
   purpose: "Keep stable API paths, auth expectations, and client-visible contract reminders."
@@ -72,10 +72,28 @@ services:
     root_path: "/mbooks-1/rest/book"
     database: "book"
     primary_role: "Movie catalog, venue/seat data, booking, Braintree integration"
+    architecture:
+      controllers:
+        - MovieController
+        - VenueController
+        - PurchaseController
+        - CheckoutController
+      flow: "family controller -> request bean -> family service -> DAO/collaborator -> response mapper/record -> ApiResponseFactory"
+      notes:
+        - "BookController and BookingHandlerImpl were removed."
+        - "Multi-input endpoints use request beans under com.jeet.rest.requestbean."
+        - "Response records are grouped by movie, venue, purchase, and checkout family."
     endpoints:
       - path: "/movies"
         method: GET
         auth: "Public"
+      - path: "/trending-movies"
+        method: GET
+        auth: "Public"
+        contract:
+          optional_query_parameters:
+            - days
+            - limit
       - path: "/locations"
         method: GET
         auth: "Public"
@@ -220,5 +238,6 @@ references:
   architecture_and_deep_contracts: ".ai/agents/AGENTS.md"
   operational_playbook: ".ai/retrieval/instructions.md"
   implementation_patterns: ".ai/skills/skills-github.md"
+  mbooks_controller_flow: ".ai/skills/mbooks-controller-dao-flow/SKILL.md"
+  feature_specs: ".ai/specs/legacy-specify/features/"
   local_k8s_manifest: "k8infra/quarkus-backend.yaml"
-

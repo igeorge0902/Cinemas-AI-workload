@@ -124,7 +124,7 @@ public class MyResource {
 **Files:**
 - `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` lines 600–1170
 - `mbooks-quarkus/src/main/java/com/jeet/service/PaymentService.java`
-- `mbooks-quarkus/src/main/java/com/jeet/booking/TicketService.java`
+- `../../mbooks-quarkus/src/main/java/com/jeet/service/booking`
 - `mbooks-quarkus/src/main/java/com/jeet/db/DAO.java` — `bookTickets()` method
 
 **Gotchas:**

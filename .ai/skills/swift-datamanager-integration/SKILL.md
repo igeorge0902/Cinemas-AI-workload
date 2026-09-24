@@ -15,7 +15,7 @@ Standardize API response to DataManager integration in iOS flows by using centra
 ## Inputs
 - Required: `SwiftCinemas/SwiftLoginScreen/Networking/BackendServices.swift`.
 - Required: DataManagers in `SwiftCinemas/SwiftLoginScreen/DataManagers/`.
-- Reference: `/.ai/workflows/features/SwiftUI_migration/skills.datamanager-api-integration.swift`.
+- Reference: `/.ai/specs/legacy-specify/features/SwiftUI_migration/skills.datamanager-api-integration.swift`.
 
 ## Outputs
 - DataManager-based fetch/parse/update flow with async/await.

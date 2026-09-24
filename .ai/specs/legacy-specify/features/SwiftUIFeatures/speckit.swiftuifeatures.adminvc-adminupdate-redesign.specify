@@ -12,7 +12,7 @@ Scope
 
 Prototype binding
 - This specification is implemented and reviewed against:
-  - `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+  - `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
 
 Functional requirements
 
@@ -89,5 +89,5 @@ Reference files
 - `SwiftCinemas/SwiftLoginScreen/AdminUpdateVC.swift`
 - `SwiftCinemas/SwiftLoginScreen/admin-screen.svg`
 - `SwiftCinemas/SwiftLoginScreen/admin-update-screen.svg`
-- `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
 

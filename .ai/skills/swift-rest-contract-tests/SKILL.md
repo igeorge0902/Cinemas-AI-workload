@@ -15,7 +15,7 @@ Define and maintain deterministic XCTest coverage for iOS service contracts in `
 ## Inputs
 - Required: service files under `SwiftCinemas/SwiftLoginScreen/Networking/`.
 - Required: test plan `SwiftCinemas/SwiftCinemas.xctestplan`.
-- Required: workflow spec `/.ai/workflows/features/SwiftTest/speckit.swifttests.specify`.
+- Required: workflow spec `/.ai/specs/legacy-specify/features/SwiftTest/speckit.swifttests.specify`.
 - Optional: live backend toggle via `SWIFT_REST_BACKEND=real`.
 
 ## Outputs

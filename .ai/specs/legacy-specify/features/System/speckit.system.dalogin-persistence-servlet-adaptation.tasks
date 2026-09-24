@@ -1,0 +1,105 @@
+Tasks: dalogin persistence and Servlet adaptation
+
+Feature
+- `speckit.system.dalogin-servlet-request-response.specify`
+
+Plan
+- `speckit.system.dalogin-persistence-servlet-adaptation.plan`
+
+Implementation model
+- `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md`
+
+Phase 1 — Combined baseline (`@backend-dev`, `@testing-engineer`)
+- [ ] Start from a clean, committed git state so the whole pass can be reverted as one unit if it
+      does not land (the only revert path; no partial rollback is designed).
+- [ ] Inventory all 14 Servlet mappings and methods.
+- [ ] Account for all 26 `doGet`/`doPost` handlers.
+- [ ] Inventory all 10 `init()`, all 10 `destroy()`, and relevant private flow helpers.
+- [ ] Inventory every header, parameter, request attribute, and session input.
+- [ ] Inventory every status, content type, encoding, JSON field/type, redirect, header, and cookie.
+- [ ] Classify every request flow as complex, simple pass-through, or no-input, with a reason.
+- [ ] Mark a DTO for each complex flow and every response-helper operation.
+- [ ] Mark the final SQLAccess family beans each Servlet/filter/listener injects.
+- [ ] Capture missing/malformed input outcomes before extraction.
+- [ ] Record baseline SQL text and resource counts required by the SQLAccess features.
+
+Phase 2 — Persistence foundation (`@backend-dev`)
+- [ ] Complete datasource legacy removal without compiling.
+- [ ] Create final CDI-backed family beans directly.
+- [ ] Place each family in its own persistence subpackage with the domain naming agreed in
+      `speckit.system.dalogin-sqlaccess-family-split.tasks` Phase 2.
+- [ ] Move every SQLAccess method to its final family.
+- [ ] Apply explicit ResultSet closing and transaction cleanup required by CDI injection.
+- [ ] Add shared SQL support and cross-family connection-accepting forms.
+- [ ] Preserve the registration procedure order.
+- [ ] Add atomic `DeviceSessionManager.establishLogin` for device/session/token creation.
+
+Phase 3 — Servlet HTTP types (`@backend-dev`)
+- [ ] Add shared stateless `ServletResponses`.
+- [ ] Add injected stateless `CryptoService` with request-local cipher state.
+- [ ] Migrate seven Servlet `AesUtil` fields and `ChangePswFilter` to `CryptoService`.
+- [ ] Add immutable DTOs for every complex request-processing flow.
+- [ ] Implement every complex request DTO as a Java record.
+- [ ] Keep simple pass-through request reads explicit in their Servlet.
+- [ ] Do not add empty or ceremonial DTOs for simple/no-input flows.
+- [ ] Add endpoint-specific response helpers for all 14 Servlets.
+- [ ] Share helpers only after proving wire contracts identical.
+- [ ] Keep all DTO/helper types outside persistence packages.
+
+Phase 4 — Final caller migration (`@backend-dev`)
+- [ ] Edit each Servlet once into its final shape.
+- [ ] Refactor every declared GET and POST handler, not only the SQLAccess-calling path.
+- [ ] Review and refactor each Servlet's private request/response/persistence helpers.
+- [ ] Inject only final family beans.
+- [ ] Confirm no Servlet injects `DataSource` or acquires `Connection` directly.
+- [ ] Replace every static/context-bound SQLAccess call.
+- [ ] Replace complex direct input parsing with DTO factories.
+- [ ] Preserve simple pass-through reads without introducing unnecessary models.
+- [ ] Replace direct response construction with named helper operations.
+- [ ] Migrate filters/listeners directly to final family beans.
+- [ ] Preserve orchestration, session mutation, crypto, redirects, downstream clients, and logging.
+- [ ] Preserve all endpoint wire behavior and SQL call order.
+- [ ] In `HelloWorld` and `RegistrationWithoutVoucher`, create only a pending session before
+      persistence and use atomic `establishLogin`.
+- [ ] In `Registration`, keep `wrapUpRegistration` atomic and treat the session as pending until it
+      commits.
+- [ ] Publish session attributes only after the required transaction commits.
+- [ ] Invalidate each pending session and return 5xx on persistence failure.
+- [ ] Remove the `RegActivation` session created solely to obtain `ServletContext`.
+- [ ] Remove the obsolete 100 ms token retry.
+
+Phase 5 — Legacy deletion (`@backend-dev`)
+- [ ] Delete empty monolithic `SQLAccess`.
+- [ ] Remove DBManager ServletContext publication and legacy fallback/dead manager code.
+- [ ] Delete `SystemConstants.DB_CATALOG`/`extractCatalog()` (last readers gone) and the dead
+      `DB_URL` env entries in `k8infra/quarkus-backend.yaml` and `k8infra/kubernetes.yaml`.
+- [ ] Remove obsolete Servlet response builders, writers, imports, and parsing locals.
+- [ ] Remove all ten Servlet `init()` and ten no-op `destroy()` overrides.
+- [ ] Preserve key size, iteration count, salts, IVs, passphrases, and ciphertext format.
+- [ ] Confirm no pass-through facade, compatibility overload, or temporary caller shape remains.
+- [ ] Confirm no direct Servlet `JSONObject` construction or `PrintWriter` ownership remains.
+
+Phase 6 — First build (`@backend-dev`)
+- [ ] Compile for the first time only after Phases 2-5 are complete.
+- [ ] Treat compiler errors as the remaining migration list.
+- [ ] Resolve every caller, import, signature, and type error.
+- [ ] Confirm no legacy static SQLAccess or DBManager call shape survives.
+
+Phase 7 — Automated verification (`@testing-engineer`)
+- [ ] Run targeted `LoginFlowTest` with `.ai/skills/quarkus-local-test-mysql/SKILL.md`.
+- [ ] Verify login success, bad HMAC, wrong password, and missing required input.
+- [ ] Verify mobile/web JSON types, cookies, and `X-Token` response header.
+- [ ] Verify malformed micro-time preserves its captured baseline outcome.
+- [ ] Force a normal-login persistence failure and verify rollback, session invalidation, and 5xx.
+- [ ] Confirm tests require neither `mbook`/`mbooks` nor Apache.
+
+Phase 8 — Static and owner verification (`@backend-dev`)
+- [ ] Diff all SQL text, parameter ordering, and result mapping.
+- [ ] Confirm explicit connection/statement/ResultSet closure and rollback requirements.
+- [ ] Confirm DTO coverage matches all and only flows classified complex.
+- [ ] Confirm all response branches map to helpers with unchanged contracts.
+- [ ] Confirm all 14 Servlet annotations are unchanged.
+- [ ] Confirm all 26 request handlers and every declared lifecycle override were reviewed.
+- [ ] Run concurrent crypto coverage; confirm no request-shared mutable `Cipher` remains.
+- [ ] Hand registration, voucher, activation, password reset, logout, admin, active sessions,
+      checkout, purchases, and client compatibility to the owner.

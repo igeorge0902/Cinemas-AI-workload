@@ -1,0 +1,160 @@
+Feature Plan: BookController split-out migration (controllers/services/records) + BookingHandlerImpl removal
+
+Objective
+- Split the current `BookController` into `MovieController`, `VenueController`,
+  `PurchaseController`, and `CheckoutController`, rolling the record/mapper pattern out to each
+  endpoint family with zero JSON contract change.
+- Move the DTO/domain-shaping work out of `BookingHandlerImpl` and into dedicated services
+  (`MovieService`, `VenueService`, `PurchaseService`, `CheckoutService`) so the old handler can be
+  removed once the migration is complete.
+- Relocate `fullcheckout2`'s inline reservation/payment orchestration into `CheckoutService`.
+- Bind multi-input controller methods via `@BeanParam` classes instead of individual annotated
+  parameters.
+- Introduce `ApiResponseFactory`, a shared CDI bean for building success/error `Response`s, with
+  the status code passed in by the caller rather than hard-coded per call site.
+
+Role ownership
+- Primary: `@backend-dev`
+- Contract/parity verification: `@ios-dev`, `@frontend-dev`
+- Payment-path review: `@backend-dev` (Braintree integration risk)
+
+Baseline (as-found)
+- `BookController.java` (1079 lines) mixes request parsing, validation, business orchestration,
+  and manual JSON assembly (`JSONObject`/`JSONArray`/`HashMap<String,String>`) in nearly every
+  method.
+- `BookingHandlerImpl.java` is a broad DAO façade plus DTO/domain-shaping layer and is currently
+  injected directly by `BookController` and the existing helper services.
+- `PurchaseService.java` currently only has `getBrainTreeCustomer(String uuid)`; it does not yet
+  own any checkout orchestration.
+- `TicketService`/`PaymentService` already exist and are called directly from `BookController` in
+  `fullcheckout2`.
+- Trending-movies migration (separate spec/plan) establishes the pattern: top-level records in
+  `com.jeet.api`, one `@ApplicationScoped` mapper per family, controller keeps its `Response`
+  return type and validation/error branches untouched.
+- No `ApiResponseFactory` or shared `@BeanParam` param classes exist yet; every controller method
+  builds its own `Response` inline and reads params individually.
+
+Phased implementation sequence
+- use modell for all like in speckit.backendendpoints.movies.implementation-example.md
+(each phase = one family from the spec's grouping; implement all phases in one pass, no
+intermediate compile/verification between phases — see Verification section below and
+REQ-ALL-6/NF-2)
+
+Phase 0 — Shared building blocks
+- Add `com.jeet.rest.ApiResponseFactory` (`@ApplicationScoped`): a success builder overloaded as
+  `ok(Object body)` (defaults to `200`) and `ok(Object body, Response.Status status)` (for
+  non-`200` success cases, e.g. `201`), plus an error builder that takes a status
+  code/`Response.Status` plus an error body, both setting `MediaType.APPLICATION_JSON`.
+- No controller wiring yet in this phase — just introduce and unit-test the factory in isolation
+  so Phases 1-4 can inject it directly.
+- Do not touch existing `BookController` error shapes yet; the factory is additive infrastructure.
+
+Phase 1 — Movie list family
+- Create `MovieController` and `MovieService`.
+- Move movie-list/search/trending-related endpoint logic out of `BookController` and into
+  `MovieService`.
+- Add `MovieSummaryItem` record + one mapper (`MovieMapper` or similar) with methods covering
+  `getAllMovies`, `getAllMoviesWithPaging`, `searchMovies`, `fullTextSearchMovies`,
+  `getMoviesForVenue`, and trending-movies response assembly.
+- Add `@BeanParam` classes for multi-param endpoints in this family (e.g. `TrendingMoviesParams`
+  for `days`/`limit`, a paging-params class for `getAllMoviesWithPaging`); leave
+  single-param endpoints (e.g. `getMoviesForVenue`'s single `locationId`) on plain
+  `@QueryParam`/`@PathParam`.
+- Wire `MovieController` to use `ApiResponseFactory` for both success and validation-error
+  responses instead of inline `Response.status(...).entity(...).build()`.
+- Verify each endpoint's root key (`movies` vs `searchedMovies` vs `trendingMovies`) is preserved
+  per-endpoint.
+
+Phase 2 — Venue/location + screen admin family
+- Create `VenueController` and `VenueService`.
+- Move venue/location/date/seat endpoint logic out of `BookController` and into `VenueService`.
+- Add `VenueScreeningItem` record + one mapper reused by `getAllMoviesOnAllVenues`,
+  `getAllMoviesOnAllVenuesWithCategory`, `getAllMoviesOnAllVenuesForSearch` (identical per-item
+  shape today — single mapper method, three call sites).
+- Confirm which venue/location/date/seat endpoints still return entities directly and only
+  introduce records where manual JSON assembly exists today.
+- Also move `addScreen`, `updateScreen`, `deleteScreen` into `VenueController`/`VenueService`
+  (screens/screenings are venue-scoped). Introduce response record(s) for their success/`409
+  CONFLICT` bodies; leave `addScreen`'s async Kafka publish call and its serialization untouched.
+- Reuse `ApiResponseFactory` (from Phase 0) for all `VenueController` responses; add `@BeanParam`
+  classes only for endpoints with more than one bound input (e.g. `getDatesForMovieOnVenue`'s
+  `locationId`+`movieId` path params).
+
+Phase 3 — Purchases/tickets family
+- Create `PurchaseController` and `PurchaseService`.
+- Naming/ownership decision (resolve before or at the start of this phase): existing
+  `com.jeet.booking.PurchaseService` only has `getBrainTreeCustomer(String uuid)`, which
+  `CheckoutService` (Phase 4) also depends on. Either extend that existing class in place with
+  this family's new methods, or introduce a differently-named/-scoped service for this family —
+  do not create a second, ambiguous `PurchaseService` under the same name.
+- Move purchase/ticket/cancel/delete endpoint logic out of `BookController` and into
+  `PurchaseService`.
+- Add `PurchaseSummaryItem`, `TicketSummaryItem` records + mapper(s) for `getAllPurchases`,
+  `getTicketsPerPurchase`.
+- Reuse `ApiResponseFactory`; add a `@BeanParam` class for `cancelTicket`'s combined
+  header/body-derived inputs if more than one bound input remains after moving parsing logic into
+  the service.
+
+Phase 4 — Checkout family
+- Create `CheckoutController` and `CheckoutService`.
+- Move `fullcheckout2` orchestration out of `BookController` and into `CheckoutService`.
+- `clientToken` migrates into `CheckoutController` alongside `fullcheckout2`.
+  (`webcheckout` and `getMovieTicket` have since been removed from `BookController` and are no
+  longer part of this phase.)
+- Add response record(s) for `fullcheckout2`'s success path (fields: `ResponseText`, `purchaseId`,
+  `AuthCode`, `ResponseCode`, `Status`, `Amount`, `TaxAmount`, `Success`, `tickets`,
+  `seatsforscreen`).
+- Add a `FullCheckoutParams` `@BeanParam` class (header `uuid` + form `orderId`/
+  `seatsToBeReserved`/`payment_method_nonce`) replacing today's manual
+  `HttpServletRequest`/`HttpHeaders` parameter reads; keep parsing/validation helper methods on
+  the class itself, business logic stays in `CheckoutService`.
+- Reuse `ApiResponseFactory` for `fullcheckout2`'s success/error responses (error JSON shape
+  unchanged — see spec's Out of scope note on error-shape unification).
+
+Phase 5 — Service extraction from BookingHandlerImpl
+- Move the DTO/domain-shaping methods out of `BookingHandlerImpl` into the four dedicated
+  services.
+- Keep the DAO calls and any genuinely shared persistence helpers in the lower layer.
+- Remove `BookingHandlerImpl` once the new services fully replace all controller call sites.
+
+Phase 6 — Trivial/leftover
+- `getGreeting` migrated opportunistically if convenient; not a dedicated phase.
+
+Verification (bulk, at the end — no intermediate compile per REQ-ALL-6/NF-2)
+1. Complete all phases (0-6) in one pass without stopping to compile in between.
+2. `cd mbooks-quarkus && mvn -DskipTests compile` once, after all phases are done.
+3. Manual curl (or existing test) comparing before/after JSON for every migrated endpoint in one
+   consolidated pass.
+4. Run any existing endpoint tests covering the touched methods.
+5. Confirm existing status codes and error JSON shapes are unchanged after routing through
+   `ApiResponseFactory` (the factory takes status as a parameter — a wrong call-site argument is
+   the main regression risk).
+6. Changes can be safely reverted from the pre-migration git commit if the bulk verification
+   surfaces regressions.
+
+Risks
+- `fullcheckout2` orchestration is the highest-risk phase (payment side effects); land it after the
+  lower-risk read-endpoint families have validated the record/mapper pattern at scale.
+- Endpoints returning entities directly (not manually built JSON) should not be forced into new
+  records just for consistency — only migrate where manual JSON assembly exists today.
+- Root JSON key naming is inconsistent across endpoints (`movies` vs `searchedMovies`, singular
+  vs plural) — preserve as-is per endpoint; do not unify naming as part of this migration.
+- `ApiResponseFactory`'s error builder taking a status code as a parameter makes it easy to
+  accidentally pass the wrong status at a call site during migration; the single bulk
+  verification pass at the end must check status codes, not just body shape.
+- Existing error-body shapes differ across endpoints/exceptions (`CustomExceptions`'s
+  `Title`/`Message` vs trending-movies' `error`/`message`); the factory must not silently
+  normalize these during the migration — each call site keeps its current shape.
+
+Definition of done
+- All families in the spec are migrated or explicitly deferred with a documented reason.
+- `fullcheckout2` no longer contains inline seat-reservation/payment-orchestration code; that
+  logic lives in `CheckoutService`.
+- `BookingHandlerImpl` is removed after its call sites are replaced by the dedicated services.
+- `ApiResponseFactory` exists and is used by all four new controllers; no controller builds a raw
+  `Response` inline except where a body/status combination the factory doesn't yet support is
+  encountered (should be rare given the factory takes status as a parameter).
+- Multi-input controller methods use `@BeanParam` classes; single-input methods are left as-is.
+- No JSON contract regressions found during the single bulk verification pass at the end.
+- Module compiles once, at the end of all phases (no intermediate per-phase compiles, per
+  REQ-ALL-6/NF-2).

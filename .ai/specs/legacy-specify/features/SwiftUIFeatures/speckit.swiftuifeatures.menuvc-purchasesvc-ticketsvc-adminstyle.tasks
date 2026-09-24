@@ -9,7 +9,7 @@
 ## Phase 0: Field mapping prerequisite
 
 - [ ] **0.1 Use field mapping baseline**
-  - Required input: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.uikit-field-mapping-implementation-plan.md`
+  - Required input: `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.uikit-field-mapping-implementation-plan.md`
   - Map every implemented UI field to backend or local/mock source before coding.
 
 - [ ] **0.2 Respect source classification**

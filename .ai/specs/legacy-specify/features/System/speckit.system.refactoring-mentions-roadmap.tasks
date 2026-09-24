@@ -11,7 +11,10 @@ Phase 2 — Wave assignment (`@business-analyst` + `@backend-dev`)
 Phase 3 — Plan generation (`@backend-dev`)
 - [ ] Create Wave 1 triads:
   - `speckit.system.thread-safety-stateless-servlets.*`
-  - `speckit.system.dalogin-datasource-pooling.*`
+  - `speckit.system.dalogin-datasource-legacy-removal.*`
+  - `speckit.system.dalogin-sqlaccess-cdi-injection.*`
+  - `speckit.system.dalogin-sqlaccess-family-split.*`
+  - `speckit.system.dalogin-connection-pool-analysis.*`
   - `speckit.system.secrets-externalization.*`
 - [ ] Create Wave 2 triads:
   - `speckit.system.mbooks-dao-cdi-migration.*`

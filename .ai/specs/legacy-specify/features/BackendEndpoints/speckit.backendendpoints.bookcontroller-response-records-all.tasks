@@ -1,0 +1,140 @@
+Phase 0 — Shared building blocks (`@backend-dev`)
+
+- [ ] Add `com.jeet.rest.ApiResponseFactory` (`@ApplicationScoped`) with:
+  - [ ] `ok(Object body)` success builder, defaulting to `200` (sets
+        `MediaType.APPLICATION_JSON`).
+  - [ ] `ok(Object body, Response.Status status)` success builder overload for non-`200` success
+        responses (e.g. `201`).
+  - [ ] Error builder accepting a `Response.Status`/status code plus an error body.
+- [ ] Add a standalone unit test for `ApiResponseFactory` (status code + body + content type for
+      both success overloads and the error builder), independent of any controller.
+
+Phase 1 — Movie list family (`@backend-dev`)
+
+- [ ] Create `MovieController`, `MovieService`, `MovieMapper` (`@ApplicationScoped`).
+- [ ] Add top-level records: `MovieSummaryItem`, `MovieListResponse`, `TrendingMovieItem`,
+      `TrendingMoviesResponse` (reuse from the trending-movies-response-records feature if already
+      implemented — do not duplicate).
+- [ ] Add `TrendingMoviesParams` `@BeanParam` class (`days`, `limit` query params with defaults).
+- [ ] Add a paging-params `@BeanParam` class for `getAllMoviesWithPaging`.
+- [ ] Migrate `GET /rest/book/movies` (`getAllMovies`) — root key `movies`.
+- [ ] Migrate `GET /rest/book/movies/paging` (`getAllMoviesWithPaging`) — root key `movies`,
+      via the new paging `@BeanParam`.
+- [ ] Migrate `GET /rest/book/movies/{name}/{order}` (`searchMovies`) — root key
+      `searchedMovies`.
+- [ ] Migrate `GET /rest/book/movies/search` (`fullTextSearchMovies`) — root key
+      `searchedMovies`.
+- [ ] Migrate `GET /rest/book/venue/movies` (`getMoviesForVenue`) — root key `movies`; single
+      `locationId` query param stays on plain `@QueryParam` (no `@BeanParam` needed).
+- [ ] Migrate `GET /rest/book/trending-movies` (`getTrendingMovies`) — root key
+      `trendingMovies`, via `TrendingMoviesParams`.
+- [ ] Wire all six `MovieController` methods to build success/validation-error `Response`s via
+      `ApiResponseFactory`.
+- [ ] Remove the six migrated routes and their inline JSON assembly from `BookController`.
+- [ ] Verify root keys (`movies`, `searchedMovies`, `trendingMovies`) and item field
+      names/types are byte-for-byte unchanged (capture before/after curl output per endpoint).
+
+Phase 2 — Venue/location + screen admin family (`@backend-dev`)
+
+- [ ] Create `VenueController`, `VenueService`.
+- [ ] Add `VenueScreeningItem` record + one mapper method reused by three admin
+      movies-on-venues endpoints (see below).
+- [ ] Migrate `GET /rest/book/venue/{movieId}` (`getVenuesForMovie`).
+- [ ] Migrate `GET /rest/book/venue/v2/{movieId}` (`getLocationForMovie`).
+- [ ] Migrate `GET /rest/book/locations/venue` (`getLocationForVenue`).
+- [ ] Migrate `GET /rest/book/locations` (`getAllLocation`).
+- [ ] Migrate `GET /rest/book/admin/moviesonvenues` (`getAllMoviesOnAllVenues`) — using
+      `VenueScreeningItem` mapper.
+- [ ] Migrate `GET /rest/book/admin/moviesonvenuescategorized`
+      (`getAllMoviesOnAllVenuesWithCategory`) — same mapper as above.
+- [ ] Migrate `GET /rest/book/admin/moviesonvenuessearch` (`getAllMoviesOnAllVenuesForSearch`)
+      — same mapper as above.
+- [ ] Migrate `GET /rest/book/dates/{locationId}/{movieId}` (`getDatesForMovieOnVenue`) — add a
+      `@BeanParam` class for its two path params.
+- [ ] Migrate `GET /rest/book/seats/{screeningDateId}` (`getSeatsForScreenForMovieOnVenue`).
+- [ ] Migrate `POST /rest/book/admin/addscreen` (`addScreen`) — introduce a response record for
+      the success/`409 CONFLICT` bodies; leave the async Kafka publish call and its error handling
+      unchanged.
+- [ ] Migrate `POST /rest/book/admin/updatescreen` (`updateScreen`) — same treatment as
+      `addScreen`.
+- [ ] Migrate `DELETE /rest/book/admin/deletescreen` (`deleteScreen`) — same treatment as
+      `addScreen`.
+- [ ] For each endpoint above, introduce a record only where manual JSON assembly exists today;
+      leave entity-returning endpoints unchanged.
+- [ ] Wire all twelve `VenueController` methods to use `ApiResponseFactory`.
+- [ ] Remove the twelve migrated routes and inline JSON assembly from `BookController`.
+- [ ] Verify JSON shape unchanged per endpoint (before/after curl comparison).
+
+Phase 3 — Purchases/tickets family (`@backend-dev`)
+
+- [ ] Create `PurchaseController`; confirm naming/package for the service layer (existing
+      `com.jeet.booking.PurchaseService` already has `getBrainTreeCustomer` — decide whether to
+      extend it in place or introduce a differently-scoped service, to avoid ambiguity with
+      `CheckoutService`'s own use of `PurchaseService` in Phase 4).
+- [ ] Add `PurchaseSummaryItem`, `TicketSummaryItem` records + mapper(s).
+- [ ] Migrate `GET /rest/book/purchases` (`getAllPurchases`) — root key `purchases`.
+- [ ] Migrate `GET /rest/book/purchases/tickets` (`getTicketsPerPurchase`).
+- [ ] Migrate `POST /rest/book/managepurchases` (`cancelTicket`) — add a `@BeanParam` class for
+      its combined header/body-derived inputs if more than one bound input remains after moving
+      parsing into the service.
+- [ ] Migrate `POST /rest/book/deletepurchases` (`deletePurchase`).
+- [ ] Wire all four `PurchaseController` methods to use `ApiResponseFactory`.
+- [ ] Remove the four migrated routes and inline JSON assembly from `BookController`.
+- [ ] Verify JSON shape unchanged per endpoint.
+
+Phase 4 — Checkout family (`@backend-dev`, payment-path review)
+
+- [ ] Create `CheckoutController`, `CheckoutService`.
+- [ ] Add `CheckoutService.reserveSeats(...)` — seat-array parsing loop,
+      `ticketService.reserveTickets(...)`, running amount/tax totals, rollback-on-failure via
+      `ticketService.rollbackTickets(...)`.
+- [ ] Add `CheckoutService.chargeAndFinalize(...)` — Braintree customer id resolution,
+      `TransactionRequest` construction, `paymentService.processTransaction(...)`,
+      rollback-on-failure.
+- [ ] Add `FullCheckoutParams` `@BeanParam` class (header `uuid`; form `orderId`,
+      `seatsToBeReserved`, `payment_method_nonce`) with a validation helper method; no business
+      logic on the class itself.
+- [ ] Add response record(s) for `fullcheckout2`'s success path (`ResponseText`, `purchaseId`,
+      `AuthCode`, `ResponseCode`, `Status`, `Amount`, `TaxAmount`, `Success`, `tickets`,
+      `seatsforscreen`).
+- [ ] Migrate `POST /rest/book/payment/fullcheckout2` (`fullcheckout2`) — bind via
+      `FullCheckoutParams` → validate → call `CheckoutService` → map result to response record →
+      return via `ApiResponseFactory`; keep existing error-path JSON (missing-params, transaction
+      failure) unchanged in shape.
+- [ ] Migrate `GET /rest/book/payment/clientToken` (`clientToken`) into `CheckoutController`.
+- [ ] Remove the two migrated routes and inline JSON assembly from `BookController`.
+      (`webcheckout` and `getMovieTicket` no longer exist in `BookController` and are not part of
+      this phase.)
+- [ ] Verify JSON shape and status codes unchanged (success and error branches) for both
+      endpoints.
+
+Phase 5 — Service extraction from BookingHandlerImpl (`@backend-dev`)
+
+- [ ] Move remaining DTO/domain-shaping methods out of `BookingHandlerImpl` into
+      `MovieService`/`VenueService`/`PurchaseService`/`CheckoutService`, matching the endpoints
+      migrated in Phases 1-4.
+- [ ] Update `TicketService`'s `BookingHandlerImpl` injection to use the new service(s) it
+      actually needs.
+- [ ] Update `HibernateTest.java`'s direct `new BookingHandlerImpl()` usage (or remove/replace it
+      if it becomes dead code).
+- [ ] Confirm no remaining references to `BookingHandlerImpl` outside itself.
+- [ ] Delete `BookingHandlerImpl.java`.
+
+Phase 6 — Trivial/leftover (`@backend-dev`)
+
+- [ ] Migrate `GET /rest/book/hello` (`getGreeting`) opportunistically — not a dedicated phase,
+      only if low effort (e.g. alongside `MovieController`).
+- [ ] Confirm `BookController` is empty/removed once all 25 endpoints are migrated, or document
+      which endpoints remain and why.
+
+Phase 7 — Bulk verification (all at once, no intermediate compile per REQ-ALL-6/NF-2)
+
+- [ ] Complete Phases 0-6 in one pass without stopping to compile in between.
+- [ ] `cd mbooks-quarkus && mvn -DskipTests compile` once, after all phases are done.
+- [ ] `cd mbooks-quarkus && mvn -DskipTests package` for a full module build.
+- [ ] Run any existing endpoint tests covering migrated methods.
+- [ ] Re-run before/after curl comparisons for every one of the 25 migrated endpoints in one
+      consolidated pass.
+- [ ] Confirm `mbooks-quarkus/README.md` endpoint documentation still matches actual behavior (no
+      rewrite expected; update only on discovered drift).
+- [ ] If bulk verification surfaces regressions, revert from the pre-migration git commit.

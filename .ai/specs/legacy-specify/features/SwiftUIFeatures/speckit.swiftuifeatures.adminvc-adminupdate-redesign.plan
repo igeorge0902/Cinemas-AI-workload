@@ -4,8 +4,8 @@ Implementation Plan: AdminVC + AdminUpdateVC iOS alignment
 Implement the approved admin redesign in UIKit while preserving existing flow contracts.
 
 ## Inputs
-- Design reference: `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
-- Gap analysis: `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md`
+- Design reference: `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html`
+- Gap analysis: `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.adminvc-adminupdate-redesign.analyze.md`
 
 ## Phase 1: Structure and layout parity
 

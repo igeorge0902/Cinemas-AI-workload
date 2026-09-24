@@ -257,7 +257,7 @@
 ## 💼 File Organization on Disk
 
 ```
-.ai/workflows/features/Swift_migration/
+.ai/specs/legacy-specify/features/Swift_migration/
 │
 ├── 📌 ENTRY POINTS
 │   ├── 00-DELIVERY-SUMMARY.md      ← Read first

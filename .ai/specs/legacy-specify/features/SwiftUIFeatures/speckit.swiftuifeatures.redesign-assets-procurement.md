@@ -145,13 +145,13 @@ Gradient exception policy:
 
 **iOS Dev receives assets in:**
 - `SwiftCinemas/SwiftLoginScreen/Assets.xcassets/` (project-relative canonical target)
-- Optional staging folder: `.ai/workflows/features/SwiftUIFeatures/extracted-assets/`
+- Optional staging folder: `.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/`
 - Naming convention: snake_case, size suffix (e.g., `icon_chevron_right_16`)
 
 **Related documentation:**
-- Full inventory: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-icon-inventory.md`
+- Full inventory: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-icon-inventory.md`
 - Styling guide: `speckit.swiftuifeatures.*.specify` (REQ-*-10, REQ-*-11, REQ-*-12, REQ-*-13)
-- Runbook: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-implementation-runbook.md`
+- Runbook: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-implementation-runbook.md`
 
 ---
 
@@ -197,11 +197,11 @@ let metaDate = "📅"
 ## icons.png intake status (reviewed)
 
 Source sheet:
-- `.ai/workflows/features/SwiftUIFeatures/icons.png`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/icons.png`
 
 Auto-extracted (best effort) to:
-- `.ai/workflows/features/SwiftUIFeatures/extracted-assets/`
-- `.ai/workflows/features/SwiftUIFeatures/extracted-assets/manifest.json`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/manifest.json`
 
 Coverage summary:
 - Required navigation: extracted (3)

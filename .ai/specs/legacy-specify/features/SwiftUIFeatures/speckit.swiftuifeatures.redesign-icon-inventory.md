@@ -163,7 +163,7 @@ Status: Requirement capture (ready for asset procurement/implementation)
 
 ## Backlog linkage
 
-- Styling constraints: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.*.specify` files (REQ-*-10, REQ-*-11, REQ-*-12, REQ-*-13 sections)
+- Styling constraints: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.*.specify` files (REQ-*-10, REQ-*-11, REQ-*-12, REQ-*-13 sections)
 - Deferred safety items: `RISK-MVC-SAFE-001` (category force-unwrap crash hardening)
-- Implementation runbook: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-implementation-runbook.md`
+- Implementation runbook: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-implementation-runbook.md`
 

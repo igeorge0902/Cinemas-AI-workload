@@ -1,0 +1,71 @@
+Feature: dalogin connection pool implementation analysis (Agroal vs HikariCP)
+
+Contract IDs
+- None (analysis and decision feature; no runtime contract change)
+
+Overview
+- Evaluate whether `dalogin-quarkus` should keep the Quarkus-native Agroal pool or adopt HikariCP.
+- Produce a recorded, evidence-backed decision rather than an implementation.
+- Establish the pool-tuning baseline that the other three split features assume.
+
+Split context
+- This is part 4 of the `dalogin-datasource-pooling` split recorded in
+  `speckit.system.refactoring-mentions-roadmap.plan`.
+- Analysis-only. It does not block parts 1-3, and parts 1-3 do not depend on its outcome
+  beyond confirming that configuration keys stay valid.
+
+Role collaboration
+- `@backend-dev`, `@performance-engineer`, `@testing-engineer`
+
+Baseline (as-found)
+- `dalogin-quarkus/pom.xml` declares `quarkus-jdbc-mysql`, which supplies Agroal as the managed pool.
+- No HikariCP dependency is present in the module today.
+- Current configuration: `min-size=5`, `max-size=20`, `acquisition-timeout` commented out.
+- The module also uses `quarkus-opentelemetry` and `quarkus-micrometer-registry-prometheus`,
+  so pool observability is already wired through the Quarkus stack.
+- Historical `c3p0` knowledge exists in `.ai/skills/hibernate-session-c3p0-debug/`, which is
+  `mbooks`/Hibernate-oriented and not a dalogin pooling decision.
+
+Key files
+- `dalogin-quarkus/pom.xml`
+- `dalogin-quarkus/src/main/resources/application.properties`
+- `k8infra/quarkus-backend.yaml`
+- `.ai/memory/k8s.yaml`
+
+Analysis requirements
+- `AR-001`: Document how Agroal integrates with Quarkus (configuration, health checks, metrics,
+  dev services, and Narayana JTA transaction management).
+- `AR-002`: Document what adopting HikariCP in Quarkus would require, including whether a supported
+  extension exists or a manual `DataSource` producer would be needed.
+- `AR-003`: Identify Quarkus features that would be lost or hand-rolled under a manual HikariCP producer.
+- `AR-004`: Identify any concrete, observed problem that HikariCP would solve for dalogin.
+- `AR-005`: Compare native-image and build-time implications for both options.
+- `AR-006`: Compare metrics exposure through the existing Micrometer/Prometheus pipeline.
+- `AR-007`: Capture a pool-behavior baseline under the existing JMeter load plan.
+- `AR-008`: Recommend concrete `min-size`, `max-size`, and `acquisition-timeout` values with rationale.
+- `AR-009`: Produce an explicit keep-or-migrate recommendation with supporting evidence.
+
+Decision criteria
+- Whether a real, measured pooling deficiency exists in dalogin.
+- Integration cost with Quarkus transaction management and health/metrics.
+- Operational consistency with `mbook-quarkus` and `mbooks-quarkus`.
+- Maintenance burden of a hand-managed pool versus a framework-managed one.
+
+Expected default position
+- Agroal is the Quarkus-native, transaction-integrated pool and is already active.
+- The analysis should therefore treat "keep Agroal and tune it" as the default outcome, and require
+  positive evidence before recommending HikariCP.
+
+Out of scope
+- Implementing a pool migration.
+- Changing datasource credentials or externalizing secrets.
+- Tuning MySQL server-side connection limits.
+- `mbooks-quarkus` Hibernate session/pool behavior.
+
+Acceptance criteria
+- `AC-001`: A written comparison covering `AR-001` through `AR-006` exists.
+- `AC-002`: A measured pool baseline under load exists.
+- `AC-003`: Recommended pool settings are stated with rationale.
+- `AC-004`: A clear keep-or-migrate decision is recorded.
+- `AC-005`: If the decision is to keep Agroal, the HikariCP option is documented as evaluated and
+  declined so it is not re-litigated informally.

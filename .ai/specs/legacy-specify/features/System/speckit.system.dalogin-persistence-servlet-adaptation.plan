@@ -1,0 +1,121 @@
+Plan: dalogin persistence and Servlet adaptation
+
+Feature
+- `speckit.system.dalogin-servlet-request-response.specify`
+
+Implementation model
+- `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md`
+
+Objective
+- Move complex dalogin Servlet request processing behind immutable DTOs and all response construction
+  behind stateless helpers while migrating every Servlet directly to final SQLAccess family beans.
+
+Combined execution shape
+- One production-code pass covers, in order:
+  1. datasource legacy removal,
+  2. final CDI-backed family bean creation and SQLAccess method movement,
+  3. Servlet/filter/listener caller migration,
+  4. Servlet request DTO and response-helper extraction,
+  5. deletion of legacy SQLAccess/DB manager structures.
+- The order describes edits, not independently compilable stages.
+- Do not compile or test after an intermediate stage.
+- The first build runs only when all production callers and structural artifacts are final.
+- Resolve build errors as missed migration work, then run the targeted login tests.
+
+Design
+- Use endpoint-specific Java records for complex request processing.
+- Keep simple pass-through request reads explicit in the Servlet.
+- Use no DTO where a Servlet has no input or where a DTO would only wrap a trivial value.
+- Use separate DTOs for materially different GET/POST contracts.
+- Use endpoint-specific response helpers to preserve reviewable wire contracts.
+- Use one shared low-level response utility for writer/content-type mechanics.
+- Share endpoint helpers only after proving wire equality.
+- Keep business orchestration in each Servlet.
+- Combine each Servlet's CDI caller conversion and HTTP-boundary extraction in one edit.
+- Treat the whole Servlet as the migration unit: all request handlers, lifecycle overrides, and
+  private flow helpers are reviewed together.
+- Remove all Servlet lifecycle overrides. Replace the seven `AesUtil` initializations and the filter
+  equivalent with injected stateless `CryptoService`; its cryptographic engine is request-local
+  because `Cipher` is mutable and not thread-safe.
+- Inject final family beans into Servlets; inject `DataSource` only into persistence beans.
+
+Implementation phases
+1. Inventory
+   - Build a 14-Servlet matrix covering all 26 handlers, 10 `init()`, 10 `destroy()`, private flow
+     helpers, mappings, request values, response branches, redirects, cookies, headers, content
+     types, encodings, and JSON value types.
+   - Classify every request flow as complex, simple, or no-input, with a reason.
+   - Mark complex flows requiring DTOs; every Servlet still receives response-helper coverage.
+   - Capture malformed/missing input outcomes before moving parsing.
+2. Persistence foundation
+   - Apply legacy datasource removal.
+   - Create final family beans directly; do not create a temporary monolithic injected facade.
+   - Move SQLAccess methods, resource cleanup, transaction handling, and shared SQL support.
+3. HTTP support
+   - Add shared `ServletResponses` mechanics.
+   - Add request DTOs for complex flows and response helpers for all Servlets.
+   - Add stateless `CryptoService` and migrate all eight Servlet/filter `AesUtil` fields.
+   - Use the implementation example as the `HelloWorld` reference slice.
+4. Final caller migration
+   - Edit each whole Servlet once: inject final family beans, replace static SQLAccess calls, parse
+     complex GET/POST flows through records, keep simple reads explicit, delegate response
+     construction, and clean lifecycle/private helpers.
+   - Migrate filters/listeners to final family beans in the same pass.
+   - Preserve endpoint-specific orchestration and all wire behavior.
+   - For `HelloWorld` and `RegistrationWithoutVoucher`, create a pending session for ID/time, call
+     atomic `DeviceSessionManager.establishLogin`, invalidate on failure, and publish attributes only
+     after commit.
+   - For `Registration`, keep `wrapUpRegistration` atomic and publish attributes only after it
+     commits; invalidate the pending session on failure.
+   - Remove the temporary `RegActivation` session used only to obtain `ServletContext`.
+   - Remove the token retry; token creation/read now occurs inside the same transaction.
+5. Legacy deletion
+   - Remove monolithic `SQLAccess`, DBManager publication/fallback, dead legacy manager code, and
+     obsolete Servlet parsing/response methods/imports.
+   - Confirm no shim, static facade, direct complex-request parsing, or direct JSON writer remains.
+   - Remove all ten Servlet `init()` and ten no-op `destroy()` overrides after crypto migration.
+6. First build and verification
+   - Compile for the first time.
+   - Resolve every compiler-reported missed caller/type.
+   - Run targeted `LoginFlowTest`.
+   - Perform static SQL/resource/request/response checks.
+   - Hand remaining endpoint flows to the owner for manual verification.
+
+Validation strategy
+- The combined pass has one build gate, after all production edits.
+- Use `.ai/skills/quarkus-local-test-mysql/SKILL.md` for Maven settings and random test port.
+- Automated gate: targeted login success, bad-HMAC, and wrong-password cases plus focused
+  request/response assertions introduced by this feature.
+- Static gate: no legacy datasource path, no static SQLAccess caller, no duplicate SQL, no direct
+  Servlet `JSONObject`/`PrintWriter`, and DTO coverage of every flow classified complex.
+- Owner gate: registration, voucher, activation, password reset, logout, admin, active sessions,
+  checkout, purchases, and iOS/web compatibility.
+
+Risks and mitigations
+- Risk: the combined diff is large.
+  - Mitigation: review by cross-cutting category and use the 14-Servlet inventory as a checklist.
+- Risk: a Servlet is migrated twice through an intermediate SQLAccess shape.
+  - Mitigation: create final family beans before caller edits; edit each caller once.
+- Risk: broad response cleanup normalizes existing quirks.
+  - Mitigation: capture every response branch first and preserve field names, types, statuses, and
+    content types exactly.
+- Risk: generic DTOs become nullable bags.
+  - Mitigation: endpoint/coherent-flow records; composition for shared fields.
+- Risk: generic response helpers hide contracts.
+  - Mitigation: named endpoint operations backed only by a mechanical shared writer.
+- Risk: broader login/logout behavior changes leak into this pass.
+  - Mitigation: only pending-session publication, atomic login persistence, failure invalidation,
+    and retry removal are authorized here; logout changes remain in
+    `dalogin-login-logout-error-handling`.
+- Risk: waiting until the end to compile hides misses.
+  - Mitigation: bounded inventories for 21 SQLAccess methods, 16 persistence callers, and 14
+    Servlets; compiler output after the pass is the authoritative missed-work list.
+- Risk: focusing on primary POST flows leaves GET or lifecycle methods half-migrated.
+  - Mitigation: the inventory counts all 26 request handlers and every declared lifecycle override;
+    closure is per whole Servlet, never per selected method.
+- Risk: injecting the current `AesUtil` makes its mutable `Cipher` shared across concurrent requests.
+  - Mitigation: inject only a stateless `CryptoService` whose cipher state is created per operation;
+    preserve all algorithm parameters and wire output.
+
+Intent
+- Forward-only. No compatibility shim or independently shippable intermediate state is designed.

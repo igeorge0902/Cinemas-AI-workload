@@ -1,0 +1,107 @@
+Tasks: dalogin SQLAccess CDI datasource injection
+
+Phase 1 — Preconditions (`@backend-dev`)
+- [ ] Confirm `dalogin-datasource-legacy-removal` is complete (single pooled connection path).
+- [ ] Inventory all 21 data-access methods and their `ServletContext` usage.
+- [ ] Classify each `ServletContext` parameter as datasource-only or genuinely needed.
+- [ ] Confirm `dalogin-datasource-legacy-removal` narrowed `getConnection()` to `throws SQLException`.
+- [ ] Record which methods declare `throws Exception` and which of those handle their own `SQLException`.
+- [ ] Inventory all 16 caller files and group them by caller type.
+- [ ] Record baseline counts: 21 connection and all statement try-with-resources blocks, 11 bare result sets.
+- [ ] Capture the current SQL text so the post-pass diff can be proven empty.
+
+Phase 2 — Field injection confirmation (`@backend-dev`)
+- [ ] Confirm CDI field injection is uniformly available in `@WebServlet` classes under `quarkus-undertow`.
+- [ ] Confirm CDI field injection is uniformly available in `@WebFilter` classes (`ChangePswFilter`, `ActiveVoucherFilter`).
+- [ ] Confirm CDI field injection is uniformly available in `@WebListener` classes (`CustomHttpSessionListener`).
+- [ ] Confirm no caller in this module needs the programmatic CDI lookup escape hatch.
+
+Execution rule (applies to Phases 3–6)
+- All production code changes land in ONE pass. Do not compile, run, or smoke-test partway through.
+- Do not add a delegation shim, compatibility overload, or temporary static forwarder.
+- The module is expected to be uncompilable until Phase 6. That is accepted and intended.
+
+Phase 3 — Bean foundation (`@backend-dev`)
+- [ ] Create the final `@ApplicationScoped` family beans with injected `DataSource`.
+- [ ] Implement connection acquisition directly in the final owning families.
+- [ ] Add the documented lookup helper for non-CDI-capable callers.
+- [ ] Confirm no delegation shim or temporary static forwarder was introduced.
+
+Phase 4 — Method migration (`@backend-dev`)
+- [ ] Move user/account methods directly to the final login/registration bean.
+- [ ] Move voucher methods directly to the final voucher bean.
+- [ ] Move device/session/token methods directly to the merged final bean.
+- [ ] Move password-reset methods directly to the final password-reset bean.
+- [ ] Drop datasource-only `ServletContext` parameters.
+- [ ] Keep `generateUUID`, `logSQLException`, `ignoreSQLException`, and `jsonSQLError` static and connection-free.
+- [ ] Confirm every migrated method still uses try-with-resources.
+- [ ] Confirm no SQL text, parameter order, or result mapping changed.
+
+Phase 4b — Connection-close hardening (`@backend-dev`)
+- [ ] Confirm the bean holds no `Connection` field and caches no connection.
+- [ ] Confirm all 21 connection acquisitions remain in try-with-resources.
+- [ ] Confirm all statement try-with-resources blocks were preserved, including nested `cstmt2` cases.
+- [ ] Convert all 11 bare `ResultSet` locals to try-with-resources.
+- [ ] Convert nested result sets (`rs2` in `getForgotPswToken`) to try-with-resources.
+- [ ] Add explicit `rollback()` to the `wrapUpRegistration` failure path.
+- [ ] Add `SqlSupport.rollbackQuietly` and `restoreAutoCommit` so cleanup cannot propagate.
+- [ ] Confirm a failing `rollback()` cannot replace the method's return value or hide the original exception.
+- [ ] Narrow each migrated method from `throws Exception` to the reachable exception, or to none.
+- [ ] Confirm no caller was forced to handle more than before.
+- [ ] Confirm no catch block swallows without logging through `SqlSupport.logSQLException`.
+- [ ] Confirm `autoCommit` cannot leak as `false` to the next pool borrower.
+- [ ] Confirm no `@PreDestroy` or shutdown hook closes connections.
+- [ ] Confirm no `closeConnection()` equivalent was reintroduced into the bean.
+- [ ] Confirm no `finally` block was added to work around missing try-with-resources.
+
+Phase 5 — Caller migration and legacy deletion (`@backend-dev`)
+- [ ] Migrate authentication and session callers to `@Inject` field injection.
+- [ ] Migrate registration and voucher callers to `@Inject` field injection.
+- [ ] Migrate password-change and reset callers to `@Inject` field injection.
+- [ ] Migrate purchase-related callers to `@Inject` field injection.
+- [ ] Migrate `CustomHttpSessionListener` to `@Inject` field injection.
+- [ ] Migrate both filters to `@Inject` field injection.
+- [ ] Convert every `SQLAccess.<method>(..., context)` call site to an injected-field instance call.
+- [ ] Confirm zero remaining callers use a programmatic CDI lookup.
+- [ ] Remove the `"DBManager"` servlet-context attribute publication.
+- [ ] Remove `DBConnectionManager` if it has no remaining references.
+- [ ] Confirm no production code reads `"DBManager"` from the servlet context.
+
+Phase 6 — First build and login test (`@backend-dev`)
+- [ ] Confirm final family splitting and Servlet request/response migration are complete.
+- [ ] Compile the module for the first time; treat the error list as the remaining-work list.
+- [ ] Resolve every reported call site until the build is clean.
+- [ ] Confirm a clean build, i.e. no legacy call shape survives anywhere.
+- [ ] Confirm MySQL is running with the `login_` schema and the `GI` test user.
+- [ ] Start `dalogin-quarkus` locally in dev mode.
+- [ ] Run the available login test flow in `LoginFlowTest` (command and required flags:
+      `.ai/skills/quarkus-local-test-mysql/SKILL.md`).
+- [ ] Confirm it passes without `mbook` or `mbooks` running.
+- [ ] Confirm the test hits `dalogin-quarkus` directly, not the Apache reverse proxy.
+- [ ] Skip `loginThenRetrieveUser`; it calls downstream mbook, which is not required here.
+
+Phase 7 — Static verification (`@backend-dev`)
+- [ ] Diff SQL text before and after; confirm the diff is empty.
+- [ ] Re-count try-with-resources blocks: connections 21 and statements match baseline.
+- [ ] Confirm result-set try-with-resources rose from 0 to 11.
+- [ ] Confirm zero bare `ResultSet` locals remain.
+- [ ] Confirm by inspection that `wrapUpRegistration` rolls back on its failure path.
+- [ ] Confirm by inspection that `autoCommit` cannot leak `false` to the next pool borrower.
+- [ ] Confirm zero `throws Exception` declarations remain on migrated data-access methods.
+- [ ] Confirm `wrapUpRegistration` still rolls back; the business behavior must survive the refactor.
+- [ ] Confirm result-set scope narrowing did not change any returned value.
+
+Phase 8 — Closure (`@security-specialist` + `@backend-dev`)
+- [ ] Confirm the change was delivered as a single pass with no shim in any reviewable state.
+- [ ] Confirm no new shared mutable static state was introduced.
+- [ ] Confirm connection handling introduces no credential logging.
+- [ ] Update roadmap item 1 status for the `SQLAccess` portion.
+- [ ] Confirm the module is ready for `dalogin-sqlaccess-family-split`.
+- [ ] Hand off `MV-001`–`MV-003` to the repository owner for manual exercise.
+
+Owner-verified manually (not part of this feature)
+- Not tasks for the implementer. Listed so the boundary is explicit.
+- Registration, voucher, session, and password-reset flows.
+- Forced mid-transaction failure in `wrapUpRegistration`.
+- Bounded-pool leak pass across all flows.
+- Admin and purchase-related servlets, and session-listener behavior.

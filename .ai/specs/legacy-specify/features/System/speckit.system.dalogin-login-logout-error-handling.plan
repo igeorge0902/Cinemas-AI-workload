@@ -1,0 +1,94 @@
+Plan: dalogin login/logout error handling and session-state integrity
+
+Feature: `speckit.system.dalogin-login-logout-error-handling.specify`
+
+Intent
+Forward-only. This pass changes behaviour deliberately: failures that are currently invisible become
+visible. There is no rollback plan; defects found afterwards are fixed forward.
+
+Sequencing
+- Depends on `dalogin-datasource-legacy-removal` for the narrowing of `throws Exception` to
+  `throws SQLException`, which makes "which failures are possible" answerable.
+- Should follow `dalogin-sqlaccess-cdi-injection`, so error handling is written once against
+  injected beans rather than twice.
+- The combined persistence/Servlet adaptation now implements the login-side requirements
+  (`FR-001`-`FR-007`) together with the final `DeviceSessionManager` boundary.
+- Run this remaining feature afterward for logout ownership, listener cleanup, and schema work.
+
+Design decisions
+- Signal failure by exception, not by `boolean`. A `boolean` is the reason `B-002` exists: it is
+  discardable at the call site and invisible in review. A dedicated unchecked exception carrying the
+  failed operation and device identifier satisfies `FR-004` and `FR-005` without forcing every
+  caller into a `try`/`catch` cascade.
+- Write to the database before publishing the session. Today attributes are set first, which is what
+  makes `activeUsers` diverge (`B-004`). Reordering so the writes precede
+  `session.setAttribute("user"/"deviceId", ...)` satisfies `FR-002`. The listener remains untouched:
+  it keeps reacting to `attributeAdded`, it just fires later.
+- Where a session already exists when a write fails, invalidate it (`FR-003`). That path also fires
+  `sessionDestroyed`, so the cleanup logic must tolerate a session that never reached the database —
+  this is exactly the `B-005` case and must not log as an error.
+- Give logout a single owner (`FR-009`). `sessionDestroyed` fires for both explicit logout and
+  timeout, so it is the correct single place to call the procedure; `LoggingOut` should invalidate
+  and let the listener do the database work. This removes the double call without losing the timeout
+  path.
+- Distinguish zero-rows from success by returning the affected-row count rather than a `boolean`
+  (`FR-008`). Zero rows is legitimate on a timeout of a login that never completed, so it is a WARN,
+  not an error.
+- Treat the `Tokens` triggers as load-bearing and leave the mechanism alone. Rotation is the
+  intended revocation path (owner-confirmed): validation compares a client value against the stored
+  `token2`, so regenerating it invalidates the old one. The schema work is therefore narrow —
+  document the mechanism (`FR-014`) and resolve one malformed statement (`FR-012`) — not a
+  redesign. Anything that disables `Tokens_BEFORE_UPDATE` is out of bounds.
+
+Implementation phases
+1. Complete the remaining failure signal
+   - Reuse the persistence exception introduced by the combined adaptation.
+   - Convert `logout` to report failure through it.
+   - Return the affected-row count from the logout path.
+2. Verify absorbed login work
+   - Confirm `establishLogin` is atomic, pending sessions are invalidated on failure, attributes are
+     published after commit, and the token retry is absent.
+3. Logout call-site correction
+   - Make `sessionDestroyed` the single caller of the logout procedure.
+   - Reduce `LoggingOut` to invalidation.
+   - Raise the swallowed DEBUG catch to WARN with identifiers, and keep remaining cleanup running.
+4. Schema documentation and cleanup
+   - Document the rotation mechanism in the schema source, including why the `Last_seen_AFTER_UPDATE`
+     self-assignment must not be "optimised away".
+   - Resolve the malformed `logout_device` assignment without changing rotation behaviour.
+   - Verify rotation still occurs after the change.
+5. Verification
+   - Static review against the acceptance criteria.
+   - Run `LoginFlowTest` to confirm the success path is unchanged.
+   - Exercise the failure path with the database stopped.
+
+Validation strategy
+- The existing `LoginFlowTest` (`loginSuccess`, `loginBadHmac`, `loginWrongPassword`) is the
+  success-path gate. It must pass unchanged; a behavioural change that breaks it is a defect in this
+  feature, not an expected consequence.
+- The failure path needs a test that does not exist yet: a login attempted with the database
+  unreachable, asserting 5xx and an empty `/activeSessions`. This is the only new test this feature
+  requires.
+- `AC-007` and `AC-011` both assert rotation still works. Since the schema change is deliberately
+  narrow, a before/after comparison of `token1`/`token2` across a logout is sufficient evidence.
+- Everything else in the manual block stays with the owner.
+
+Risks and mitigations
+- Risk: making failures visible surfaces pre-existing breakage as new incidents.
+  - Mitigation: expected and intended. Roll out behind the owner's manual verification rather than
+    silently.
+- Risk: reordering session publication changes listener timing in ways the eviction logic depends on.
+  - Mitigation: `attributeAdded` ordering between `user` and `deviceId` is preserved; only the
+    position relative to the database writes moves. Verify device eviction still works on re-login.
+- Risk: moving the logout call into the listener alone loses it if the listener does not fire.
+  - Mitigation: confirm `sessionDestroyed` fires on explicit `invalidate()` before removing the call
+    from `LoggingOut`. It does today — that is the source of the double call.
+- Risk: a cleanup of the `logout_device` statement accidentally suppresses rotation.
+  - Mitigation: rotation comes from the trigger, not the statement, so any `UPDATE` to the row
+    preserves it. Removing the `UPDATE` entirely would not. Verify with `AC-011`.
+- Risk: a later reader removes the `Last_seen_AFTER_UPDATE` self-assignment as dead code and
+  silently disables rotation on re-login.
+  - Mitigation: this is the main reason `FR-014` exists. The comment is the mitigation.
+- Risk: scope creep into the token-generation weakness (`B-012`) or the `last_insert_id()` tautology
+  (`B-013`).
+  - Mitigation: both are explicitly out of scope and recorded for separate features.

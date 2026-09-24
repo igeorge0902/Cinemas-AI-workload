@@ -1,6 +1,6 @@
 # Testing Reference: Cinemas Project
 # Durable test inventory and validation boundaries only
-# Last Updated: May 16, 2026
+# Last Updated: September 19, 2026
 
 document_scope:
   purpose: "Track stable test suites, ownership areas, and environment expectations."
@@ -17,7 +17,8 @@ document_scope:
 frameworks:
   java_unit_tests:
     framework: "Quarkus @QuarkusTest"
-    runtime: "Java 17 / Quarkus 3.19.4"
+    environment_jdk: "Java 21 (default)"
+    project_target: "Java 17 / Quarkus 3.19.4"
     runner: "JUnit 5"
     primary_locations:
       - "dalogin-quarkus/src/test/java/"
@@ -39,6 +40,7 @@ frameworks:
   java_rest_assured_api_tests:
     framework: "Rest Assured"
     language: "Java"
+    runtime: "Java 21"
     location: "k8infra/api-smoke-restassured/"
     status: "Preferred Java API smoke suite"
 
@@ -65,9 +67,14 @@ test_suites:
   mbooks:
     focus:
       - "health and metrics smoke"
+      - "ApiResponseFactory status/body/content-type unit coverage"
       - "booking/payment contract regression when covered by integration tests"
     locations:
-      - "mbooks-quarkus/src/test/java/com/jeet/rest/"
+      - "mbooks-quarkus/src/test/java/com/jeet/"
+    requires:
+      - "book schema available for Quarkus startup"
+    execution_notes:
+      - "When quarkus:dev is running, use -Dquarkus.http.test-port=0 to avoid fixed-port conflicts."
 
   simple_service_webapp:
     focus:
@@ -81,6 +88,7 @@ test_suites:
       - "login to profile flow"
       - "browse and purchase API contract verification"
       - "admin/session smoke coverage"
+      - "manual concurrent checkout race coverage"
     locations:
       - "k8infra/api-smoke-restassured/"
     environment_expectations:
@@ -113,6 +121,17 @@ environment_baseline:
   backend:
     - "MySQL seeded with login_ and book schemas"
     - "dalogin, mbook, mbooks, and simple-service-webapp reachable for integration/UI coverage"
+  local_quarkus_development:
+    runtime: "Use the environment-default Java 21 JDK; the Maven modules compile for Java 17."
+    startup:
+      - "Start MySQL before launching database-backed Quarkus applications."
+      - "Run an application directly from its module with mvn quarkus:dev -f pom.xml."
+      - "Minikube is not required for direct local backend development."
+    routing:
+      - "No local Apache reverse proxy is configured for direct quarkus:dev execution."
+      - "Call each application through localhost, its configured HTTP port, and its Quarkus root path."
+      - "Do not expect Apache route fan-out, TLS termination, proxy-added headers, or Apache CORS behavior."
+      - "The shell environment may enable HTTP/HTTPS proxies by default; disable them or bypass localhost and 127.0.0.1 for local requests."
   ios_ui:
     - "Xcode installed"
     - "Appium available when running Appium suite"
@@ -134,6 +153,7 @@ validation_policy:
     - "Prefer smallest targeted suite first."
     - "Use integration/UI suites to verify cross-service behavior or client contracts."
     - "Treat experimental framework tests as environment signals, not sole regression proof."
+    - "Use --noproxy localhost,127.0.0.1 for direct local curl checks when a system proxy is configured."
   expected_outputs:
     - "Auth and booking regressions should surface as explicit contract/assertion failures."
     - "UI selector issues should be debugged through page-source inspection, not memory-file snippets."
@@ -155,4 +175,3 @@ references:
   deployment_runbook: "k8infra/README-k8s-local.md"
   run_configurations: ".run/"
   coding_patterns: ".ai/skills/skills-github.md"
-

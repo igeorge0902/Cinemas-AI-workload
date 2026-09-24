@@ -1,0 +1,68 @@
+Tasks: dalogin login/logout error handling and session-state integrity
+
+Feature: `speckit.system.dalogin-login-logout-error-handling.specify`
+Plan: `speckit.system.dalogin-login-logout-error-handling.plan`
+
+This feature changes behaviour on purpose. Its login-side requirements (`FR-001`-`FR-007`) were
+absorbed by the combined persistence/Servlet adaptation; the logout, listener, and schema work here
+runs after that pass has landed.
+
+Phase 1 — Preconditions (`@backend-dev`)
+- [ ] Confirm the combined pass (`speckit.system.dalogin-persistence-servlet-adaptation.tasks`)
+      has landed and its `LoginFlowTest` gate passed.
+- [ ] Confirm `PersistenceOperationException` and the final family beans exist to build on.
+- [x] `OQ-001` resolved: atomic `establishLogin` rolls back the partial device write.
+- [ ] Resolve `OQ-003` (whether `device_states.state` becomes enforced).
+- [ ] Record a baseline: current response codes for login and logout with the database stopped.
+
+Phase 2 — Remaining failure signal (`@backend-dev`)
+- [ ] Reuse the persistence exception from the combined adaptation.
+- [ ] Convert `logout` to return the affected-row count.
+- [ ] Confirm no logout call still returns a discardable `boolean`.
+
+Phase 3 — Absorbed login verification (`@backend-dev`)
+- [ ] Confirm the combined adaptation implemented `FR-001`-`FR-007`.
+- [ ] Confirm both login and registration-without-voucher publish session attributes after commit.
+- [ ] Confirm persistence failure invalidates the pending session and returns 5xx.
+- [ ] Confirm the 100 ms token retry is absent.
+
+Phase 4 — Logout call sites (`@backend-dev`)
+- [ ] Make `sessionDestroyed` the single caller of the logout procedure (`FR-009`).
+- [ ] Reduce `LoggingOut` to session invalidation.
+- [ ] Verify `sessionDestroyed` fires on explicit `invalidate()` before relying on it.
+- [ ] Raise the swallowed DEBUG catch to WARN with identifiers (`FR-010`).
+- [ ] Ensure a cleanup failure does not stop the remaining cleanup steps (`FR-011`).
+- [ ] Ensure a zero-row logout is logged as WARN, not as an error (`FR-008`).
+- [ ] Ensure cleanup tolerates a session that never reached the database.
+
+Phase 5 — Schema (`@backend-dev`)
+- [ ] Enumerate consumers of `Tokens`, `get_token`, `get_token2`, and `user_on_devices`.
+- [ ] Resolve the malformed `logout_device` assignment (`FR-012`, `B-010`) without altering
+      rotation behaviour.
+- [ ] Document in the schema source that `Tokens_BEFORE_INSERT`/`UPDATE` regenerate both columns on
+      every write, and that this is the intended revocation mechanism (`FR-014`).
+- [ ] Add a warning comment that `Last_seen_AFTER_UPDATE`'s self-assignment is deliberate and must
+      not be removed as a no-op (`FR-014`, `B-009`).
+- [ ] Confirm rotation still occurs on re-login and on logout (`AC-011`, `FR-013`).
+- [ ] Record, for each changed trigger or procedure, the Java behaviour that depends on it
+      (`FR-015`).
+- [ ] Confirm no change was made to `RAND()` token generation or the `last_insert_id()` predicate —
+      both are out of scope.
+
+Phase 6 — Verification (`@testing-engineer`)
+- [ ] Run `LoginFlowTest` (`loginSuccess`, `loginBadHmac`, `loginWrongPassword`); confirm unchanged.
+- [ ] Add a failure-path test: login with the database unreachable returns 5xx.
+- [ ] Confirm that failed login leaves no entry in `/activeSessions` (`AC-001`, `AC-002`).
+- [ ] Confirm an explicit logout invokes `logout_device` exactly once (`AC-004`).
+- [ ] Confirm a zero-row logout is distinguishable in the logs (`AC-005`).
+- [ ] Confirm `logout_device` sets the columns its text says it sets (`AC-008`).
+- [ ] Confirm no error response leaks SQL text, schema names, or credentials (`NFR-002`).
+
+Phase 7 — Closure (`@backend-dev`)
+- [ ] Confirm every `FR` has a corresponding change or a recorded decision not to act.
+- [ ] Hand `MV-001`-`MV-003` to the owner for manual verification.
+- [ ] Hand `AC-007` (token rejected after logout) to the owner if not automated.
+- [ ] Record `B-012` (`RAND()` tokens) and `B-013` (`last_insert_id()` tautology) as follow-up
+      features.
+- [ ] Update `speckit.system.refactoring-mentions-roadmap.plan` if these findings change its
+      priorities.

@@ -7,11 +7,11 @@ Execution mode: Screen-by-screen replacement with compile gate after each chunk
 Current active implementation target: Final batch closeout + pending user manual handoffs
 
 ## Source task artifacts
-- `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
-- `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
-- `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
-- `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`
-- `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-ios-dev.execution-plan.md`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-ios-dev.execution-plan.md`
 
 ## Global execution rules
 - Replace code one screen at a time only.
@@ -29,7 +29,7 @@ xcodebuild -workspace "<YourWorkspace>.xcworkspace" -scheme "<YourScheme>" -conf
 ---
 
 ## Screen 1 - `MoviesVC` (`moviesvc-redesign`)
-Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
+Task file: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
 
 ### Implementation checklist (`@ios-dev`)
 - [ ] Phase 1A compile-gate mode active for `MoviesVC`.
@@ -55,7 +55,7 @@ Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.movi
 ---
 
 ## Screen 2 - `VenuesVC` + `VenuesMigration` parity (`venuesvc-redesign`)
-Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
+Task file: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
 
 ### Implementation checklist (`@ios-dev`)
 - [x] Phase 1A compile-gate mode active for `VenuesVC`/`VenuesMigration`.
@@ -78,7 +78,7 @@ Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venu
 ---
 
 ## Screen 3 - `VenueForMoviesVC` (`venueformoviesvc-redesign`)
-Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
+Task file: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
 
 ### Implementation checklist (`@ios-dev`)
 - [x] Phase 1A compile-gate mode active for `VenueForMoviesVC`.
@@ -99,7 +99,7 @@ Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venu
 ---
 
 ## Screen 4 - `VenuesDetailsVC` (`venuesdetailsvc-redesign`)
-Task file: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`
+Task file: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesdetailsvc-redesign.tasks`
 
 ### Implementation checklist (`@ios-dev`)
 - [x] Phase 1A compile-gate mode active for `VenuesDetailsVC`.

@@ -1,9 +1,9 @@
 # Fixed Asset Catalog (Implementation Safe)
 
 Date: 2026-05-10
-Source sheet: `/.ai/workflows/features/SwiftUIFeatures/icons.png`
-Extractor: `/.ai/workflows/features/SwiftUIFeatures/extract_icons_from_sheet.py`
-Manifest: `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/manifest.json`
+Source sheet: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/icons.png`
+Extractor: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extract_icons_from_sheet.py`
+Manifest: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/manifest.json`
 
 This catalog reflects the **locked mapping** (manual overrides enabled) so icons are not mixed between runs.
 
@@ -12,30 +12,30 @@ This catalog reflects the **locked mapping** (manual overrides enabled) so icons
 ## Required assets (ready)
 
 ### Navigation
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_right_16.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_right_15.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_left_13.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_right_16.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_right_15.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/navigation/chevron_left_13.png`
 
 ### Favorite
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/favorite/favorite_outline_32.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/favorite/favorite_filled_32.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/favorite/favorite_outline_32.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/favorite/favorite_filled_32.png`
 
 ### Actions (VenuesDetailsVC)
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/actions/action_book_12.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/actions/action_dates_12.png`  *(corrected from map mismatch)*
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/actions/action_map_12.png`    *(corrected from dates mismatch)*
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/actions/action_movie_detail_12.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/actions/action_book_12.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/actions/action_dates_12.png`  *(corrected from map mismatch)*
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/actions/action_map_12.png`    *(corrected from dates mismatch)*
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/actions/action_movie_detail_12.png`
 
 ### Placeholder
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/required/placeholder/poster_placeholder_52.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/required/placeholder/poster_placeholder_52.png`
 
 ---
 
 ## Optional metadata assets
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_location_pin_16.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_home_16.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_folder_tag_12.png`
-- `/.ai/workflows/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_calendar_date_12.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_location_pin_16.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_home_16.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_folder_tag_12.png`
+- `/.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/optional/metadata/meta_calendar_date_12.png`
 
 ---
 

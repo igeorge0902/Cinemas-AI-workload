@@ -1,0 +1,175 @@
+Feature: dalogin SQLAccess family split
+
+Contract IDs
+- None (internal persistence structure; no public endpoint contract change)
+
+Overview
+- Split the monolithic `SQLAccess` class in `dalogin-quarkus` into family-scoped data-access beans.
+- Mirror the family decomposition model already applied to `mbooks-quarkus`
+  (Movie / Venue / Purchase / Checkout), adapted to dalogin's authentication domain.
+- Preserve all `/login/*` endpoint behavior, SQL statements, and result handling.
+
+Split context
+- This is part 3 of the `dalogin-datasource-pooling` split recorded in
+  `speckit.system.refactoring-mentions-roadmap.plan`.
+- Depends on `dalogin-sqlaccess-cdi-injection`; the split moves injectable instance methods,
+  not static `ServletContext`-bound ones.
+- Reference model: `speckit.backendendpoints.bookcontroller-response-records-all.*` and
+  `speckit.backendendpoints.movies.implementation-example.md`.
+
+Role collaboration
+- `@backend-dev`, `@testing-engineer`
+
+Baseline (as-found)
+- `SQLAccess` is 483 lines containing 21 data-access methods plus 4 helpers.
+- The class mixes user accounts, vouchers, devices/tokens, sessions, and password reset.
+- 16 production files depend on it, so it is a broad coupling point.
+
+Proposed families
+- Login / registration (owns `wrapUpRegistration`)
+  - `createUser`, `changePassword`, `deleteUser`, `getHash`, `getUUID`, `checkActivation`,
+    `wrapUpRegistration`
+- Voucher
+  - `checkVoucher`, `insertVoucher`, `registerVoucher`, `activateVoucher`, `resetVoucher`,
+    `copyToken2`
+- Device / session / token (merged; resolved, see `FR-017`)
+  - `insertDevice`, `getToken`, `getToken2`, `getActivationToken`, `insertSessionCreated`, `logout`
+- Password reset
+  - `getForgotPswToken`, `getForgotPswConfirmationCode`
+- Shared support (not a data-access family)
+  - `generateUUID`, `logSQLException`, `ignoreSQLException`, `jsonSQLError`
+
+Registration and login are one family (decided; see `FR-005`). Registration completes a login
+identity, so the two share the same domain owner rather than sitting with voucher mechanics.
+
+The `wrapUpRegistration` transaction problem
+- `wrapUpRegistration` is one transaction over four procedures that belong to two *other* families:
+  `insert_voucher` and `copy_token2` (voucher), `insert_device_` and `insert_sessionCreated`
+  (device/session/token, merged per `FR-017`).
+- All four statements are already textually duplicated in today's `SQLAccess`: lines 104/112/119/127
+  inside `wrapUpRegistration` repeat lines 168/185/201/218 in `insertVoucher`, `insertDevice`,
+  `insertSessionCreated`, and `copyToken2`. The split turns existing in-class duplication into
+  cross-family duplication, which `NFR-003` forbids.
+- Atomicity depends on all four running on one `Connection` with `autoCommit` false. A plain
+  cross-family bean call (`voucherManager.insertVoucher(...)`) would acquire a *second* pooled
+  connection and silently destroy the transaction: a later failure could no longer roll back the
+  earlier inserts.
+- Therefore cross-family participation MUST be connection-passing, not connection-acquiring. See
+  `FR-011`-`FR-014`.
+
+Key files
+- `dalogin-quarkus/src/main/java/com/dalogin/SQLAccess.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/servlets/*.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/filters/ChangePswFilter.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/filters/ActiveVoucherFilter.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/listeners/CustomHttpSessionListener.java`
+
+Functional requirements
+- `FR-001`: Each family MUST be its own `@ApplicationScoped` data-access bean.
+- `FR-002`: Family beans MUST live in a dedicated persistence subpackage rather than the module root.
+- `FR-003`: SQL statements, parameter binding, and result mapping MUST be moved verbatim.
+- `FR-004`: Shared SQL-error helpers MUST live in one shared support type used by all families.
+- `FR-005`: `wrapUpRegistration` MUST be owned by the login/registration family. Registration and
+  login are one family; this resolves `OQ-001`.
+- `FR-006`: Cross-family calls MUST go through injected beans, not static access.
+- `FR-007`: Each caller MUST depend only on the families it actually uses.
+- `FR-008`: The monolithic `SQLAccess` class MUST be removed once empty.
+- `FR-009`: `SQLAccess` MUST NOT be reintroduced as a pass-through facade.
+- `FR-010`: Existing transaction and auto-commit semantics MUST be preserved.
+- `FR-011`: A family method that participates in another family's transaction MUST accept the
+  caller's `Connection` as a parameter and MUST NOT acquire its own. This is the only permitted
+  form of cross-family transactional collaboration.
+- `FR-012`: A connection-accepting method MUST NOT close, commit, or roll back the connection it was
+  given. Those belong solely to the owner that acquired it.
+- `FR-013`: `insert_device_` and `insert_sessionCreated` participate in two transactional operations:
+  registration-with-voucher (`wrapUpRegistration`) and normal login/registration-without-voucher
+  (`DeviceSessionManager.establishLogin`). Each SQL statement MUST be written once as a
+  connection-accepting method and called with the owning transaction's connection.
+- `FR-014`: Where a family exposes both a standalone and a transactional form of an operation, the
+  standalone form MUST delegate to the connection-accepting form so the SQL text exists once.
+- `FR-015`: The standalone `SQLAccess.insertVoucher` and `SQLAccess.copyToken2` methods have no
+  callers in the module. They MUST be carried forward unchanged into the voucher family rather than
+  deleted (decided; see the resolved `OQ-003`). They therefore become the standalone forms required
+  by `FR-014` and MUST delegate to the connection-accepting forms used by `wrapUpRegistration`, so
+  the SQL text still exists exactly once. Note this concerns only the Java wrappers: the
+  `insert_voucher` and `copy_token2` stored procedures are live in `login_` and MUST NOT be touched.
+- `FR-016`: The call order inside `wrapUpRegistration` MUST be preserved exactly:
+  `insert_voucher` → `insert_device_` → `insert_sessionCreated` → `copy_token2`. The order is a
+  schema contract, not a stylistic choice. `insert_device_` fires the `deviceId_uuid` trigger that
+  populates `device_states`; `insert_sessionCreated` inserts into `Last_seen`, which fires the
+  `tokens` trigger that creates the `Tokens` row; only then does `copy_token2` have a `token2` value
+  to copy into `voucher_states.activation_token`. Reordering or parallelising these steps would
+  silently write `NULL` rather than fail. `insert_voucher` MUST additionally stay first for a second
+  reason: `vouchers.voucher_` carries the `voucher__UNIQUE` key, so a reused voucher fails there
+  before either `INSERT` has run. That ordering is what makes today's rollback-free abort leave no
+  partial rows, and it MUST NOT be relied on once the explicit `rollback()` required by
+  `dalogin-sqlaccess-cdi-injection` `FR-019` is in place.
+- `FR-017`: Device/token and session MUST be a single family. It owns `devices`, `device_states`,
+  `Tokens`, and `Last_seen`, and exposes `insertDevice`, `getToken`, `getToken2`,
+  `getActivationToken`, `insertSessionCreated`, and `logout`.
+- `FR-018`: Because `insert_device_` and `insert_sessionCreated` now belong to the same family, the
+  connection-accepting forms both `wrapUpRegistration` participants need live in one bean. This
+  does not change `FR-011`: they still accept the caller's `Connection` and never acquire their own.
+- `FR-019`: This feature inherits the validation strategy of `dalogin-sqlaccess-cdi-injection`
+  (`FR-025`-`FR-028`) and the unified execution plan in
+  `speckit.system.dalogin-persistence-servlet-adaptation.plan`: compile and test only after the full
+  datasource/CDI/family/Servlet pass, then owner-verify the remaining flows.
+- `FR-020`: The merged family MUST expose atomic `establishLogin`, which executes
+  `insert_device_`, `insert_sessionCreated`, and `get_token2` on one connection. Missing token data
+  is a failure and rolls back both writes.
+
+Non-functional requirements
+- `NFR-001`: No family bean may hold mutable shared state beyond its injected datasource.
+- `NFR-002`: Family boundaries must follow domain meaning, not call-site convenience.
+- `NFR-003`: No duplicated SQL across families.
+
+Out of scope
+- Changing SQL text, schema, or stored procedures.
+- Replacing the connection pool implementation.
+- Standardizing error envelopes (roadmap item 9).
+- Reducing the dalogin proxy/gateway servlet pattern (roadmap item 7).
+
+Resolved decisions
+- `OQ-001` (resolved): `wrapUpRegistration` belongs to the login/registration family. Registration
+  and login are one family. It stays a real transactional method there — not a thin orchestrator —
+  and reaches the other families' statements by passing its own `Connection` (`FR-011`-`FR-014`).
+
+- `OQ-003` (resolved): the callerless `SQLAccess.insertVoucher` and `SQLAccess.copyToken2` Java
+  wrappers are **carried forward unchanged**, not deleted. Verified zero callers in
+  `dalogin-quarkus`, but removal is a behavioural subtraction that this structural refactor does not
+  need to make, and keeping them costs nothing once `FR-014` delegation means the SQL is written
+  once. Recorded in `FR-015`.
+
+- `OQ-002` (resolved): device/token and session are **one family**. The deciding evidence is table
+  ownership, not bean size: `insert_sessionCreated` writes `device_states`, `logout_device` writes
+  `device_states` and `Tokens`, and `get_token2` reads `Tokens JOIN Last_seen`. `Last_seen` is the
+  only table a separate session family would own outright, so a split would produce two beans whose
+  SQL mutates each other's tables — ownership that cannot be enforced or stated clearly
+  (`NFR-002`). Recorded as `FR-017`.
+
+Open questions
+- None. All three open questions are resolved.
+
+Acceptance criteria
+- `AC-001`: No `SQLAccess` class remains in `dalogin-quarkus`.
+- `AC-002`: Each family bean contains only its domain's methods.
+- `AC-003`: All 16 former caller files compile against the new family beans.
+- `AC-004`: SQL statements are provably identical to the pre-split versions.
+- `AC-005`: `wrapUpRegistration` lives in the login/registration family.
+- `AC-006`: `wrapUpRegistration` executes all four procedures on a single `Connection`; a forced
+  failure at any step rolls back every preceding step.
+- `AC-007`: No connection-accepting family method closes, commits, or rolls back its argument.
+- `AC-008`: Each of the four shared statements appears exactly once in the codebase.
+- `AC-009`: `HelloWorld` and `RegistrationWithoutVoucher` call atomic `establishLogin`; neither
+  performs standalone sequential `insertDevice`/`insertSessionCreated` calls.
+- `AC-010`: The `insertVoucher` and `copyToken2` wrappers still exist in the voucher family with
+  unchanged signatures, and each delegates to its connection-accepting form rather than repeating
+  the SQL.
+- `AC-011`: `wrapUpRegistration` calls its four procedures in the original order, and the
+  `Last_seen` → `tokens` trigger → `Tokens` chain still yields a non-null
+  `voucher_states.activation_token` after a successful registration.
+- `AC-012`: No family bean other than the merged device/session family contains SQL touching
+  `devices`, `device_states`, `Tokens`, or `Last_seen`.
+
+Owner-verified manually (outside this feature)
+- `MV-001`: Login, registration, voucher, session, and password-reset flows are unchanged.

@@ -1,0 +1,63 @@
+Feature Plan: dalogin connection pool implementation analysis (Agroal vs HikariCP)
+
+Objective
+- Decide, with evidence, whether `dalogin-quarkus` keeps Agroal or adopts HikariCP, and set the
+  pool-tuning baseline used by the rest of the datasource split.
+
+Relationship to the roadmap
+- Fourth and final part of the `dalogin-datasource-pooling` split.
+- Answers the "is the pool right" question that roadmap inventory item 2 implies but does not settle.
+- Deliberately separated from parts 1-3 so implementation work is not blocked by a technology debate.
+
+Role ownership
+- Analysis: `@backend-dev`
+- Load baseline: `@performance-engineer`
+- Verification of measurements: `@testing-engineer`
+
+Framing
+- Agroal is not an incidental choice in Quarkus; it is the integrated pool that Quarkus wires to
+  configuration, health checks, metrics, dev services, and Narayana JTA transaction management.
+- HikariCP is a strong standalone pool, but in Quarkus it has no equivalent first-class integration,
+  so adopting it generally means managing a `DataSource` producer by hand.
+- The burden of proof therefore sits with migration, not with the status quo.
+
+Analysis structure
+1. Integration comparison
+   - Configuration surface and key naming.
+   - Transaction enlistment and propagation.
+   - Health check and readiness integration.
+   - Metrics exposure through Micrometer/Prometheus - requires minikube, so skipped. will do performance test later
+   - Dev services and dev-mode behavior - localhost
+   - Native-image and build-time implications.
+2. Problem validation
+   - Identify whether dalogin has any observed pooling defect: exhaustion, leak, latency, or stalls.
+   - If no defect exists, record that explicitly; a migration without a compile problem is also justified. we expect kind of FIFO one2one migration.
+3. Measurement
+   - Capture pool behavior under the existing JMeter plan (`API2.jmx`) - localhost apache https with homebrew with quarkus spinned up. check db for existing users
+   - Record acquisition latency, active/idle counts, and any timeout or exhaustion events.
+   - Repeat under a deliberately small pool to characterize exhaustion behavior.
+4. Tuning recommendation
+   - Recommend `min-size`, `max-size`, and `acquisition-timeout` from the measurements.
+   - Cross-check `max-size` against MySQL server-side connection limits and the other services' pools.
+5. Decision record
+   - State keep-or-migrate with reasoning tied to the measured evidence.
+   - If keeping Agroal, record HikariCP as evaluated and declined, with the reasons.
+
+Sequencing note
+- Run the measurement phase after `dalogin-datasource-legacy-removal`, so the fallback path cannot
+  distort results by creating unpooled connections.
+
+Validation strategy
+- Every claim in the comparison must cite either Quarkus configuration, module source, or a measurement.
+- Load measurements must be repeated at least twice to confirm stability before being recorded.
+- Recommended settings must be sanity-checked against the deployed manifest, not only local runs.
+
+Risks and mitigations
+- Risk: the analysis becomes a generic pool comparison with no dalogin-specific conclusion.
+  - Mitigation: `AR-004` requires naming a concrete observed problem or explicitly recording its absence.
+- Risk: pool sizing is tuned per service and collectively exceeds MySQL limits.
+  - Mitigation: cross-check all service pool sizes against the server-side maximum.
+
+Deliverable
+- A single analysis document plus an updated `application.properties` pool configuration if tuning
+  is recommended. No pool implementation change unless the decision explicitly calls for one.

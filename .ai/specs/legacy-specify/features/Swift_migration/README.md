@@ -296,7 +296,7 @@ SwiftCinemas/SwiftLoginScreen/Managers/  [NEW DIRECTORY]
 This refactoring will be documented in Speckit for future AI assistance:
 
 ```
-.ai/workflows/features/Swift_migration/
+.ai/specs/legacy-specify/features/Swift_migration/
 ├── 00-MIGRATION-OVERVIEW.md
 ├── 01-IMPLEMENTATION-GUIDE.md
 ├── 02-READY-TO-IMPLEMENT.md
@@ -315,7 +315,7 @@ This refactoring will be documented in Speckit for future AI assistance:
 - **Naming:** `XyzDataManager` (e.g., `MoviesDataManager`, `SeatsDataManager`)
 - **Access:** `XyzDataManager.shared.fetchXyz(...) async throws -> [XyzModel]`
 - **Benefits:** Type safety, centralized error handling, easier testing
-- **Examples:** See feature specifications in `.ai/workflows/features/Swift_migration/`
+- **Examples:** See feature specifications in `.ai/specs/legacy-specify/features/Swift_migration/`
 ```
 
 ---

@@ -33,7 +33,7 @@ Translate HTML prototype screens into production UIKit implementations in this r
 - Use storyboard for navigation wiring only when practical.
 
 ## Prototype Sources (Repository)
-- Main source folder: `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/workflows/features/SwiftUIFeatures/prototypes`
+- Main source folder: `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes`
 - Reference first for admin redesign: `adminvc-adminupdate-redesign.prototype.html`
 - Reference for menu/purchases/tickets styling: `menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
 

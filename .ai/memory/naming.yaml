@@ -1,6 +1,6 @@
 # Naming Conventions & Key Identifiers
 # Durable names, paths, and immutable identifiers only
-# Last Updated: May 16, 2026
+# Last Updated: September 19, 2026
 
 document_scope:
   purpose: "Keep stable package names, path names, headers, schemas, and reserved identifiers in one place."
@@ -27,11 +27,25 @@ packages:
       base: "com.jeet"
       stable_subpackages:
         - "com.jeet.rest"
+        - "com.jeet.rest.requestbean"
+        - "com.jeet.rest.responsemapper"
+        - "com.jeet.rest.responserecord.movie"
+        - "com.jeet.rest.responserecord.venue"
+        - "com.jeet.rest.responserecord.purchase"
+        - "com.jeet.rest.responserecord.checkout"
         - "com.jeet.service"
-        - "com.jeet.booking"
+        - "com.jeet.service.booking"
         - "com.jeet.db"
         - "com.jeet.broadcasting"
         - "com.jeet.api"
+      controller_families:
+        movie: "MovieController -> MovieService -> MovieMapper"
+        venue: "VenueController -> VenueService -> VenueMapper"
+        purchase: "PurchaseController -> PurchaseService -> PurchaseMapper"
+        checkout: "CheckoutController -> CheckoutService -> CheckoutMapper"
+      removed_types:
+        - "com.jeet.rest.BookController"
+        - "com.jeet.service.BookingHandlerImpl"
     mbook:
       base: "com.jeet"
       note: "Shares base package with mbooks for historical compatibility."
@@ -205,4 +219,4 @@ references:
   k8s_reference: ".ai/memory/k8s.yaml"
   testing_reference: ".ai/memory/testing.yaml"
   code_patterns: ".ai/skills/skills-github.md"
-
+  mbooks_controller_flow: ".ai/skills/mbooks-controller-dao-flow/SKILL.md"

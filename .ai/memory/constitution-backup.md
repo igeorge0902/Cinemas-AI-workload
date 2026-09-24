@@ -4,7 +4,7 @@
 **Cinemas** is a multi-service Quarkus-based cinema booking system with iOS client, web UI (AngularJS), and Kubernetes infrastructure. The system handles user authentication, seat reservation, Braintree payments, and real-time availability tracking.
 
 ## Technology Stack
-- **Runtime:** Java 17, Quarkus 3.19.4
+- **Runtime:** Java 21 is the default development JDK; Maven modules target Java 17 with Quarkus 3.19.4
 - **Frontend:** AngularJS 1.x (Film-Review SPA), iOS SwiftUI/AppKit
 - **Backend Services:** 4 Quarkus microservices (dalogin, mbook, mbooks, simple-service-webapp)
 - **Database:** MySQL 8 (dual schemas: `login_` for auth, `book` for cinema data)
@@ -14,6 +14,13 @@
 - **API Gateway/Proxy:** Apache HTTP Server 2.4 (reverse proxy, SSL termination)
 - **Testing:** XCTest/XCUITest, Appium 3.x + XCUITest driver + TestNG, Java Rest Assured API smoke tests, experimental Quarkus `@QuarkusTest` coverage
 - **Payment Gateway:** Braintree Sandbox API (JS 1.44.1, iOS 5.26.0, Java 3.36.0)
+
+### Local Quarkus Development
+- Java services can run directly with `mvn quarkus:dev -f pom.xml`; Minikube is not required.
+- Start MySQL before launching database-backed services.
+- Direct local mode uses each application's configured localhost port and Quarkus root path.
+- No Apache reverse proxy is configured for direct local mode, so Apache route fan-out, TLS
+  termination, proxy headers, and Apache-managed CORS behavior are unavailable.
 
 ## Critical Architecture Decisions
 
@@ -140,7 +147,7 @@ Modern async/await + centralized networking layer replaced callback-based implem
 |---------|----------|------|-----------------|----------|
 | **dalogin** | `dalogin-quarkus/` | 8080 | `HelloWorld.java`, `CookieFilter.java`, `AuthFilter.java` | `login_` |
 | **mbook** | `mbook-quarkus/` | 8888 | `UserController.java` | `login_` (read-only proxy) |
-| **mbooks** | `mbooks-quarkus/` | 8080 | `BookController.java`, `PaymentService.java` | `book` |
+| **mbooks** | `mbooks-quarkus/` | 8080 | `MovieController.java`, `VenueController.java`, `PurchaseController.java`, `CheckoutController.java` | `book` |
 | **simple-service-webapp** | `simple-service-webapp-quarkus/` | 8085 | `ImageResource.java` | N/A (serves files) |
 
 ### Web UI
@@ -173,6 +180,7 @@ Modern async/await + centralized networking layer replaced callback-based implem
 Implementation templates and copy-paste snippets are intentionally **not duplicated** in this constitution.
 Use these canonical sources instead:
 - `.ai/skills/skills-github.md` — reusable coding patterns (REST, auth, payment, WebSocket, tests, deployment helpers)
+- `.ai/skills/mbooks-controller-dao-flow/SKILL.md` — current mbooks family controller/service/DAO trace
 - `.ai/retrieval/instructions.md` — operational routing (where to edit, quick checks, gotchas)
 - `.ai/agents/AGENTS.md` — architecture deep-dive and immutable service contracts
 
@@ -229,7 +237,6 @@ For operational procedures and command catalogs, use:
 
 ---
 
-**Last Updated:** May 16, 2026
+**Last Updated:** September 19, 2026
 **Maintained By:** Development Team
 **Status:** Active — All services production-ready in Minikube
-

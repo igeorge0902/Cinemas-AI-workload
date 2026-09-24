@@ -16,7 +16,7 @@ Scope: Recent Swift DataManager migration implementation and its current verific
 - Review updated accordingly: this is treated as design choice, not an actionable migration defect.
 
 ### 3) Medium - Migration verification gates are still open
-- File: `.ai/workflows/features/Swift_migration/speckit.swiftui.swift-migration-data-managers.tasks:258-281, 297-319, 328-349`
+- File: `.ai/specs/legacy-specify/features/Swift_migration/speckit.swiftui.swift-migration-data-managers.tasks:258-281, 297-319, 328-349`
 - Deferred checks include auth/payment integration, full Appium E2E, performance profiling, and sign-off tasks.
 - Risk: migration is functionally advanced but still under-verified for regressions in end-to-end scenarios.
 - Recommended fix:

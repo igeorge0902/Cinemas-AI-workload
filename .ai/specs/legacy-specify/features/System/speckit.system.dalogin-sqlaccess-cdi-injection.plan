@@ -1,0 +1,158 @@
+Feature Plan: dalogin SQLAccess CDI datasource injection
+
+Objective
+- Move `dalogin-quarkus` persistence code from static methods plus `ServletContext` datasource lookup
+  to CDI-injected, instance-based data access.
+
+Implementation model
+- `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md` is the single
+  final-state model for datasource injection, family transactions, Servlet callers, request DTOs,
+  response helpers, and session publication.
+
+Relationship to the roadmap
+- Implements the second portion of the originally planned `speckit.system.dalogin-datasource-pooling.*` triad.
+- Directly reduces roadmap item 1 (thread-safety static mutable state in `SQLAccess`).
+- Sequenced after `dalogin-datasource-legacy-removal` so only one connection path must be rewired.
+- Sequenced before `dalogin-sqlaccess-family-split` so the split moves already-clean methods.
+
+Role ownership
+- Implementation: `@backend-dev`
+- Injection and lifecycle review: `@backend-dev`
+- Security review: `@security-specialist`
+- Verification: `@testing-engineer`
+
+Baseline (as-found)
+- 21 `SQLAccess` data-access methods each repeat the same two-line prologue to reach a connection.
+- The `ServletContext` parameter is threaded through call sites purely as a datasource carrier.
+- 16 caller files span servlets, two filters, and a session listener.
+- `quarkus-arc` is already a dependency and `@Inject DataSource` already works in the context listener.
+
+Central design decision
+- Keep this feature mechanical. Change how a connection is reached, not what the SQL does.
+- Method bodies below the connection acquisition line should remain untouched in this feature,
+  with one deliberate exception: resource release and failure-path transaction cleanup.
+
+Connection-close design
+- Ownership model: the bean acquires a connection per method call and releases it in that same call.
+  A connection is never a bean field, never cached, and never shared across calls.
+- "Close" means "return to the Agroal pool". It is cheap and mandatory, not a physical disconnect,
+  so there is no reason to defer, pool-manage, or skip it in application code.
+- No lifecycle close is needed anywhere: no `@PreDestroy`, no shutdown hook, no listener close.
+  Pool shutdown belongs to Quarkus/Agroal. The existing no-op `closeConnection()` is removed by
+  `dalogin-datasource-legacy-removal` and must not reappear here in any form.
+- Verified current state: all 21 connections and all statements already use try-with-resources.
+  That coverage must be preserved exactly; this migration must not downgrade any of it.
+- Gap 1 — result sets: 11 result sets are bare locals with no explicit close. They survive today only
+  because closing a statement cascades to its result set. Since every result set already sits inside
+  its statement's try-with-resources block, converting them to try-with-resources is a local,
+  low-risk change that makes cleanup explicit rather than inherited.
+- Gap 2 — transaction cleanup: `wrapUpRegistration` sets `autoCommit(false)` and commits on success,
+  but its catch block only logs and returns `false`. The connection is then closed with an open
+  transaction and `autoCommit` still `false`, relying on driver/pool reset to clean up.
+  Add an explicit `rollback()` on the failure path.
+- Why this belongs in this feature: moving connection acquisition into an injected bean changes who
+  owns the connection. Leaving implicit cleanup in place would bake an unclear ownership contract
+  into the new structure, and the family split would then copy it into five beans.
+- Restraint: only failure-path cleanup changes. Successful-path behavior, SQL text, and returned
+  values stay identical.
+
+Caller-type strategy
+- Field injection via `@Inject` is the uniform, required approach for every caller registered
+  through `@WebServlet`, `@WebFilter`, or `@WebListener` under `quarkus-undertow`. Quarkus wires
+  these through an ArC-aware Undertow instance factory, so CDI field injection works the same way
+  in servlets, filters, and listeners — this is a platform guarantee for this module, not something
+  to re-derive per caller.
+- A programmatic CDI lookup helper exists only as a documented escape hatch for a plain Java type
+  that is genuinely outside container management (not `@WebServlet`/`@WebFilter`/`@WebListener` and
+  not otherwise container-managed). No currently known caller in this module needs it.
+- Every call-site shaped like `SQLAccess.checkActivation(user, context)` converts to an injected
+  field call, e.g. `accountManager.checkActivation(user)`, dropping the `ServletContext` argument.
+
+Execution shape
+- Introduce the final `@ApplicationScoped` family beans holding injected datasources; do not create
+  an intermediate monolithic injected bean.
+- All code changes land in the unified adaptation pass: datasource cleanup, final family beans,
+  resource hardening, every caller, and Servlet request/response extraction are converted together.
+  The module is expected not to compile partway through, and that is accepted.
+- No delegation shim, no compatibility overload, and no temporary static forwarding method is
+  introduced. `SQLAccess` either is migrated or is deleted; it never coexists in two shapes.
+- Rationale: the change is mechanical and closed over a known set of 21 methods and 16 caller files.
+  A shim would add code whose only purpose is to be removed, and a half-migrated `SQLAccess` is the
+  state most likely to be accidentally left in place.
+- The compiler is the completeness check. A missed call site is a build error rather than a
+  silently surviving legacy path.
+
+Implementation phases
+- These phases describe the order of edits within the single pass, not separately shippable steps.
+  Nothing is compiled, run, or verified until phase 5 is reached.
+1. Bean foundation
+   - Create the final `@ApplicationScoped` family beans with injected `DataSource`.
+   - Provide connection acquisition inside each owning family.
+   - Add the documented lookup helper for non-CDI callers.
+2. Method migration
+   - Convert data-access methods directly to instance methods on their final family bean.
+   - Drop the `ServletContext` parameter where it exists only for datasource access.
+   - Preserve SQL text, parameter order, and result mapping exactly.
+   - Preserve existing connection and statement try-with-resources coverage exactly.
+   - Keep stateless helpers static and connection-free.
+3. Resource-release hardening
+   - Convert the 11 bare `ResultSet` locals to try-with-resources, including nested `rs2` cases.
+   - Add explicit `rollback()` to the `wrapUpRegistration` failure path, via a non-propagating helper.
+   - Add `SqlSupport.rollbackQuietly` and `restoreAutoCommit` so cleanup cannot mask a result.
+   - Narrow `throws Exception` signatures to the reachable exception, or to none.
+   - Ensure no connection can return to the pool with `autoCommit` false or a transaction open.
+   - Confirm no `@PreDestroy`, shutdown hook, or `closeConnection()` equivalent was introduced.
+4. Caller migration and legacy deletion
+   - Convert all 16 caller files to `@Inject` field injection in the same pass.
+   - Remove the `"DBManager"` servlet-context attribute publication.
+   - Remove `DBConnectionManager` if nothing references it after migration.
+5. First build
+   - Compile the module once, at the end. Resolve every reported call site.
+   - A clean build is the signal that no legacy call shape survives.
+
+Intent
+- This feature is a structural improvement. It is carried forward, not staged for reversal. There is
+  no rollback plan and no revert path is designed for; defects found after the pass are fixed
+  forward.
+
+Validation strategy
+- Compile once, after the full pass. Treat the error list as the migration worklist.
+- Start `dalogin-quarkus` locally against the already-running MySQL and run the available REST
+  Assured login test flow. That is the full automated validation for this feature.
+- `mbook` and `mbooks` are not required. This feature touches only `dalogin-quarkus`, so no
+  cross-module or Apache-proxied setup is needed to validate it.
+- Static checks that need no runtime: diff SQL strings before and after, and count connection,
+  statement, and result-set try-with-resources blocks. Connection and statement counts must match
+  the baseline; the result-set count must rise from 0 to 11.
+- Everything else — registration, voucher, password reset, forced mid-transaction failure, and the
+  bounded-pool leak pass — is verified manually by the repository owner after the pass. It is not
+  automated here and does not block the change.
+
+Login test scope
+- The available login test flow is the automated check for the pass.
+- It is meaningful because login exercises the whole migrated path end to end: servlet field
+  injection, bean resolution, pooled connection acquisition, query execution, result-set handling,
+  and connection release. If injection or connection plumbing is broken anywhere, login fails.
+- It does not cover registration, voucher, password reset, or the transaction-rollback path. Those
+  are the owner's manual follow-up.
+
+Risks and mitigations
+- Risk: a large mechanical change hides a behavioral regression.
+  - Mitigation: one pass, not staged; the compiler is the completeness check, and the login test is the automated gate.
+- Risk: the single pass produces a large diff that is hard to review.
+  - Mitigation: just compile, and the login test is the automated gate.
+- Risk: the module sits uncompilable long enough that the work is hard to resume.
+  - Mitigation: we move forward. if it not successful, revert the whole from git.
+- Risk: a passing login test is mistaken for full verification.
+  - Mitigation: the login test covers the injection and connection path only; registration, voucher,
+    password reset, and the failure paths are explicitly the owner's manual follow-up.
+- Risk: adding explicit `rollback()` changes observable failure behavior for registration.
+  - Mitigation: today's implicit cleanup already discards the transaction via driver/pool reset, so
+    the committed outcome is unchanged; the owner confirms this manually.
+- Risk: result-set try-with-resources conversion accidentally narrows a variable's scope and breaks
+  a value read after the block.
+  - Mitigation: each result set is already consumed inside its statement block; verify returned
+    values per method during the pass, at edit time rather than at runtime, otherwise exception will be thrown.
+- Risk: a connection leak that the old unbounded fallback path masked becomes visible.
+  - Mitigation: treat any leak the owner surfaces manually as a real defect to fix forward, not as a
+    regression caused by this feature.

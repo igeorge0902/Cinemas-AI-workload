@@ -1,0 +1,109 @@
+Feature Plan: Trending Movies response record migration
+
+Objective
+- Migrate `BookController#getTrendingMovies` success-path response construction from manual
+  `org.json` object building to Jackson-serialized top-level Java `record` models, produced by a
+  dedicated `TrendingMoviesMapper`, with zero change to the public JSON contract
+  (CID-MBOOKS-TRENDING).
+
+Role ownership
+- Primary: `@backend-dev`
+- Contract/parity verification: `@ios-dev`, `@frontend-dev` (consumers of CID-MBOOKS-TRENDING)
+- Test coverage support: `@testing-engineer`
+
+Baseline (as-found)
+- `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java`
+  (`getTrendingMovies`, `/book/trending-movies` under class base path `/rest`): builds validation
+  errors and success body with `org.json.JSONObject`/`JSONArray`, returns `jakarta.ws.rs.core.Response`.
+- `mbooks-quarkus/src/main/java/com/jeet/service/BookingHandlerImpl.java`:
+  `getTrendingMovies(int days, int limit)` returns `List<com.jeet.api.TrendingMovieRow>` unchanged;
+  out of scope for this migration.
+- `mbooks-quarkus/src/main/java/com/jeet/db/DAO.java`: HQL projection into `TrendingMovieRow`;
+  out of scope.
+- `mbooks-quarkus/src/main/java/com/jeet/api/TrendingMovieRow.java`: existing plain class,
+  `lastBookingTime` typed as `String` (nullable ISO-8601); kept as-is, treated as the internal
+  projection type feeding the new mapper.
+- `pom.xml`: `quarkus-resteasy-jackson` already present (Jackson has built-in Java `record`
+  support since 2.12), so no new dependency is required.
+- Module currently compiles cleanly (`mvn -DskipTests compile` verified green after
+  `TrendingMovieRow` was added).
+
+Proposed changes
+
+1. New file: `mbooks-quarkus/src/main/java/com/jeet/api/TrendingMovieItem.java`
+   - `public record TrendingMovieItem(int movieId, String name, String thumbnail_picture,
+     String large_picture, long bookedTickets, String lastBookingTime) {}`
+
+2. New file: `mbooks-quarkus/src/main/java/com/jeet/api/TrendingMoviesResponse.java`
+   - `public record TrendingMoviesResponse(List<TrendingMovieItem> trendingMovies) {}`
+
+3. New file: `mbooks-quarkus/src/main/java/com/jeet/rest/TrendingMoviesMapper.java`
+   - `@ApplicationScoped` bean.
+   - `public TrendingMoviesResponse toResponse(List<TrendingMovieRow> rows)`
+     - Maps each `TrendingMovieRow` to a `TrendingMovieItem` via `row.getMovieId()`,
+       `row.getName()`, `row.getThumbnail_picture()`, `row.getLarge_picture()`,
+       `row.getBookedTickets()`, `row.getLastBookingTime()` (no type conversion needed — both
+       sides are `String`).
+     - Wraps the mapped list in `new TrendingMoviesResponse(items)`.
+
+4. Modify `BookController.java`
+   - Inject `TrendingMoviesMapper trendingMoviesMapper` alongside the existing
+     `BookingHandlerImpl bookingHandler` field.
+   - Keep the existing `days`/`limit` validation block and its `400` `Response` construction as-is.
+   - Replace the success-path block:
+     ```java
+     List<TrendingMovieRow> rows = bookingHandler.getTrendingMovies(days, limit);
+     TrendingMoviesResponse response = trendingMoviesMapper.toResponse(rows);
+     logger.info("trending-movies: days=" + days + " limit=" + limit + " resultSize=" + rows.size());
+     return Response.ok().entity(response).type(MediaType.APPLICATION_JSON).build();
+     ```
+   - Keep the existing `try`/`catch` around `bookingHandler.getTrendingMovies(...)` and the `500`
+     error branch unchanged.
+   - Remove the now-unused `JSONArray`/`JSONObject` success-path code and the
+     `org.json` import only if no longer used elsewhere in the class (it is — other endpoints in
+     `BookController` still use `JSONObject`/`JSONArray`, so keep those imports).
+
+5. Tests
+   - Add/extend a unit test for `TrendingMoviesMapper` (plain POJO input/output, no CDI container
+     required) covering:
+     - Non-empty row list → correct field mapping, order preserved.
+     - `lastBookingTime == null` → preserved as `null` in the mapped item.
+   - Add/extend an endpoint-level test (existing `rest-assured` setup, see `pom.xml` test scope)
+     asserting the JSON shape for `GET /rest/book/trending-movies` is unchanged: root key
+     `trendingMovies`, item field names/types, empty-window `[]` case, and the `400` validation
+     cases remain intact.
+
+6. Docs
+   - No README contract changes expected. After implementation, diff actual response JSON against
+     `mbooks-quarkus/README.md`'s documented example to confirm no drift; update only if a
+     genuine discrepancy is found (there should not be one).
+
+Verification sequence
+1. `cd mbooks-quarkus && mvn -DskipTests compile` — must succeed.
+2. `mvn test -Dtest=TrendingMoviesMapperTest` (or equivalent) — new mapper unit test passes.
+3. `mvn test -Dtest=*TrendingMovies*` or run `quarkus:dev` and curl:
+   - `curl -s "http://localhost:8080/rest/book/trending-movies" | jq .`
+   - `curl -s "http://localhost:8080/rest/book/trending-movies?limit=0"` → still `400`.
+   - Compare output shape against README example and pre-refactor baseline captured via
+     `git stash`/branch diff if needed.
+4. Full module build: `mvn -DskipTests package` to catch any missed reference.
+
+Risks
+- Jackson's record serialization must produce property names exactly matching the record
+  component names (`thumbnail_picture`, `large_picture` — snake_case component names are legal in
+  Java and serialize as-is; no `@JsonProperty` overrides expected, but verify with an actual curl
+  response since these are unconventional Java identifiers).
+- If any other code path constructs a `TrendingMovieRow`-derived JSON shape elsewhere (none found
+  in current search), it must be updated in lockstep — confirmed only `BookController` builds this
+  JSON today.
+- Keeping the controller's `Response`-based return type (rather than switching to returning
+  `TrendingMoviesResponse` directly per the original draft) is a deliberate deviation from
+  `TRENDING_MOVIES_REFACTOR_DRAFT.md`'s example controller, made to avoid regressing the existing
+  `400`/`500` validation/error-handling behavior identified during review.
+
+Definition of done
+- Response records and mapper exist as separate top-level types per REQ-TMR-1/REQ-TMR-2.
+- Controller delegates success-path body construction to the mapper; validation/error paths
+  untouched.
+- No JSON contract drift (verified via test + manual curl comparison).
+- Module compiles and relevant tests pass.

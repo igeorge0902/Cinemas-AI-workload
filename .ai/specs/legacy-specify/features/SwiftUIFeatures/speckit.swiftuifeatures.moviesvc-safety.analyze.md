@@ -47,6 +47,6 @@ Focused analysis of category-search safety paths in:
 ## Backlog linkage
 
 Tracked in:
-- `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10 - Deferred safety hardening backlog)
-- `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-ios-dev.execution-plan.md` (Deferred fix-later items)
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10 - Deferred safety hardening backlog)
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.redesign-ios-dev.execution-plan.md` (Deferred fix-later items)
 

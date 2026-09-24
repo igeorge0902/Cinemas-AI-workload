@@ -187,6 +187,6 @@ The package is now **complete with all 9 data managers** ready for implementatio
 **Next Step:** You can now review the complete payment flow section in the implementation guides.
 
 **File Locations:**
-- Pattern guide: `.ai/workflows/features/Swift_migration/01-IMPLEMENTATION-GUIDE.md` (line 376)
-- Copy-paste code: `.ai/workflows/features/Swift_migration/02-READY-TO-IMPLEMENT.md` (line 722)
+- Pattern guide: `.ai/specs/legacy-specify/features/Swift_migration/01-IMPLEMENTATION-GUIDE.md` (line 376)
+- Copy-paste code: `.ai/specs/legacy-specify/features/Swift_migration/02-READY-TO-IMPLEMENT.md` (line 722)
 

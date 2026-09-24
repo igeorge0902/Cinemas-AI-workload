@@ -108,7 +108,7 @@ Additional focus for this pass:
 - `SwiftCinemas/SwiftLoginScreen/ListViewCell.swift`
 - `SwiftCinemas/SwiftLoginScreen/FeedCells.swift`
 - `SwiftCinemas/SwiftLoginScreen/UIViewExt.swift`
-- `.ai/workflows/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/menuvc-purchasesvc-ticketsvc-adminstyle.prototype.html`
 - `SwiftCinemas/SwiftLoginScreen/menu-screen.svg`
 - `SwiftCinemas/SwiftLoginScreen/purchases-screen.svg`
 - `SwiftCinemas/SwiftLoginScreen/tickets-screen.svg`

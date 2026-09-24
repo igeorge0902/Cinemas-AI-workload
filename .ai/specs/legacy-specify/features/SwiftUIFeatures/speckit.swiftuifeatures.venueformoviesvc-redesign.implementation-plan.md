@@ -1,9 +1,9 @@
 # Implementation Plan - VenueForMoviesVC Redesign (UIKit)
 
 ## Source of truth
-- Tasks: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
-- Spec: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.specify`
-- Prototype: `/.ai/workflows/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html`
+- Tasks: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.tasks`
+- Spec: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venueformoviesvc-redesign.specify`
+- Prototype: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/venueformoviesvc-redesign.prototype.html`
 
 ## Exact view controllers / classes
 - Primary VC: `SwiftCinemas/SwiftLoginScreen/VenueForMoviesVC.swift`

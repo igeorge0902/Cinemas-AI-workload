@@ -1,0 +1,221 @@
+Feature: dalogin Servlet request DTOs and response helpers
+
+Contract IDs
+- None (internal Servlet structure; all existing `/login/*` HTTP contracts are preserved)
+
+Intent
+- Extract request parsing and response construction from every class in
+  `dalogin-quarkus/src/main/java/com/dalogin/servlets`.
+- Keep all 14 endpoints as Undertow `@WebServlet` classes.
+- Use immutable endpoint request DTOs for complex request processing.
+- Keep trivial pass-through request reads direct; do not wrap them in ceremonial DTOs.
+- Use explicit endpoint response helpers for both complex and straightforward responses, backed by
+  one shared mechanical JSON writer.
+- Implement this work in the same production-code pass as datasource legacy removal, CDI injection,
+  SQLAccess family splitting, and final caller migration.
+
+Implementation model
+- `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md`
+- `HelloWorld` is the complete reference slice. Other Servlets apply the same boundaries while
+  preserving their own request and response contracts.
+
+Execution plan
+- `speckit.system.dalogin-persistence-servlet-adaptation.plan`
+
+Context
+- JAX-RS `@BeanParam`, `@FormParam`, `@HeaderParam`, `@Consumes`, and `@Produces` do not bind
+  `HttpServlet.doGet`/`doPost` arguments.
+- Custom response annotations would recreate JAX-RS response mapping behind less familiar
+  infrastructure.
+- The owner decided to keep Servlets, use immutable request DTO parsing for complex request
+  processing, and explicit response helpers across all Servlet endpoints.
+- Current source contains 14 Servlet classes. Ten directly read headers/parameters; the others still
+  construct responses and therefore participate in response-helper extraction.
+- The 14 classes declare 26 `doGet`/`doPost` handlers. Ten classes also declare `init()` and
+  `destroy()`; seven `init()` methods initialize `AesUtil`, three are empty, and all ten `destroy()`
+  methods are no-ops. The migration unit is the entire class, not only the POST branch that calls
+  SQLAccess.
+- `AesUtil` holds a mutable `javax.crypto.Cipher` field. `Cipher` is not thread-safe, while each
+  Servlet instance serves concurrent requests. The seven per-Servlet `AesUtil` fields and the same
+  pattern in `ChangePswFilter` are therefore not safe candidates for simple shared CDI injection.
+
+Servlet scope
+
+| Servlet | Request handling | Response helper direction |
+|---|---|---|
+| `HelloWorld` | complex: `LoginRequest` | login |
+| `Registration` | complex: registration DTO(s) | registration |
+| `RegistrationWithoutVoucher` | complex: registration DTO(s) | registration where wire-identical |
+| `Voucher` | simple single voucher read; no DTO | voucher |
+| `RegActivation` | simple single header read; no DTO | activation |
+| `ChangePassword` | complex: password-reset DTO | password reset |
+| `ChangePasswordCode` | complex: confirmation-code DTO | password reset |
+| `ChangePasswordNewPassword` | complex: new-password DTO | password reset |
+| `AdminServlet` | simple optional session-id read; no DTO | admin |
+| `ManagePurchases` | simple operation-specific reads; no DTO unless inventory disproves | purchase |
+| `GetAllPurchases` | no direct input DTO | purchase |
+| `CheckOut` | no direct input DTO | checkout |
+| `LoggingOut` | no direct input DTO | logout |
+| `ActiveSessionsServlet` | no direct input DTO | active sessions |
+
+Request-complexity rule
+- **Complex request processing** maps a coherent input model from multiple values, mixes headers and
+  parameters, applies cross-field validation/HMAC input ordering, trims/defaults several fields, or
+  performs type conversion. It gets an immutable DTO and factory.
+- **Simple request access** reads at most a small operation-specific value set and passes it through
+  without cross-field validation, normalization policy, or conversion. It stays explicit in the
+  Servlet; a DTO would add indirection without modeling anything.
+- **Response construction is different.** Even a straightforward response represents a wire
+  contract (status, content type, field names/types, headers/cookies), so it goes through a named
+  response helper. The helper may be one line over shared mechanics; it does not need a matching DTO.
+
+Relationship to SQLAccess refactor
+- This feature and the three SQLAccess structural features form one implementation pass:
+  `dalogin-datasource-legacy-removal`, `dalogin-sqlaccess-cdi-injection`,
+  `dalogin-sqlaccess-family-split`, and this feature.
+- Each Servlet MUST be edited once into its final shape: final family-bean injection, final
+  data-access calls, DTO parsing where request processing is complex, and response-helper delegation.
+- No intermediate monolithic injected SQLAccess caller shape is required.
+- The module may remain uncompilable during the pass. The first compile occurs only after all
+  production code in all four features has been migrated.
+- `dalogin-login-logout-error-handling` remains separate because it intentionally changes behavior.
+
+Functional requirements
+- `FR-001`: All 14 endpoint classes MUST remain `HttpServlet` implementations with unchanged
+  `@WebServlet` names and URL patterns.
+- `FR-002`: The solution MUST NOT introduce JAX-RS resources, `@BeanParam`, Bean Validation,
+  CDI request-scoped mutable holders, custom response annotations, or a new dependency.
+- `FR-003`: Every complex Servlet request contract MUST have an immutable request DTO. Complexity is
+  determined by the Request-complexity rule above, not merely by the presence of request input.
+- `FR-003a`: Request DTOs MUST be Java records. Structured response data SHOULD also use records
+  where that clarifies the contract; constant one-off error bodies do not require ceremonial
+  response records.
+- `FR-004`: A request DTO factory MUST be the only place in that complex request flow that calls
+  `getHeader` or `getParameter`.
+- `FR-005`: A Servlet with materially different GET and POST contracts MAY use separate DTOs.
+  Unrelated fields MUST NOT be combined into one nullable field bag.
+- `FR-006`: A no-input or simple pass-through request flow MUST NOT receive an empty or ceremonial
+  DTO for symmetry. Its small direct reads remain in the Servlet.
+- `FR-007`: DTOs own wire-name mapping, baseline trimming/defaults, required-value detection, and
+  safe type conversion. They MUST NOT own CDI, sessions, responses, SQL, client calls, crypto, or
+  logging.
+- `FR-008`: Every Servlet response branch, including straightforward `sendError`, redirect, and
+  small JSON branches, MUST delegate response construction to an endpoint-specific response helper.
+- `FR-009`: One shared stateless `ServletResponses` support type MAY own mechanical content-type,
+  encoding, status, and writer handling. It MUST NOT choose endpoint statuses or payload fields.
+- `FR-010`: Response helpers MAY be shared only where wire contracts are field-for-field identical.
+  Similar business domains alone are insufficient.
+- `FR-011`: Servlets retain orchestration, session/request-attribute mutation, data-access calls,
+  downstream client calls, authentication, crypto, redirects, and response-branch selection.
+- `FR-012`: Existing status codes, content types, encodings, redirects, JSON field names,
+  capitalization, value types, response headers, and cookie properties MUST remain unchanged.
+- `FR-013`: Each terminal response is written exactly once. No Servlet writes again after a helper
+  commits a terminal response.
+- `FR-014`: Existing malformed/missing input outcomes MUST be captured before extraction and
+  preserved, even where the baseline outcome is imperfect.
+- `FR-015`: No Servlet may retain direct `JSONObject` construction or `PrintWriter` ownership after
+  migration. Non-JSON streaming is exempt only when explicitly documented by the endpoint inventory.
+- `FR-016`: The work MUST land in the same single pass as the SQLAccess refactor. No compile, test,
+  or reviewable compatibility shim occurs between the four structural feature phases.
+- `FR-017`: For each Servlet, final family-bean injection and DTO/helper migration MUST happen in
+  one edit so the caller is not migrated twice.
+- `FR-018`: `HelloWorld` follows the full reference example, including its ten request values,
+  presence-based `ios`, default `M`, and exact mobile/web response differences.
+- `FR-019`: `HelloWorld`, `Registration`, and `RegistrationWithoutVoucher` MUST treat a newly
+  created `HttpSession` as pending while obtaining the session ID/time needed by persistence. They
+  MUST NOT publish `user`, `deviceId`, token, or active-session attributes before their required
+  persistence work succeeds.
+- `FR-020`: Device insertion, session insertion, and token retrieval for normal login and
+  registration-without-voucher MUST execute as one transaction in
+  `DeviceSessionManager.establishLogin`. Registration-with-voucher continues to use the atomic
+  `AccountManager.wrapUpRegistration` transaction.
+- `FR-021`: If required persistence fails in any session-establishing flow, its transaction MUST
+  roll back, the pending `HttpSession` MUST be invalidated, and a 5xx response MUST be returned.
+- `FR-022`: After `establishLogin` commits, `HelloWorld` MAY publish session attributes and write
+  cookies, headers, and the success response.
+- `FR-023`: The 100 ms token retry MUST be removed. Token retrieval runs on the same transaction
+  connection after `insert_sessionCreated`, so missing token data is a persistence failure rather
+  than an asynchronous-commit condition.
+- `FR-024`: `RegActivation` MUST NOT create an `HttpSession` solely to obtain `ServletContext` for
+  SQLAccess. CDI removes that need; activation uses its injected final family bean directly.
+- `FR-025`: The migration unit is the whole Servlet class. Every declared `doGet`, `doPost`,
+  `init`, `destroy`, and private helper involved in request/response or persistence flow MUST be
+  reviewed and moved to the final structure in the same edit.
+- `FR-026`: All 26 request-handler methods MUST be covered. GET paths MUST receive the same
+  request-complexity classification and response-helper treatment as POST paths.
+- `FR-027`: Empty `init()` and no-op `destroy()` overrides MUST be removed. Non-empty `init()`
+  behavior MUST NOT be silently dropped.
+- `FR-028`: Servlets MUST inject final persistence family beans, never `DataSource`, `Connection`,
+  `DBConnectionManager`, or a replacement SQLAccess facade. Family beans alone inject `DataSource`.
+- `FR-029`: Private Servlet helpers MUST be reviewed with their handler. Request parsing and response
+  construction move to records/helpers; business orchestration stays in clearly named Servlet
+  helpers where extraction would mix HTTP and persistence concerns.
+- `FR-030`: The seven Servlet `AesUtil` initialization paths and `ChangePswFilter` MUST migrate to
+  an injected stateless `CryptoService`. It MUST create/use a request-local `Cipher` (directly or
+  through a per-operation `AesUtil`) and MUST NOT share the current mutable `Cipher` across threads.
+- `FR-031`: Removing `init()` MUST preserve key size, iteration count, salts, IVs, passphrases,
+  ciphertext format, and every successful encryption/decryption result.
+
+Non-functional requirements
+- `NFR-001`: Request DTOs are immutable and hold no shared mutable state.
+- `NFR-002`: Response helpers and shared response support are stateless.
+- `NFR-003`: No password, HMAC, token, confirmation code, voucher, or decrypted device identifier is
+  newly logged or included in an exception.
+- `NFR-004`: Request/response types live outside persistence packages.
+- `NFR-005`: Common code is extracted only for actual mechanics or identical contracts; abstraction
+  MUST NOT erase endpoint-specific behavior.
+
+Out of scope
+- Converting any Servlet to JAX-RS.
+- Deliberately correcting unrelated status codes, error payloads, logout behavior, or token
+  rotation. The normal-login persistence failure and session-publication changes in `FR-019`-
+  `FR-023` are explicitly in scope.
+- Applying the pattern to filters/listeners unless they construct an HTTP response already in the
+  combined caller migration.
+- Generalizing a response framework beyond dalogin's current Servlet endpoints.
+
+Open questions
+- None. Servlet-wide scope and combination with the SQLAccess refactor are owner-decided.
+
+Acceptance criteria
+- `AC-001`: All 14 Servlet mappings and names are unchanged.
+- `AC-002`: Complex request flows contain no direct `getHeader`/`getParameter` calls; simple
+  pass-through reads remain explicit and no ceremonial DTO exists.
+- `AC-003`: The baseline inventory classifies every request flow as complex, simple, or no-input,
+  with a reason; DTO coverage matches the complex set exactly.
+- `AC-004`: No Servlet directly constructs `JSONObject` or owns a `PrintWriter`, except a documented
+  non-JSON streaming case.
+- `AC-005`: Every response branch maps to an endpoint helper and retains exact baseline wire output.
+- `AC-006`: Shared `ServletResponses` contains mechanics only and no endpoint field/status choices.
+- `AC-007`: DTOs and helpers contain no persistence, CDI, session, client, or crypto behavior.
+- `AC-008`: Each Servlet injects only its final SQLAccess family beans; no monolithic/facade caller
+  shape remains.
+- `AC-009`: The repository has no reviewable or compiled intermediate state between datasource
+  removal, CDI injection, family split, and Servlet request/response extraction.
+- `AC-010`: The first full compile after the combined pass succeeds after reported misses are fixed.
+- `AC-011`: Targeted `LoginFlowTest` cases pass without `mbook`, `mbooks`, or Apache.
+- `AC-012`: SQL text, parameter order, result mapping, Servlet mappings, and success-path HTTP
+  contracts are unchanged except for explicit cleanup and the login transaction/publication
+  behavior authorized by `FR-019`-`FR-023`.
+- `AC-013`: `user` and `deviceId` are absent from pending login/registration sessions until their
+  required persistence transaction successfully commits.
+- `AC-014`: A forced failure in device insertion, session insertion, or token retrieval rolls back
+  the normal-login transaction, invalidates the pending session, and returns 5xx.
+- `AC-015`: The successful login path performs no sleep/retry and still returns the same tokens,
+  cookies, header, and JSON payload.
+- `AC-016`: `RegActivation` does not create a Servlet session solely for datasource access.
+- `AC-017`: All 26 declared request handlers are accounted for in the migration inventory and no
+  GET path remains in the old parsing/response style merely because POST was the primary flow.
+- `AC-018`: All ten `init()` and ten no-op `destroy()` overrides are removed; the seven functional
+  Servlet crypto paths and `ChangePswFilter` use injected thread-safe `CryptoService`.
+- `AC-019`: Every complex request DTO is a Java record.
+- `AC-020`: No Servlet injects or acquires `DataSource`/`Connection`; only final persistence family
+  beans do.
+- `AC-021`: No request-shared object contains a mutable `Cipher`; concurrent crypto operations
+  preserve the existing ciphertext/decryption contract.
+
+Owner-verified manually
+- `MV-001`: Registration with and without voucher, activation, voucher, and password-reset flows.
+- `MV-002`: Logout, admin, active sessions, checkout, and purchase flows.
+- `MV-003`: Existing iOS and web clients receive unchanged response shapes, redirects, headers, and
+  cookies.

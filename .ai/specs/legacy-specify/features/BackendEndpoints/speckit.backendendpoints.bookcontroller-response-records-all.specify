@@ -1,0 +1,184 @@
+Feature: BookController split-out migration (controllers/services/records)
+
+Overview
+- Split the current `BookController` monolith into dedicated controllers:
+  `MovieController`, `VenueController`, `PurchaseController`, and `CheckoutController`.
+- Replace manual `org.json.JSONObject`/`JSONArray`/`HashMap<String,String>` response body
+  construction with dedicated top-level `record` response models, produced by per-domain mapper
+  classes, serialized via the already-available Jackson provider.
+- Move the DTO/domain-shaping work out of `BookingHandlerImpl` and into dedicated services
+  (`MovieService`, `VenueService`, `PurchaseService`, `CheckoutService`) so the controllers only
+  handle HTTP concerns and delegate to services.
+- No public JSON contract changes: field names, types, nesting, and status codes must stay
+  identical for all existing consumers (`@frontend-dev`, `@ios-dev`).
+- Checkout orchestration currently inlined in `fullcheckout2` must move into `CheckoutService`
+  (seat reservation loop, amount/tax totals, Braintree customer id resolution,
+  `TransactionRequest` construction). Deleted `webcheckout` and gateway/client-token wiring out of
+  scope unless explicitly required by the endpoint migration.
+- Request parameter binding moves from individual `@QueryParam`/`@PathParam`/`@FormParam`/
+  `@Context HttpServletRequest` reads into per-endpoint (or per-family, where identical)
+  `@BeanParam` classes.
+- Response building (success and error) moves from ad-hoc `Response.status(...).entity(...).build()`
+  calls scattered across controllers into one shared, CDI-managed `ApiResponseFactory`.
+
+In scope
+- The endpoint families currently implemented in `BookController`, to be redistributed across the
+  new controllers (`MovieController`, `VenueController`, `PurchaseController`, `CheckoutController`).
+- New per-domain record types + mapper classes under `com.jeet.api` / `com.jeet.rest` (or
+  `com.jeet.mapper`), one mapper per response "family" (see grouping below), not one mapper per
+  endpoint.
+- New controller-facing services (`MovieService`, `VenueService`, `PurchaseService`,
+  `CheckoutService`) that absorb the current DTO/domain-shaping behavior and replace
+  `BookingHandlerImpl` call sites.
+- Moving `fullcheckout2`'s inline reservation/payment-orchestration steps into `CheckoutService`.
+- New `@BeanParam` request-param classes for endpoints with more than one bound input (query,
+  path, header, or form), replacing individual annotated method parameters.
+- One new `ApiResponseFactory` (`@ApplicationScoped`, in `com.jeet.rest`) used by all four new
+  controllers to build success and error `Response`s.
+
+Out of scope
+- No behavior change to validation rules, error codes, HQL/DAO queries, or business logic beyond
+  relocating existing checkout orchestration code.
+- No migration of error-response bodies (`400`/`500`/ad-hoc error JSON) to records — kept as
+  today's inline JSON for now, consistent with the trending-movies precedent.
+- No change to `webcheckout` - deleted, `getMovieTicket` - deleted, `clientToken`, or Braintree gateway wiring beyond
+  what `fullcheckout2` orchestration needs.
+- No renaming of JSON field names, even where they are inconsistent or use snake_case.
+- No requirement to preserve `BookingHandlerImpl`; it is expected to be removed once the endpoint
+  families are fully migrated into dedicated services.
+- `ApiResponseFactory` centralizes *how* a `Response` is assembled (status code passed as a
+  parameter, body serialization), not *what* JSON shape each error body has today. Existing error
+  body shapes (`{"error":..., "message":...}` in trending-movies vs `CustomExceptions`'s
+  `{"Title":..., "Message":...}`) are preserved as-is per call site; unifying them is a separate,
+  explicitly out-of-scope decision requiring consumer sign-off.
+- `@BeanParam` classes are introduced only where an endpoint already binds more than one request
+  input; single-parameter endpoints are not forced onto `@BeanParam` for its own sake.
+
+Endpoint groupings (response "family" → shared record shape)
+
+1. Movie list family (`getAllMovies`, `getAllMoviesWithPaging`, `searchMovies`,
+   `fullTextSearchMovies`, `getMoviesForVenue`, `getTrendingMovies`) → `MovieSummaryItem` record
+   (`movieId, name, detail, large_picture, thumbnail_picture, iMDB_url`) plus `TrendingMovieItem`
+   record (`movieId, name, thumbnail_picture, large_picture, bookedTickets, lastBookingTime`) +
+   wrapper record per root key used today (`movies` vs `searchedMovies` vs `trendingMovies` —
+   keep all three root keys, do not unify).
+2. Venue/location family (`getVenuesForMovie`, `getLocationForMovie`, `getLocationForVenue`,
+   `getAllLocation`, `getDatesForMovieOnVenue`, `getSeatsForScreenForMovieOnVenue`, `addScreen`,
+   `updateScreen`, `deleteScreen`) → confirm current shape per endpoint before introducing
+   records; do not force a shared record if underlying entity shapes diverge or if the endpoint
+   already returns entities directly. (Screen admin endpoints are grouped here — see family 6
+   below for their specific handling notes.)
+3. Admin movies-on-venues family (`getAllMoviesOnAllVenues`, `...WithCategory`, `...ForSearch`)
+   → single shared `VenueScreeningItem` record (`movie, movieId, category, large_picture,
+   ScreeningId, venueId, venue, ...`), one mapper reused by all three endpoints since their
+   per-item shape is identical.
+4. Purchases/tickets family (`getAllPurchases`, `getTicketsPerPurchase`) → `PurchaseSummaryItem`,
+   `TicketSummaryItem` records. Naming/ownership caveat: `com.jeet.booking.PurchaseService`
+   already exists with `getBrainTreeCustomer(String uuid)`, which `CheckoutService` (family 5)
+   also depends on — decide whether this family's new service extends that class in place or is
+   introduced under a different name before implementing Phase 3, to avoid ambiguity.
+5. Checkout/payment family (`fullcheckout2`, `clientToken`) → response shapes here mix ad-hoc
+   fields with domain entities (`tickets`, `seatsforscreen`) and success/error sentinels
+   (`"Success": "true"` as a string). Migrate the success-path shape to a record but keep
+   error/exception-path JSON as-is (matches the trending-movies precedent of leaving error paths
+   untouched). (`webcheckout` and `getMovieTicket` have since been deleted from `BookController`
+   and are no longer part of this family.)
+6. Screen admin family (`addScreen`, `updateScreen`, `deleteScreen`) → owned by `VenueController`/
+   `VenueService` (screens/screenings are venue-scoped). These are write endpoints with existing
+   success/`409 CONFLICT` branches and an async Kafka publish on `addScreen`'s success path;
+   introduce response record(s) for the success/conflict bodies only, do not touch the Kafka
+   side-effect call or its error handling.
+7. Trivial (`getGreeting`) → optional, low-value; migrate only if trivial to do alongside another
+   family, not a dedicated phase.
+
+Functional requirements
+
+REQ-ALL-1 Per-family mapper
+- One `@ApplicationScoped` mapper class per family above (not per-endpoint), each with one
+  `toXxx(...)` method per endpoint it serves when the input/output types differ.
+
+REQ-ALL-2 Backward-compatible JSON
+- For every migrated endpoint, the serialized JSON (field names, types, root keys, array vs
+  object) must be identical to current output. Verify only the success-path JSON; error-path JSON is out of scope and may remain ad-hoc.
+
+REQ-ALL-3 Controller thinning
+- Each migrated controller method keeps its existing validation/error-handling structure and
+  `Response` return type; only the success-path body construction changes to service/mapper-based
+  record serialization.
+
+REQ-ALL-4 Checkout orchestration moves to CheckoutService
+- Add method(s) to `CheckoutService` (e.g. `reserveAndChargeSeats(...)` or split into
+  `reserveSeats(...)` + `chargeTransaction(...)`) that encapsulate:
+  - the seat-array parsing loop calling `ticketService.reserveTickets(...)`,
+  - running total amount/tax computation,
+  - Braintree customer id resolution (`purchaseService.getBrainTreeCustomer` +
+    `paymentService.getOrCreateCustomerId` + persistence of the resolved customer id in the
+    purchase/order record),
+  - `TransactionRequest` construction and `paymentService.processTransaction(...)` call,
+  - rollback-on-failure calls to `ticketService.rollbackTickets(...)`.
+- `fullcheckout2` in `CheckoutController` is reduced to: parse/validate request params → call the
+  new `CheckoutService` method(s) → map the result to a response record → return `Response`.
+- `webcheckout` is unaffected (uses a different, simpler gateway path with no seat reservation).
+
+REQ-ALL-5 Service ownership
+- `MovieService`, `VenueService`, `PurchaseService`, and `CheckoutService` own the DTO/domain
+  shaping work that currently lives in `BookingHandlerImpl` and/or `BookController`.
+- Once those call sites are migrated, `BookingHandlerImpl` should be removed rather than preserved as
+  a redundant pass-through layer.
+
+REQ-ALL-6 Incremental delivery
+- Do it all at once, and skip compile in the middle. Once done with all, then check for errors, and user will try. Changes can safely reverted from git commit.
+
+REQ-ALL-7 Request parameter binding via `@BeanParam`
+- For each new controller method with more than one bound request input (query/path/header/form),
+  introduce a plain Java class carrying the corresponding JAX-RS param annotations
+  (`@QueryParam`, `@PathParam`, `@HeaderParam`, `@FormParam`, `@DefaultValue`) and bind it with
+  `@BeanParam` in the method signature.
+- `@BeanParam` classes may include simple derived/validation helper methods (e.g. an `isValid()`
+  check), but must not contain business logic — that stays in the service layer.
+- Single-parameter endpoints keep using the existing individual `@QueryParam`/`@PathParam`
+  annotations; `@BeanParam` is not mandatory where it adds no value.
+
+REQ-ALL-8 Centralized response building via `ApiResponseFactory`
+- Add `com.jeet.rest.ApiResponseFactory`, an `@ApplicationScoped` CDI bean injected by every new
+  controller, exposing at minimum:
+  - a success builder taking the response body (and, where needed, a status code parameter,
+    e.g. for `201`-style success responses) and returning a `Response` with
+    `MediaType.APPLICATION_JSON` set;
+  - an error builder taking a `Response.Status` (or int status code) plus an error body/record,
+    so callers choose the status code per call rather than the factory hard-coding one status.
+  - Both builders always set `MediaType.APPLICATION_JSON` and must not change today's existing
+    status codes for any migrated endpoint.
+- All four new controllers (`MovieController`, `VenueController`, `PurchaseController`,
+  `CheckoutController`) route their `Response` construction through this one factory instead of
+  ad-hoc `Response.status(...).entity(...).type(...).build()` chains.
+- The factory does not own error-message content or JSON field names for existing error shapes
+  (see Out of scope) — it only owns the mechanical `Response` assembly.
+
+Non-functional requirements
+
+REQ-ALL-NF-1 No new dependency
+- Reuse Jackson (`quarkus-resteasy-jackson`), same as trending-movies.
+
+REQ-ALL-NF-2 Regression safety
+- bulk check will be at the end, no intermediate compile/test. The migration is expected to be done in one pass, and the user will verify the correctness of the changes after the migration is complete.
+
+Acceptance criteria
+- [ ] Every migrated controller endpoint's success-path JSON is unchanged after migration
+      (spot-checked per family).
+- [ ] All new response records are top-level types (not nested in mapper classes), one mapper
+      class per family, consistent with the trending-movies precedent.
+- [ ] `fullcheckout2`'s reservation/payment-orchestration logic lives in `CheckoutService`;
+      `CheckoutController#fullcheckout2` no longer contains the seat-loop/total-calculation/
+      transaction-building code inline.
+- [ ] `MovieController`, `VenueController`, `PurchaseController`, and `CheckoutController` exist
+      and own the endpoint families formerly centralized in `BookController`.
+- [ ] `MovieService`, `VenueService`, `PurchaseService`, and `CheckoutService` replace the
+      corresponding `BookingHandlerImpl` call sites for DTO/domain shaping.
+- [ ] `BookingHandlerImpl` is removed after the migration (or explicitly proven unnecessary and
+      deleted as part of the final consolidation step).
+- [ ] Multi-input controller methods bind their request parameters via `@BeanParam` classes
+      instead of individual annotated method parameters.
+- [ ] `ApiResponseFactory` exists, is injected by all four new controllers, and its error builder
+      accepts a status code parameter rather than hard-coding one.
+- [ ] Module compiles and existing tests pass after each family's migration.

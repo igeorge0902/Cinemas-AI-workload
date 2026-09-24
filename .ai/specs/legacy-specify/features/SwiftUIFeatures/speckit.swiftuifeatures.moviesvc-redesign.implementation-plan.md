@@ -1,9 +1,9 @@
 # Implementation Plan - MoviesVC Redesign (UIKit)
 
 ## Source of truth
-- Tasks: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
-- Spec: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.specify`
-- Prototype: `/.ai/workflows/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`
+- Tasks: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks`
+- Spec: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.specify`
+- Prototype: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/movies-redesign2.prototype.html`
 
 ## Exact view controllers / classes
 - Primary VC: `SwiftCinemas/SwiftLoginScreen/MoviesVC.swift`
@@ -68,6 +68,6 @@
   - Severity: Critical (primary search path), High (related pagination/admin paths)
   - Status: Deferred (`FIX LATER`) for safety hardening backlog
   - Tracking:
-    - `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10)
-    - `.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-safety.analyze.md`
+    - `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-redesign.tasks` (Phase 10)
+    - `.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.moviesvc-safety.analyze.md`
 

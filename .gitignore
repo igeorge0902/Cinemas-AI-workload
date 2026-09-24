@@ -8,3 +8,7 @@
 !.github
 !.ai
 !.ai/**
+!k6/
+!k6/api2.js
+!k6/README.md
+!k6/api2.properties.example

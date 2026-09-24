@@ -28,10 +28,30 @@ modules:
   data:
     - mysql_8
 
+  ai_assets:
+    specifications: ".ai/specs/"
+    feature_specs: ".ai/specs/legacy-specify/features/"
+    skills: ".ai/skills/"
+    memory: ".ai/memory/"
+
 relationships:
   - backend -> infra
   - backend -> data
   - testing -> backend
+
+architecture_notes:
+  mbooks_request_flow: "family controller -> request bean -> service -> DAO/collaborator -> response mapper/record -> ApiResponseFactory"
+  mbooks_controller_families:
+    - Movie
+    - Venue
+    - Purchase
+    - Checkout
+  local_java_execution:
+    environment_jdk: "Java 21"
+    project_target: "Java 17"
+    mode: "Quarkus applications may run directly with quarkus:dev; Minikube is optional."
+    prerequisite: "MySQL must be started for database-backed applications."
+    routing: "Direct localhost application ports; no Apache reverse proxy is configured."
 
 references:
   contracts: ".ai/memory/constitution.md"
@@ -39,4 +59,3 @@ references:
   testing: ".ai/memory/testing.yaml"
   naming: ".ai/memory/naming.yaml"
   k8s: ".ai/memory/k8s.yaml"
-

@@ -1,0 +1,102 @@
+Feature Plan: dalogin SQLAccess family split
+
+Objective
+- Decompose the 483-line `SQLAccess` class into family-scoped data-access beans that follow the
+  decomposition model already proven in `mbooks-quarkus`.
+
+Relationship to the roadmap and prior work
+- Completes the structural portion of the `dalogin-datasource-pooling` split.
+- Applies the same reasoning that retired `BookController` and `BookingHandlerImpl` in `mbooks-quarkus`
+  (roadmap item 8, marked DONE).
+- Reduces roadmap item 1 (static mutable state) and eases roadmap item 7 (gateway pattern reduction).
+
+Role ownership
+- Implementation: `@backend-dev`
+- Family boundary review: `@backend-dev`
+- Verification: `@testing-engineer`
+
+Precondition
+- The CDI method/resource edits must be complete earlier in the unified adaptation pass. No
+  intermediate compile is required; splitting static, context-bound methods would require doing the
+  injection work twice.
+
+Implementation model
+- Follow `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md`. It is
+  the single final-state model for family beans, transactions, Servlet callers, and HTTP boundaries.
+  - also group new files into family-folders
+
+Family model
+- Login / registration (`AccountManager`): account lifecycle, credential hash, identity lookup, activation state, and
+  registration completion. Registration and login are one family.
+- Voucher (`VoucherManager`): voucher lifecycle and token copying.
+- Device / session / token (`DeviceSessionManager`): device registration, token retrieval, session creation, and logout.
+  Merged per `FR-017` — see the boundary decision below.
+- Password reset (`PasswordResetManager`): reset token issuance and confirmation-code retrieval.
+- Shared support (`SqlSupport`, static, no connection): UUID generation and SQL-error helpers, used by all families.
+
+Boundary decisions
+- Settled (`OQ-001`): `wrapUpRegistration` is a login/registration-family method, because
+  registration and login are one family. It is not an orchestration service above the families.
+- `copyToken2` is voucher-driven but token-shaped. Assign it by which table it owns, not by its
+  name: it updates `voucher_states`, so it is voucher-family.
+- Settled (`OQ-003`): the callerless `insertVoucher` and `copyToken2` wrappers are carried forward
+  unchanged rather than deleted. Deletion is a behavioural subtraction this structural refactor does
+  not need, and `FR-014` delegation already prevents the SQL from being written twice.
+- Settled (`OQ-002`): device/token and session are one family. The reason is table ownership, not
+  bean size — `insert_sessionCreated` and `logout_device` both write `device_states`, `logout_device`
+  also writes `Tokens`, and `get_token2` reads `Tokens JOIN Last_seen`. A split would leave
+  `Last_seen` as the only session-owned table and produce two beans mutating each other's tables.
+
+Package placement
+- Use a dedicated persistence subpackage per family rather than leaving beans in the module root,
+  consistent with how `mbooks-quarkus` groups controllers, services, mappers, and records.
+
+Implementation phases
+1. Boundary agreement
+   - All three open questions are settled; no boundary decision remains outstanding.
+   - Mark each method that participates in another family's transaction.
+   - Produce the final method-to-family assignment table.
+2. Shared support extraction
+   - Move `generateUUID`, `logSQLException`, `ignoreSQLException`, and `jsonSQLError` to a shared type.
+   - Confirm the shared type performs no connection access.
+3. Family extraction
+   - Extract one family at a time, moving methods verbatim, into its own family-folder package.
+   - Callers are not touched per family: each Servlet/filter/listener is edited exactly once, after
+     all families exist, under the unified adaptation plan (phase 4).
+   - Do not compile between families.
+4. Monolith removal
+   - Delete `SQLAccess` once it is empty.
+   - Confirm no facade or pass-through replacement was introduced.
+5. Caller tightening
+   - Ensure each caller injects only the families it uses.
+
+Validation strategy
+- Extract families in increasing order of caller count so early mistakes are cheap.
+- Diff moved SQL strings against the originals to prove verbatim movement.
+- Compile once and run `LoginFlowTest` only after the full datasource/CDI/family/Servlet pass. It is
+  the automated gate (`FR-019`); every other flow is owner-verified manually.
+- Confirm the final class count and method distribution match the agreed assignment table.
+
+Risks and mitigations
+- Risk: family boundaries chosen by call site rather than domain produce a second monolith.
+  - Mitigation: families are domain-named `*Manager` beans — `AccountManager`,
+    `DeviceSessionManager`, `VoucherManager`, `PasswordResetManager` — each in its own
+    family-folder package.
+- Risk: `wrapUpRegistration` gets duplicated across families.
+  - Mitigation: single documented owner is a hard requirement (`FR-005`).
+- Risk: splitting `wrapUpRegistration`'s participants into other families silently breaks atomicity,
+  because a plain bean call acquires a second pooled connection.
+  - Mitigation: connection-passing is mandatory (`FR-011`, `FR-012`); participants never acquire,
+    close, commit, or roll back, but delegeted to quarkus.
+    - db owned prepared statements may be used as required in other methods, as now.
+- Risk: the combined pass breaks many callers at once.
+  - Mitigation: edit each caller once into its final family-bean and request/response shape; use the
+    compiler after the pass as the missed-caller list.
+- Risk: transaction scope changes beyond the approved login adaptation.
+  - Mitigation: move SQL verbatim; only `establishLogin` may combine the former device/session/token
+    calls, as required by `FR-020`.
+    - db owned prepared statements may be used as required in other methods, as now.
+
+Intent
+- Forward-only. All families are extracted before any caller moves, so the pass is fixed forward
+  rather than reverted per family; the only revert is the whole combined pass from git.

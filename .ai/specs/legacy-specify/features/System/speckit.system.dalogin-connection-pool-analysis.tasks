@@ -1,0 +1,60 @@
+Tasks: dalogin connection pool implementation analysis (Agroal vs HikariCP)
+
+Phase 1 — Current state (`@backend-dev`)
+- [ ] Confirm Agroal is supplied through `quarkus-jdbc-mysql` in `dalogin-quarkus/pom.xml`.
+- [ ] Record the current pool configuration values.
+- [ ] Confirm no HikariCP dependency exists in the module today.
+- [ ] Record pool settings used by `mbook-quarkus` and `mbooks-quarkus` for comparison.
+- [ ] Check the MySQL server-side maximum connection limit.
+
+Phase 2 — Integration comparison (`@backend-dev`)
+- [ ] Document Agroal configuration surface and key naming.
+- [ ] Document Agroal transaction enlistment under Narayana JTA.
+- [ ] Document Agroal health check and metrics integration.
+- [ ] Document Agroal dev-services and dev-mode behavior.
+- [ ] Determine whether a supported Quarkus HikariCP extension exists.
+- [ ] Document what a manual HikariCP `DataSource` producer would require.
+- [ ] List Quarkus features lost or hand-rolled under HikariCP.
+- [ ] Compare native-image and build-time implications.
+- [ ] Metrics exposure through Micrometer/Prometheus: skipped for now (needs minikube); revisit
+      with the later performance test.
+
+Phase 3 — Problem validation (`@backend-dev`)
+- [ ] Search local dalogin logs for pool exhaustion or acquisition-timeout events (Grafana skipped
+      with metrics).
+- [ ] Check for connection leak symptoms in dalogin.
+- [ ] Identify any latency issue attributable to connection acquisition.
+- [ ] Record explicitly whether a real pooling defect exists; if none, a migration is justified only
+      as a one-to-one drop-in with no compile-level impact.
+
+Phase 4 — Measurement (`@performance-engineer`)
+- [ ] Confirm the combined persistence/Servlet adaptation pass has landed before measuring, so the
+      fallback path cannot create unpooled connections.
+- [ ] Confirm the local topology: homebrew Apache HTTPS reverse proxy in front of a running
+      `dalogin-quarkus`; `apachectl configtest` passes.
+- [ ] Check the `login_` database for the users `API2.jmx` expects; seed if missing.
+- [ ] Run `API2.jmx` against dalogin through the Apache HTTPS endpoint with current pool settings.
+- [ ] Record acquisition latency, active count, and idle count.
+- [ ] Record any timeout or exhaustion events.
+- [ ] Repeat with a deliberately small pool to characterize exhaustion.
+- [ ] Repeat the primary run to confirm measurement stability.
+
+Phase 5 — Tuning recommendation (`@performance-engineer` + `@backend-dev`)
+- [ ] Recommend `min-size` with rationale.
+- [ ] Recommend `max-size` with rationale.
+- [ ] Recommend `acquisition-timeout` with rationale.
+- [ ] Cross-check the combined pool sizes of all services against the MySQL limit.
+- [ ] Verify the recommendation against `k8infra/quarkus-backend.yaml`.
+
+Phase 6 — Decision (`@backend-dev`)
+- [ ] State the keep-or-migrate recommendation.
+- [ ] Tie the recommendation to measured evidence, not preference.
+- [ ] If keeping Agroal, record HikariCP as evaluated and declined with reasons.
+- [ ] If recommending HikariCP, specify the required follow-up implementation plan.
+
+Phase 7 — Closure (`@testing-engineer` + `@backend-dev`)
+- [ ] Verify each comparison claim cites configuration, source, or measurement.
+- [ ] Apply the tuning recommendation to `application.properties` if approved.
+- [ ] Re-run the flow suite after any configuration change.
+- [ ] Update `.ai/memory/k8s.yaml` if durable pooling topology facts changed.
+- [ ] Update `speckit.system.refactoring-mentions-roadmap.plan` inventory item 2 with the decision.

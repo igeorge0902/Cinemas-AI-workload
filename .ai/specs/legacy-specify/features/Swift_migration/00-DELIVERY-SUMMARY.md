@@ -2,7 +2,7 @@
 
 **Status:** ✅ COMPLETE  
 **Delivered:** May 5, 2026  
-**Package Location:** `.ai/workflows/features/Swift_migration/`  
+**Package Location:** `.ai/specs/legacy-specify/features/Swift_migration/`  
 
 ---
 

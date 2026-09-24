@@ -1,0 +1,189 @@
+Feature: dalogin login/logout error handling and session-state integrity
+
+Intent
+Make login and logout fail loudly and consistently, so that an HTTP 200 means the database agrees a
+session exists. Today a database failure during login is invisible to the caller, and logout cannot
+reliably undo a login that half-succeeded.
+
+This feature contains the remaining login/logout behavioral work. Atomic normal-login persistence,
+pending-session invalidation, publication after commit, and token-retry removal have moved into the
+owner-approved combined persistence/Servlet adaptation. This feature retains logout ownership,
+listener cleanup, schema documentation, and other behavior not absorbed there.
+
+Context
+Investigated against live schema `login_` and the current `dalogin-quarkus` source. The findings
+below are verified, not inferred; the empirical ones are marked.
+
+Baseline: how a login is assembled today
+```
+HelloWorld.createSession
+  1. session.setAttribute("user", ...)      -> attributeAdded -> activeUsers.put(...)
+  2. session.setAttribute("deviceId", ...)  -> attributeAdded -> evict prior session
+  3. SQLAccess.insertDevice(...)            -> INSERT devices     (-> trigger -> device_states)
+  4. SQLAccess.insertSessionCreated(...)    -> INSERT Last_seen    (-> trigger -> Tokens)
+                                            -> UPDATE device_states.SessionID
+  5. SQLAccess.getToken2(...)               -> reads Tokens JOIN Last_seen
+```
+Steps 1-2 are in-memory and complete **before** any database write. `/activeSessions` and, through
+it, `simple-service-webapp` `GET /myresource/admin` read only that in-memory map.
+
+Baseline defects
+- `B-001`: `insertDevice`, `insertSessionCreated`, and `logout` catch `SQLException`, log, and
+  `return false`. They never throw on failure.
+- `B-002`: `HelloWorld.createSession` (~line 175) calls `insertDevice` and `insertSessionCreated`
+  and discards both return values. A failed write yields HTTP 200 and a usable session.
+- `B-003`: The enclosing `catch (Exception) -> ServletException` is reachable only via
+  `ClassNotFoundException` from the legacy `DriverManager` path. Once
+  `dalogin-datasource-legacy-removal` lands, it is dead code.
+- `B-004`: Session attributes are set before the writes, so `activeUsers` can report a session the
+  database has no row for. Nothing reconciles the two.
+- `B-005`: `logout_device` matches `WHERE device_states.sessionID = ?`. If step 4 failed, that
+  column was never written, so the `UPDATE` matches zero rows. Zero rows is not a SQL error, so
+  `logout` returns `true` and the device remains `logged_in` permanently.
+- `B-006`: `LoggingOut` calls `SQLAccess.logout`, ignores the result, then calls
+  `session.invalidate()`, which fires `sessionDestroyed`, which calls `SQLAccess.logout` again. The
+  procedure runs twice per explicit logout.
+- `B-007`: `CustomHttpSessionListener.sessionDestroyed` wraps its `logout` call in
+  `catch (Exception) -> log.debug("No device left to remove during logout cleanup")`. The message
+  describes an empty result, but the catch equally swallows a total database outage, at DEBUG level,
+  in a listener with no request context to report into.
+- `B-008`: `HelloWorld` retries `getToken2` once after 100 ms, attributing emptiness to
+  `insertSessionCreated` not having "committed yet". That path runs at autocommit and returns
+  synchronously, so there is no pending commit. An empty `getToken2` most likely means step 4
+  silently failed. The retry reports "Session token not yet available, please retry" for what is
+  actually a hard database failure.
+
+Trigger and table findings
+The schema does substantial work through triggers, which makes several failures invisible at the
+Java layer.
+
+| Trigger | On | Effect |
+|---|---|---|
+| `insert_guid` | `logins` BEFORE INSERT | sets `uuid` |
+| `vouchers_trigger` | `logins` AFTER INSERT | inserts into `vouchers` |
+| `deviceId_uuid` | `devices` AFTER INSERT | inserts into `device_states` (`logged_in`) |
+| `tokens` | `Last_seen` AFTER INSERT | inserts into `Tokens` |
+| `Tokens_BEFORE_INSERT` | `Tokens` | sets `token1 = UUID()`, `token2 = RAND()` |
+| `Tokens_BEFORE_UPDATE` | `Tokens` | sets `token1 = UUID()`, `token2 = RAND()` |
+| `Last_seen_AFTER_UPDATE` | `Last_seen` | `UPDATE Tokens SET deviceId = deviceId` (apparent no-op) |
+
+- `B-009` (empirically verified, **by design**): `Tokens_BEFORE_INSERT` and `Tokens_BEFORE_UPDATE`
+  set `token1 = UUID()` and `token2 = RAND()` on every write, so *any* update to a `Tokens` row
+  rotates the pair. `Last_seen_AFTER_UPDATE`'s `SET deviceId = deviceId` self-assignment reads as a
+  no-op but deliberately triggers this, rotating tokens on re-login. Owner confirms rotation is
+  intentional. This is a **documentation gap, not a defect**: the mechanism is invisible at the
+  Java layer and a future reader could "optimise away" the apparent no-op and silently disable
+  rotation. Observed: a self-assigning `UPDATE` changed both `token1` and `token2`.
+- `B-010` (empirically verified, **cosmetic**): `logout_device` contains
+  `UPDATE Tokens SET Tokens.token1 = 0 AND Tokens.token2 = 0`, which parses as
+  `token1 = (0 AND (token2 = 0))` — assigning only `token1` and never mentioning `token2`.
+  The statement does not do what its text says. It has **no security impact**, because
+  `Tokens_BEFORE_UPDATE` overwrites both columns with fresh values regardless, and rotation is the
+  intended revocation mechanism: `RegActivation` validates a client-supplied value against the
+  *stored* `token2` (`token2.get(0).equals(ciphertext)`), so a rotated token fails that comparison.
+  The zeroing attempt is therefore redundant as well as malformed. (`delete_user` carries a comment
+  recording an identical operator-precedence fix applied there but not here.)
+- `B-011`: `device_states.state` is only ever written (`logged_in` at `insert_device_`,
+  `logged_out` at `logout_device`). No procedure, filter, or servlet reads it for an authorisation
+  decision; it surfaces only through the `user_on_devices` view. Marking a device `logged_out`
+  therefore has no enforcement effect.
+- `B-012`: `token2` is generated by `RAND()`, which is not a cryptographically secure source, and is
+  returned to clients via the `X-Token` header in `ActiveVoucherFilter`.
+- `B-013`: Several triggers and procedures locate "the row just written" with
+  `WHERE last_insert_id() = last_insert_id() ORDER BY id DESC LIMIT 1`. The predicate is a tautology,
+  so correctness rests entirely on the `ORDER BY ... LIMIT 1`. Under concurrent inserts this can
+  select another session's row.
+- `B-014`: `Registration` sets the `user` and `deviceId` session attributes (lines 101-102) before
+  calling `wrapUpRegistration`. When that returns `false` the servlet correctly emits a
+  `Registration failed` JSON body, but the attributes are left on the session and the session is not
+  invalidated. This is the same defect class as `B-001` in `HelloWorld`, with a milder effect
+  because the caller at least inspects the return value.
+
+Functional requirements
+- `FR-001`: A failed database write during login MUST NOT produce a success response.
+- `FR-002`: The HTTP session MUST NOT be presented as established until the writes it depends on
+  have succeeded. Session attributes that publish the session to `activeUsers` MUST be set only
+  after `insertDevice` and `insertSessionCreated` succeed.
+- `FR-003`: Where a login write fails after the session was created, the session MUST be invalidated
+  so the in-memory map and the database do not diverge.
+- `FR-004`: `insertDevice`, `insertSessionCreated`, and `logout` MUST report failure in a form the
+  caller cannot silently discard.
+- `FR-005`: Every call site MUST handle that failure explicitly. No login or logout call may ignore
+  the outcome of a database write.
+- `FR-006`: A login failure MUST return a 5xx status with a message that reflects the real cause,
+  replacing the misleading "Session token not yet available, please retry".
+- `FR-007`: The `getToken2` retry MUST be removed or re-justified. If retained, its comment MUST
+  state the real condition it compensates for.
+- `FR-008`: `logout_device` MUST distinguish "no matching session" from "succeeded". Zero rows
+  affected MUST be visible to the caller.
+- `FR-009`: The explicit logout path MUST invoke the logout procedure once, not twice. Ownership
+  between `LoggingOut` and `sessionDestroyed` MUST be explicit.
+- `FR-010`: `sessionDestroyed` MUST NOT swallow database failures at DEBUG. Cleanup failures MUST be
+  logged at WARN or above with the session and device identifiers.
+- `FR-011`: A failure during listener-driven cleanup MUST NOT prevent the remaining cleanup steps.
+- `FR-012`: The malformed assignment in `logout_device` (`B-010`) MUST be resolved so the statement
+  expresses its actual intent — either by removing the redundant zeroing and relying on trigger
+  rotation, or by writing a correct assignment. It MUST NOT be left as text that claims to set two
+  columns while setting one.
+- `FR-013`: Token rotation on logout and re-login MUST be preserved. It is the intended revocation
+  mechanism: validation compares a client value against the stored `token2`, so rotation
+  invalidates previously issued tokens. No change may disable or bypass `Tokens_BEFORE_UPDATE`.
+- `FR-014`: The rotation mechanism MUST be documented in the schema source: that `Tokens_BEFORE_*`
+  regenerates both columns on every write, and that `Last_seen_AFTER_UPDATE`'s self-assignment
+  exists to trigger it. The comment MUST warn that removing the apparent no-op would silently
+  disable rotation (`B-009`).
+- `FR-015`: Any change to a trigger or procedure MUST be accompanied by a note recording which
+  Java-visible behaviour depends on it.
+
+Non-functional requirements
+- `NFR-001`: No change to the login or logout HTTP contract on the success path.
+- `NFR-002`: Error responses must not leak SQL text, schema names, or credentials.
+- `NFR-003`: Failures must be diagnosable from logs alone: which step failed, for which device.
+
+Out of scope
+- Replacing `RAND()` for token generation (`B-012`) — recorded here, but it changes the token
+  contract with clients and belongs in its own security-reviewed feature.
+- Introducing JTA or `@Transactional`.
+- The `last_insert_id()` tautology (`B-013`) — same reasoning as `B-012`; it needs a concurrency
+  test harness this feature does not build.
+- Reconciling pre-existing divergent rows already in the database.
+
+Open questions
+- `OQ-003`: Should `device_states.state` become enforced (`B-011`), or is it accepted as
+  informational? If enforced, every token check gains a state condition.
+
+Resolved decisions
+- `OQ-001` (resolved): remove the partial device write. Atomic
+  `DeviceSessionManager.establishLogin` rolls back device, session, and token work together before
+  invalidating the pending Servlet session.
+
+Acceptance criteria
+- `AC-001`: A login with the database unreachable returns 5xx, and no session appears in
+  `/activeSessions`.
+- `AC-002`: A login whose session write fails returns 5xx and leaves no entry in `activeUsers`.
+- `AC-003`: No call site in the login or logout path ignores the return value of a database write.
+- `AC-004`: An explicit logout invokes `logout_device` exactly once.
+- `AC-005`: A logout for a session with no matching `device_states` row is distinguishable from a
+  successful logout in the logs.
+- `AC-006`: A database failure during `sessionDestroyed` is logged at WARN or above with identifiers.
+- `AC-007`: After logout, a token captured before logout is rejected (rotation still effective).
+- `AC-008`: `logout_device` contains no assignment whose text misstates what it sets.
+- `AC-009`: The existing `LoginFlowTest` cases still pass unchanged.
+- `AC-010`: The schema documents the rotation mechanism and the role of the self-assignment.
+- `AC-011`: Token rotation still occurs on re-login and on logout after the change.
+
+Owner-verified manually
+- `MV-001`: Registration with and without voucher, password reset, and device re-login behave as
+  before.
+- `MV-002`: The admin session list in `simple-service-webapp` matches the database after a mix of
+  successful and failed logins.
+- `MV-003`: iOS and web clients tolerate the corrected failure responses.
+
+Notes
+- A local dev row in `Tokens` (`id=44`, last touched 2022) had its `token1`/`token2` rotated while
+  verifying `B-009` and `B-010`. The original values cannot be restored: any `UPDATE` fires
+  `Tokens_BEFORE_UPDATE` and regenerates them. The row is stale dev data and rotation is normal
+  for this table, but the change is recorded here rather than left unmentioned.
+- Owner confirmed token rotation is intentional. `B-009` and `B-010` were initially written up as
+  defects; they are corrected above. Rotation is the revocation mechanism, so the remaining work on
+  the `Tokens` triggers is documentation plus one malformed statement, not a behaviour fix.

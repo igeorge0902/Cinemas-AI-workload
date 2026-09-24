@@ -1,0 +1,101 @@
+Feature: dalogin datasource legacy connection removal
+
+Contract IDs
+- None (internal persistence wiring; no public endpoint contract change)
+
+Overview
+- Make the `application.properties` Agroal datasource the single connection source in `dalogin-quarkus`.
+- Remove the legacy `DriverManager` fallback path and its hardcoded credentials.
+- Keep all `/login/*` endpoint behavior, status codes, and payloads unchanged.
+
+Split context
+- This is part 1 of the `dalogin-datasource-pooling` split recorded in
+  `speckit.system.refactoring-mentions-roadmap.plan` (inventory item 2, Wave 1).
+- Sibling features: `dalogin-sqlaccess-cdi-injection`, `dalogin-sqlaccess-family-split`,
+  `dalogin-connection-pool-analysis`.
+
+Role collaboration
+- `@backend-dev`, `@security-specialist`, `@testing-engineer`
+
+Baseline (as-found)
+- `application.properties` already defines the preferred pooled datasource:
+  - `quarkus.datasource.db-kind=mysql`
+  - `quarkus.datasource.jdbc.url=jdbc:mysql://localhost:3306/login_`
+  - `quarkus.datasource.jdbc.min-size=5`
+  - `quarkus.datasource.jdbc.max-size=20`
+  - `quarkus.datasource.jdbc.acquisition-timeout` is present but commented out.
+- `DBConnectionManager` exposes three constructors: no-arg, `DataSource`, and legacy `(url, user, password)`.
+- `DBConnectionManager.getConnection()` branches on `dataSource != null` and otherwise calls
+  `Class.forName("com.mysql.cj.jdbc.Driver")` plus `DriverManager.getConnection(...)`.
+- `CustomServletContextListener.contextInitialized` injects `DataSource` but keeps an `else` branch
+  constructing `new DBConnectionManager(dbUrl, "sqluser", "sqluserpw")` with hardcoded credentials.
+- `DBConnectionManager.closeConnection()` is already a no-op for the pooled path.
+- `contextDestroyed` still calls `closeConnection()`.
+- `getConnection()` declares `throws SQLException, ClassNotFoundException`. The checked
+  `ClassNotFoundException` exists only because of the `Class.forName` call in the legacy branch.
+- `getConnection()` logs at INFO on every acquisition and calls `conn.getCatalog()` to build the
+  message, so the line is emitted once per data-access call across all 21 methods.
+- `com.dalogin.utils.test` is a dead scratch class in the production source tree
+  (`src/main/java/com/dalogin/utils/test.java`). It is referenced by nothing, has a `main` method,
+  and contains its own `Class.forName` plus
+  `DriverManager.getConnection("jdbc:mysql://localhost:3306", "sqluser", "sqluserpw-1982")` —
+  a second, different hardcoded credential pair. It also carries hardcoded `SALT`/`IV` constants
+  and a sample password hash.
+
+Key files
+- `dalogin-quarkus/src/main/resources/application.properties`
+- `dalogin-quarkus/src/main/java/com/dalogin/DBConnectionManager.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/listeners/CustomServletContextListener.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/utils/test.java` (to be deleted)
+
+Functional requirements
+- `FR-001`: The Agroal datasource defined in `application.properties` MUST be the only connection source.
+- `FR-002`: The legacy `DBConnectionManager(String url, String u, String p)` constructor MUST be removed.
+- `FR-003`: The `DriverManager` fallback branch in `getConnection()` MUST be removed.
+- `FR-004`: The `Class.forName("com.mysql.cj.jdbc.Driver")` call MUST be removed.
+- `FR-005`: The hardcoded `"sqluser"` / `"sqluserpw"` literals MUST be removed from the listener.
+- `FR-006`: The `DB_URL` environment-variable fallback can come from config map in minikube or the connection URL comes from configuration.
+- `FR-007`: `getConnection()` MUST fail fast with a clear error when no datasource is available,
+  instead of silently degrading to an unpooled connection.
+- `FR-008`: Callers MUST continue to receive connections that are safe to use in try-with-resources.
+- `FR-009`: The no-op `closeConnection()` and its `contextDestroyed` invocation MUST be removed
+  or explicitly documented as intentionally empty.
+- `FR-010`: `quarkus.datasource.jdbc.acquisition-timeout` MUST be explicitly set rather than left commented out.
+- `FR-011`: The dead scratch class `com.dalogin.utils.test` MUST be deleted. It is unreferenced and
+  is the second source of `DriverManager` usage and hardcoded credentials in the module. Deleting it
+  is required for `AC-001` and `AC-002` to be satisfiable at all.
+- `FR-012`: Once `Class.forName` is gone, `getConnection()` MUST NOT declare
+  `throws ClassNotFoundException`. Its signature MUST narrow to `throws SQLException`.
+- `FR-013`: Narrowing `getConnection()` MUST NOT widen any caller's exception handling. Callers that
+  only ever catch `SQLException` MUST keep compiling unchanged.
+- `FR-014`: The per-acquisition log line MUST NOT call `conn.getCatalog()`. It MUST report the
+  configured catalog name instead, so the message costs nothing beyond formatting.
+- `FR-015`: The per-acquisition log line MUST be demoted from INFO to DEBUG. At INFO it emits once
+  per data-access call across all 21 methods.
+
+Non-functional requirements
+- `NFR-001`: No credentials may remain in Java source - should be in application.properties.
+- `NFR-002`: Pool sizing values MUST remain configuration-driven.
+- `NFR-003`: Connection acquisition failures MUST be logged without leaking credentials or full JDBC URLs.
+
+Out of scope
+- Converting `SQLAccess` static methods to CDI injection (see `dalogin-sqlaccess-cdi-injection`).
+- Splitting `SQLAccess` into families (see `dalogin-sqlaccess-family-split`).
+- Choosing a different pool implementation (see `dalogin-connection-pool-analysis`).
+- Externalizing datasource credentials to Kubernetes secrets (roadmap item 4).
+
+Acceptance criteria (verified in this feature)
+- `AC-001`: No `DriverManager` reference remains in `dalogin-quarkus` production source, including
+  `com.dalogin.utils.test`.
+- `AC-002`: No hardcoded database credentials remain in `dalogin-quarkus` production source. Both
+  `sqluserpw` (listener) and `sqluserpw-1982` (`utils/test`) are gone.
+- `AC-003`: `dalogin` starts successfully against the `login_` schema using only `application.properties`.
+- `AC-004`: `com.dalogin.utils.test` no longer exists and the module still compiles.
+- `AC-005`: `getConnection()` declares only `throws SQLException`; no caller needed a catch-block change.
+- `AC-006`: The connection-acquisition log is DEBUG and does not call `conn.getCatalog()`.
+- `AC-007`: The available REST Assured login test flow passes against a locally running
+  `dalogin-quarkus`, started without `mbook`, `mbooks`, or the Apache reverse proxy.
+
+Owner-verified manually (outside this feature)
+- `MV-001`: Login, registration, voucher, and password-reset flows behave identically to the baseline.
+- `MV-002`: Pool exhaustion surfaces as a timeout error rather than an unbounded new connection.

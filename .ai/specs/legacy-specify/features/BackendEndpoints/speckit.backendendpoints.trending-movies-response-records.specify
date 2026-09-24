@@ -1,0 +1,94 @@
+Feature: Trending Movies response record migration
+
+Overview
+- Refactor `BookController#getTrendingMovies` (`mbooks-quarkus`) to stop building the response body
+  by hand with `org.json.JSONObject`/`JSONArray`, and instead serialize dedicated top-level `record`
+  response models via a dedicated mapper class.
+- Contract ID: CID-MBOOKS-TRENDING (see `.ai/retrieval/references/CONTRACTS_INDEX.md`).
+- This is an internal implementation refactor only. The public HTTP contract
+  (`GET /rest/book/trending-movies`, query params, status codes, JSON field names/types) MUST NOT
+  change for existing consumers (`@frontend-dev`, `@ios-dev`).
+
+Baseline (as-found)
+- Endpoint: `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` (`getTrendingMovies`,
+  path `/book/trending-movies`, class-level base path resolves it under `/rest`).
+- Validation (`days >= 1`, `limit` in `1..50`) and error responses (`400`/`500`) are built manually
+  as `JSONObject` and returned via `Response`.
+- Success body is assembled manually: `JSONArray` of `JSONObject` items, wrapped in a
+  `JSONObject` under key `trendingMovies`.
+- Data source: `BookingHandlerImpl#getTrendingMovies(int days, int limit)` →
+  `DAO#getTrendingMovies(int days, int limit)`, returning `List<com.jeet.api.TrendingMovieRow>`.
+- `TrendingMovieRow` (`com.jeet.api.TrendingMovieRow`) already exists as a plain class with:
+  `movieId` (int), `name` (String), `thumbnail_picture` (String, defaults to `""`),
+  `large_picture` (String, defaults to `""`), `bookedTickets` (long),
+  `lastBookingTime` (String, ISO-8601 or `null`).
+- `pom.xml` already includes `quarkus-resteasy-jackson`, so Jackson (with Java `record` support)
+  is available for automatic JSON serialization without adding a new dependency.
+
+Functional requirements
+
+REQ-TMR-1 Response model types
+- Introduce two new top-level `record` types, not nested inside the mapper class:
+  - `com.jeet.rest.responserecord.TrendingMoviesResponse(List<TrendingMovieItem> trendingMovies)`
+  - `com.jeet.rest.responserecord.TrendingMovieItem(int movieId, String name, String thumbnail_picture,
+    String large_picture, long bookedTickets, String lastBookingTime)`
+- `lastBookingTime` MUST remain `String` (not `Instant`), matching `TrendingMovieRow`'s existing
+  type and the documented ISO-8601-or-null contract in the README/CID. Introducing an `Instant`
+  field would silently change the serialized JSON shape and is out of scope here.
+
+REQ-TMR-2 Mapper
+- Add `com.jeet.rest.TrendingMoviesMapper` (or `com.jeet.mapper.TrendingMoviesMapper`), an
+  `@ApplicationScoped` CDI bean with a single responsibility: convert
+  `List<TrendingMovieRow>` → `TrendingMoviesResponse`.
+- Mapper MUST preserve current null-safety behavior:
+  - `thumbnail_picture`/`large_picture`: already normalized to `""` inside `TrendingMovieRow`;
+    mapper must not re-introduce `null`.
+  - `lastBookingTime`: pass through as-is (`null` stays `null`; current behavior serializes this
+    as JSON `null` via `JSONObject.NULL` — Jackson serializes a `null` record component the same
+    way by default, so no extra handling is required).
+
+REQ-TMR-3 Controller behavior preserved
+- The controller method signature, `@GET`/`@Path("/book/trending-movies")`/`@Produces` annotations,
+  and query param validation (`days < 1` → `400`; `limit` outside `1..50` → `400`) MUST be
+  unchanged.
+- The controller MUST keep returning `jakarta.ws.rs.core.Response` (not the bare record type) so
+  that the existing `400`/`500` error-response construction and status codes are untouched.
+- On the success path, replace the manual `JSONArray`/`JSONObject` construction with:
+  `Response.ok(trendingMoviesMapper.toResponse(rows)).type(MediaType.APPLICATION_JSON).build()`,
+  relying on Jackson to serialize the `TrendingMoviesResponse` record.
+- The existing structured log line (`days`, `limit`, `resultSize`) MUST be preserved.
+
+REQ-TMR-4 Backward-compatible JSON shape
+- Serialized JSON for the success path MUST be field-for-field identical to today's output:
+  root key `trendingMovies`, item keys `movieId`, `name`, `thumbnail_picture`, `large_picture`,
+  `bookedTickets`, `lastBookingTime` (string or `null`), same value types.
+- Empty result window MUST still produce `{"trendingMovies": []}`.
+
+REQ-TMR-5 Error paths unaffected
+- `400` (`INVALID_PARAM`) and `500` (`INTERNAL_ERROR`) JSON error payloads and status codes are
+  unchanged; no migration to record-backed error bodies in this feature (kept out of scope to
+  minimize blast radius).
+
+Non-functional requirements
+
+REQ-TMR-NF-1 No new runtime dependency
+- Use the Jackson provider already pulled in by `quarkus-resteasy-jackson`. Do not add JSON-B or
+  another serialization library.
+
+REQ-TMR-NF-2 Testability
+- `TrendingMoviesMapper` must be unit-testable in isolation (plain input `List<TrendingMovieRow>`,
+  plain output `TrendingMoviesResponse`), independent of JAX-RS/CDI request context.
+
+Acceptance criteria
+- [ ] `TrendingMoviesResponse` and `TrendingMovieItem` exist as separate top-level records in
+      `com.jeet.api`.
+- [ ] `TrendingMoviesMapper` exists as a separate class with no response record nested inside it.
+- [ ] `BookController#getTrendingMovies` delegates response construction to
+      `TrendingMoviesMapper` and no longer builds `JSONArray`/`JSONObject` for the success body.
+- [ ] Existing validation and error-response behavior (`400`/`500`) is unchanged.
+- [ ] `GET /rest/book/trending-movies` produces byte-for-byte equivalent JSON field names/types
+      versus current behavior for a non-empty and an empty result set.
+- [ ] Module compiles (`mvn -DskipTests compile`) and existing tests (if any cover this endpoint)
+      still pass.
+- [ ] README section for the trending-movies endpoint requires no contract changes (verify, do
+      not rewrite unless drift is found).

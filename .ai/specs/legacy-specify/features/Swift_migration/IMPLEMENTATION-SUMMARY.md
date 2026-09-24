@@ -301,7 +301,7 @@ mvn test -f appium/pom.xml     # Verify Appium tests pass
 ## File Locations
 
 ```
-.ai/workflows/features/Swift_migration/
+.ai/specs/legacy-specify/features/Swift_migration/
 ├── README.md                                          [INDEX]
 ├── 00-MIGRATION-OVERVIEW.md                          [USER-PROVIDED]
 ├── 01-IMPLEMENTATION-GUIDE.md                        [USER-PROVIDED]
@@ -417,4 +417,23 @@ mvn test -f appium/pom.xml     # Verify Appium tests pass
 **Estimated Implementation Time:** 20.5 hours  
 
 **Next Action:** Schedule Phase 1 kickoff meeting and begin implementation!
+
+```
+@MainActor
+final class LocationsDataManager: ObservableObject {
+
+    static let shared = LocationsDataManager()
+
+    @Published var selectedLocation: Location?
+}
+```
+```
+override func viewWillDisappear(_ animated: Bool) {
+super.viewWillDisappear(animated)
+
+    if isMovingFromParent {
+        AdminScreeningsDataManager.shared.screeningsForAdminUpdate = []
+    }
+}
+```
 

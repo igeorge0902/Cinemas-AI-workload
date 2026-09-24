@@ -1,0 +1,202 @@
+Feature: dalogin SQLAccess CDI datasource injection
+
+Contract IDs
+- None (internal persistence wiring; no public endpoint contract change)
+
+Overview
+- Replace `ServletContext.getAttribute("DBManager")` lookups in `dalogin-quarkus` persistence code
+  with CDI-injected `DataSource` access.
+- Convert `SQLAccess` from a static utility to injectable bean(s) so connections are obtained through
+  managed injection rather than servlet-context state.
+- Preserve all `/login/*` endpoint behavior, status codes, and payloads.
+
+Split context
+- This is part 2 of the `dalogin-datasource-pooling` split recorded in
+  `speckit.system.refactoring-mentions-roadmap.plan` (inventory item 2, Wave 1).
+- Depends on `dalogin-datasource-legacy-removal` having collapsed connection acquisition to one path.
+- Directly reduces roadmap item 1 (thread-safety / static mutable state).
+- Prepares the ground for `dalogin-sqlaccess-family-split`.
+
+Role collaboration
+- `@backend-dev`, `@security-specialist`, `@testing-engineer`
+
+Baseline (as-found)
+- `SQLAccess` is a 483-line class whose data-access methods are all `public static`.
+- Every data-access method takes a trailing `ServletContext context` parameter purely to reach the datasource.
+- Each method body starts with
+  `DBConnectionManager dbManager = (DBConnectionManager) context.getAttribute("DBManager");`
+  followed by `try (Connection conn = dbManager.getConnection())`.
+- `CustomServletContextListener` publishes the manager into the servlet context at startup.
+- 16 production files call `SQLAccess`, including servlets, filters, and `CustomHttpSessionListener`.
+- The module already uses CDI (`quarkus-arc`), and the listener already performs `@Inject DataSource`.
+
+Connection-close baseline (verified)
+- `Connection`: 21 of 21 acquisitions already use try-with-resources. Closing returns the connection
+  to the Agroal pool; it does not destroy a physical connection.
+- `Statement` / `CallableStatement` / `PreparedStatement`: every statement is already inside
+  try-with-resources, including the nested `cstmt2` cases.
+- `ResultSet`: 11 result sets are declared as bare locals (`ResultSet rs = cstmt.executeQuery();`).
+  There are zero `ResultSet` try-with-resources blocks and zero explicit `rs.close()` calls.
+  They are reclaimed only by the JDBC cascade when the owning statement closes.
+- There are zero `finally` blocks in the class; all cleanup depends on try-with-resources.
+- `DBConnectionManager.closeConnection()` is a no-op and is only invoked from `contextDestroyed`.
+- Transaction handling: `wrapUpRegistration` is the only method that calls `conn.setAutoCommit(false)`
+  and `conn.commit()`. Its `catch (SQLException)` block logs and returns `false` but performs no
+  `conn.rollback()` and never restores `autoCommit`. On failure the connection is closed with an
+  open transaction, leaving cleanup to driver/pool reset behavior rather than explicit code.
+
+Key files
+- `dalogin-quarkus/src/main/java/com/dalogin/SQLAccess.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/DBConnectionManager.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/listeners/CustomServletContextListener.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/listeners/CustomHttpSessionListener.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/servlets/*.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/filters/ChangePswFilter.java`
+- `dalogin-quarkus/src/main/java/com/dalogin/filters/ActiveVoucherFilter.java`
+
+Implementation model
+- `speckit.system.dalogin-persistence-servlet-adaptation.implementation-example.md` is the single
+  worked reference for datasource injection, family transactions, final Servlet callers, request
+  DTOs, response helpers, and session publication.
+
+Functional requirements
+- `FR-001`: Persistence code MUST obtain its datasource through CDI injection.
+- `FR-002`: The `ServletContext` attribute `"DBManager"` MUST no longer be the connection source.
+- `FR-003`: Data-access methods MUST NOT take a `ServletContext` parameter solely to reach the datasource.
+- `FR-004`: Data-access methods MUST become instance methods on injectable beans.
+- `FR-005`: Beans MUST hold no mutable shared state; only the injected datasource may be a field.
+- `FR-006`: Every connection MUST continue to be acquired and released with try-with-resources.
+- `FR-007`: **Core requirement** — `@WebServlet`, `@WebFilter`, and `@WebListener` classes registered
+  under `quarkus-undertow` MUST support CDI field injection uniformly. Every caller of this kind
+  MUST use `@Inject` directly on the family bean field; no caller of this kind may fall back to a
+  programmatic CDI lookup.
+- `FR-008`: A caller MUST use a documented programmatic CDI lookup only if it is a plain Java type
+  never registered with the servlet container (i.e., not `@WebServlet`/`@WebFilter`/`@WebListener`
+  and not otherwise container-managed). This is expected to be rare or unnecessary in this module.
+- `FR-009`: Existing SQL statements, parameter binding, and result handling MUST remain unchanged.
+- `FR-010`: Genuinely stateless helpers (`generateUUID`, `logSQLException`, `ignoreSQLException`,
+  `jsonSQLError`) MAY remain static and MUST stay free of connection access.
+- `FR-011`: Every call-site pattern currently shaped like
+  `SQLAccess.checkActivation(user, context)` (static call, trailing `ServletContext`) MUST be
+  converted to an injected-field instance call, e.g. `accountManager.checkActivation(user)`.
+
+Connection-close requirements
+- `FR-012`: The data-access bean MUST NOT hold a `Connection` as a field. Connections MUST be
+  acquired per method call and closed within that call.
+- `FR-013`: Every connection MUST be closed by try-with-resources in the method that acquired it.
+  No caller-side or bean-lifecycle close may be introduced.
+- `FR-014`: No `@PreDestroy`, shutdown hook, or listener-driven connection close may be added.
+  Pool shutdown is owned by Quarkus/Agroal, not by application code.
+- `FR-015`: The no-op `closeConnection()` MUST NOT be carried over into the bean in any form.
+- `FR-016`: `ResultSet` handling MUST be made explicit: each result set MUST be closed via
+  try-with-resources rather than relying on the implicit statement-close cascade.
+- `FR-017`: Nested result sets (for example `rs2` inside `getForgotPswToken`) MUST follow the same
+  explicit-close rule as their outer result set.
+- `FR-018`: Statement-level try-with-resources coverage MUST be preserved exactly; no statement may
+  be downgraded to a bare local during migration.
+- `FR-019`: `wrapUpRegistration` MUST explicitly `rollback()` on failure instead of closing the
+  connection with an open transaction.
+- `FR-020`: Any method that changes connection state (notably `setAutoCommit(false)`) MUST restore
+  that state or guarantee it cannot leak to the next pool borrower.
+- `FR-021`: Connection close MUST NOT be treated as a transaction boundary; commit and rollback
+  MUST be explicit.
+
+Exception-handling requirements
+- `FR-029`: Cleanup operations MUST NOT propagate. `rollback()` and `setAutoCommit(true)` MUST be
+  wrapped so a secondary failure cannot replace the method's primary result or discard the original
+  exception. `SqlSupport.rollbackQuietly` / `restoreAutoCommit` are the documented shape.
+- `FR-030`: Method signatures MUST be narrowed from `throws Exception` to the exception actually
+  reachable. A method that catches, logs, and returns a sentinel MUST declare no checked exception.
+- `FR-031`: Narrowing MUST NOT widen any caller's handling. Callers may be tightened as the compiler
+  allows, but no caller may be forced to handle more than before.
+- `FR-032`: No catch block may silently swallow. Every catch either logs through
+  `SqlSupport.logSQLException` or propagates.
+- `FR-033`: The explicit `rollback()` in `wrapUpRegistration` is business behavior, not migration
+  scaffolding. It MUST be preserved by this feature and by every later refactor.
+
+Execution strategy requirements
+- `FR-022`: All production code changes MUST land in the unified adaptation pass. Datasource
+  cleanup, final family beans, resource hardening, every caller, and Servlet request/response
+  extraction are converted together.
+- `FR-023`: No delegation shim, compatibility overload, or temporary static forwarding method may be
+  introduced. `SQLAccess` MUST NOT exist in both a legacy and a migrated shape at the same time.
+- `FR-024`: The module is permitted to be uncompilable during the pass. The first compile happens
+  after the pass is complete, and its error list is the remaining-work list.
+- `FR-025`: After the pass compiles, `dalogin-quarkus` MUST be started locally against the running
+  MySQL and the available REST Assured login test flow MUST pass. This is the automated validation
+  for the feature.
+- `FR-026`: The login test MUST NOT require `mbook` or `mbooks` to be running, and MUST NOT depend
+  on the Apache reverse proxy. It targets `dalogin-quarkus` directly.
+- `FR-027`: Flows beyond login — registration, voucher, password reset, forced mid-transaction
+  failure, and bounded-pool leak checks — are verified manually by the repository owner. They are
+  not automated in this feature and do not block it.
+- `FR-028`: This feature is a forward-only structural improvement. No rollback plan, revert path, or
+  reversible intermediate state is required or designed for.
+
+Non-functional requirements
+- `NFR-001`: No new shared mutable static field may be introduced.
+- `NFR-002`: SQL statement text, parameter binding order, and result mapping must stay byte-for-byte
+  equivalent in this feature.
+- `NFR-003`: Transaction semantics remain unchanged except for two owner-approved corrections:
+  explicit failure-path cleanup (`FR-019`, `FR-020`) and atomic normal-login establishment/session
+  publication defined by `dalogin-servlet-request-response` `FR-019`-`FR-023`.
+- `NFR-004`: Resource cleanup must be deterministic and visible in code rather than inferred from
+  JDBC cascade behavior.
+
+Scope boundary for this feature
+- In scope: how a connection is reached (injection) and how connections, statements, result sets,
+  and transactions are released. Connection lifecycle correctness is the core of this feature.
+- Out of scope: what the SQL does. Statement text and parameter order are untouched.
+- `FR-016`, `FR-019`, and `FR-020` are therefore intentional behavior changes on failure paths only;
+  they must not alter successful-path results.
+
+Out of scope
+- Regrouping methods into family beans (see `dalogin-sqlaccess-family-split`).
+- Removing the `DriverManager` fallback (see `dalogin-datasource-legacy-removal`).
+- Replacing the pool implementation (see `dalogin-connection-pool-analysis`).
+- Rewriting stored procedures or changing SQL text.
+- Introducing declarative `@Transactional` boundaries or JTA-managed transactions.
+
+Constraints
+- Servlets registered via `@WebServlet`, filters via `@WebFilter`, and listeners via `@WebListener`
+  under `quarkus-undertow` are CDI-managed by Quarkus (ArC-aware Undertow instance factory) and
+  MUST use field injection uniformly. This is a settled platform capability for this module, not an
+  open question — see `FR-007`.
+- `CustomHttpSessionListener` is lifecycle-driven; it still receives CDI field injection like the
+  other `@WebListener` classes and must be migrated the same way.
+
+Acceptance criteria (verified in this feature)
+- `AC-001`: No production data-access method reads `"DBManager"` from the servlet context.
+- `AC-002`: No production data-access method takes `ServletContext` only for datasource access.
+- `AC-003`: All 16 caller files compile.
+- `AC-004`: Every `@WebServlet`/`@WebFilter`/`@WebListener` caller uses `@Inject` field injection;
+  zero callers of this kind use a programmatic CDI lookup.
+- `AC-005`: No call site retains the `SQLAccess.<method>(..., context)` static-with-context shape.
+- `AC-006`: All 21 connection acquisitions remain in try-with-resources; zero connections are held
+  as bean fields.
+- `AC-007`: All 11 result sets are closed explicitly via try-with-resources; zero bare `ResultSet`
+  locals remain.
+- `AC-008`: Multi-statement transactional methods roll back explicitly on failure; specifically
+  `wrapUpRegistration` performs `rollback()` in its failure path. Verified by code inspection.
+- `AC-009`: No connection is returned to the pool with `autoCommit` left `false` or a transaction
+  open. Verified by code inspection.
+- `AC-010`: No `@PreDestroy`, shutdown hook, or residual `closeConnection()` exists in the bean.
+- `AC-011`: The change is delivered as a single pass; no delegation shim or dual-shape `SQLAccess`
+  exists at any reviewable point.
+- `AC-012`: The module compiles cleanly after the pass, with zero unresolved legacy call sites.
+- `AC-013`: The available REST Assured login test flow passes against a locally running
+  `dalogin-quarkus`, started without `mbook`, `mbooks`, or the Apache reverse proxy.
+- `AC-014`: SQL text diff is empty and the try-with-resources counts match the baseline.
+- `AC-015`: No `throws Exception` remains on a migrated data-access method; each declares only the
+  exception it can raise, or none.
+- `AC-016`: Rollback and `autoCommit` restoration cannot propagate; a forced secondary failure still
+  yields the method's primary result and logs both exceptions.
+- `AC-017`: `wrapUpRegistration` still rolls back on failure; the business behavior is intact.
+
+Owner-verified manually (outside this feature)
+- The repository owner exercises these after the pass. They are recorded for completeness and do not
+  gate the change.
+- `MV-001`: Registration, voucher, session, and password-reset flows behave as before.
+- `MV-002`: A forced mid-transaction failure in `wrapUpRegistration` leaves no partial rows and the
+  connection returns to the pool usable.
+- `MV-003`: A bounded-pool run across all flows shows no connection, statement, or result-set leak.

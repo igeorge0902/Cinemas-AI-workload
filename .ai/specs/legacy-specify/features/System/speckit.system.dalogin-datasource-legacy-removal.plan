@@ -1,0 +1,100 @@
+Feature Plan: dalogin datasource legacy connection removal
+
+Objective
+- Collapse `DBConnectionManager` to a single pooled path backed by the `application.properties`
+  Agroal datasource, and delete the `DriverManager` fallback along with its hardcoded credentials.
+
+Relationship to the roadmap
+- Implements inventory item 2 ("DB connection pooling ... remove remaining raw `DriverManager` fallback")
+  from `speckit.system.refactoring-mentions-roadmap.plan`.
+- Replaces the first portion of the originally planned `speckit.system.dalogin-datasource-pooling.*` triad.
+- Partially overlaps roadmap item 4 (hardcoded credentials) by removing the two credential literals
+  currently present in `CustomServletContextListener`; full secret externalization stays in its own plan.
+
+Role ownership
+- Implementation: `@backend-dev`
+- Credential and log review: `@security-specialist`
+- Verification: `@testing-engineer`
+
+Baseline (as-found)
+- Pooled path is already active: `CustomServletContextListener` injects `DataSource` and, when present,
+  builds `new DBConnectionManager(dataSource)`.
+- The fallback branch is therefore effectively dead in normal Quarkus startup, but it still compiles,
+  still carries credentials, and still masks misconfiguration.
+- `SQLAccess` obtains the manager via `context.getAttribute("DBManager")`; that indirection is retained
+  in this feature and addressed by the CDI injection feature.
+
+Design decisions
+- `DBConnectionManager` survives only as a thin, single-constructor class at this edit step. It and
+  the `"DBManager"` `ServletContext` attribute are deleted later in the same combined pass
+  (`speckit.system.dalogin-persistence-servlet-adaptation.plan`, phase 5); nothing here is
+  compiled or shipped in the intermediate shape.
+- Prefer fail-fast over silent fallback: a missing datasource is a configuration defect.
+- Set `acquisition-timeout` explicitly so pool exhaustion is observable instead of hanging.
+- Delete `com.dalogin.utils.test` outright rather than sanitizing it. It is unreferenced scratch code
+  with a `main` method; it has no callers to preserve and no tests depend on it. Leaving it would
+  keep a live `DriverManager` path and a second credential pair in the module.
+- Narrow `getConnection()` to `throws SQLException`. `ClassNotFoundException` was an artifact of
+  `Class.forName`; keeping it would force callers to handle an exception that can no longer occur.
+- Log the configured catalog name rather than calling `conn.getCatalog()` per acquisition, and log at
+  DEBUG. The current line fires on every one of the 21 data-access methods.
+
+Target state
+- `DBConnectionManager` retains a single `DataSource`-based constructor.
+- `getConnection()` delegates directly to `dataSource.getConnection()` and declares only
+  `throws SQLException`.
+- `CustomServletContextListener` has no conditional fallback branch.
+- No credentials, no `DB_URL` default, and no JDBC driver class loading in source.
+- `com.dalogin.utils.test` is gone.
+
+Intent
+- This is a forward-only structural cleanup. There is no rollback plan and no revert path is designed
+  for; defects found after the change are fixed forward.
+
+Implementation phases
+1. Configuration
+   - Uncomment and set `quarkus.datasource.jdbc.acquisition-timeout`.
+   - Confirm `min-size` / `max-size` remain configuration-driven.
+2. Connection manager simplification
+   - Delete the `DriverManager` branch and the `Class.forName` call.
+   - make it runnable in localhost and with minikube as well - check k8infra for deployment info.
+   - Narrow the signature to `throws SQLException` and drop the now-impossible checked exception.
+   - Make a null datasource an explicit startup/acquisition failure, when db is not running.
+   - Remove closeConnection(), as quarkus take control.
+3. Listener cleanup
+   - Remove the `if (dataSource != null) ... else ...` branch.
+   - Remove the hardcoded credentials and `DB_URL` fallback.
+   - Remove the `contextDestroyed` call to `closeConnection()` if the method is dropped.
+4. Dead code deletion
+   - Delete `src/main/java/com/dalogin/utils/test.java`.
+   - Confirm nothing referenced it. `SystemConstants.DB_CATALOG` loses its last readers
+     (`utils/test`, `DBConnectionManager`) inside the combined pass, so delete it and its `DB_URL`
+     read there; keep `getServiceUrl()`.
+   - Remove the dead dalogin `DB_URL` env entries from `k8infra/quarkus-backend.yaml` and
+     `k8infra/kubernetes.yaml`; the `QUARKUS_DATASOURCE_*` entries already carry minikube config.
+5. Logging review
+   - Reduce the acquisition log to DEBUG and report the configured catalog name, not `getCatalog()`.
+   - Ensure connection logs do not print credentials or the full JDBC URL.
+
+Validation strategy
+- Do not compile this component independently. Continue through CDI injection, family splitting, and
+  Servlet adaptation under `speckit.system.dalogin-persistence-servlet-adaptation.plan`.
+- `mbook` and `mbooks` are not required; the test targets `dalogin-quarkus` directly.
+- Registration, voucher, password-reset, and the bounded-pool check (`max-size=1` with a short
+  acquisition timeout) are verified manually by the repository owner and do not block the change.
+
+Risks and mitigations
+- Risk: some deployment relied on the `DB_URL` environment fallback.
+  - Mitigation: confirm `k8infra/quarkus-backend.yaml` supplies datasource configuration before merging.
+- Risk: fail-fast converts a previously silent misconfiguration into a startup error.
+  - Mitigation: this is the intended behavior; ensure the error message names the missing datasource.
+- Risk: narrowing `getConnection()` breaks a caller that catches `ClassNotFoundException`.
+  - Mitigation: no caller does. `SQLAccess` methods declare `throws Exception` and catch only
+    `SQLException`; the compiler confirms this at the single build.
+- Risk: deleting `utils/test` and `DBConnectionManager` removes every reader of
+  `SystemConstants.DB_CATALOG`.
+  - Mitigation: delete `DB_CATALOG`/`extractCatalog()` in the same pass; the compiler confirms no
+    reader remains.
+- Risk: connection leak becomes more visible once the pool is bounded.
+  - Mitigation: verify every `SQLAccess` method uses try-with-resources; a leak found here is a real
+    defect to fix forward.

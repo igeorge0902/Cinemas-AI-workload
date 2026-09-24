@@ -14,7 +14,7 @@ speckit_lifecycle:
     - speckit.taskstoissues
   lifecycle_paths:
     constitution: .ai/constitution/constitution.md
-    features_root: .ai/workflows/features
+    features_root: .ai/specs/legacy-specify/features
     templates_root: .ai/specs/templates
     scripts_root: .ai/specs/legacy-specify/scripts/bash
     prompts_root: .ai/prompts

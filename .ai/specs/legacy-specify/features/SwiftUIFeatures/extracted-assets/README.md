@@ -1,13 +1,13 @@
 # Extracted Assets (from `icons.png`)
 
 These assets were auto-extracted from:
-- `.ai/workflows/features/SwiftUIFeatures/icons.png`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/icons.png`
 
 Extraction script:
-- `.ai/workflows/features/SwiftUIFeatures/extract_icons_from_sheet.py`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/extract_icons_from_sheet.py`
 
 Manifest:
-- `.ai/workflows/features/SwiftUIFeatures/extracted-assets/manifest.json`
+- `.ai/specs/legacy-specify/features/SwiftUIFeatures/extracted-assets/manifest.json`
 
 ## Important
 

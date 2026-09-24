@@ -482,7 +482,7 @@ All of the following files are designed to guide AI coding agents. They are vers
 | **`.ai/retrieval/references/QUICKSTART.md`** | 5-minute local setup, deploy steps, troubleshooting commands | New developers, quick onboarding |
 | **`docs/system-documentation.html`** | Inline SVG diagrams (architecture, auth flow, booking flow, entity relationships), Hibernate caching deep-dive | Visual learners, architecture review |
 | **`.ai/constitution/constitution.md`** | Speckit AI context — project identity, tech stack, critical decisions, hardcoded contracts, debugging patterns (primary reference for AI agents) | AI agents (loaded first) |
-| **`.ai/workflows/features/`** | Feature tracking & migration specs (e.g., `SwiftUI_migration/`, `System/`, `WebUI/`) | Feature planning, migration tracking |
+| **`.ai/specs/legacy-specify/features/`** | Feature tracking & migration specs (e.g., `SwiftUI_migration/`, `System/`, `WebUI/`) | Feature planning, migration tracking |
 
 ## Where to start editing
 - Auth/session bugs: `dalogin-quarkus/src/main/java/com/dalogin/filters/` and `.../servlets/`.

@@ -2,7 +2,7 @@
 
 **Created:** May 5, 2026  
 **Status:** ✅ COMPLETE - Ready for Implementation  
-**Package Location:** `.ai/workflows/features/Swift_migration/`
+**Package Location:** `.ai/specs/legacy-specify/features/Swift_migration/`
 
 ---
 
@@ -414,7 +414,7 @@ xcodebuild build          # Verify compile success
 ## File Structure
 
 ```
-.ai/workflows/features/Swift_migration/
+.ai/specs/legacy-specify/features/Swift_migration/
 │
 ├── 📋 SPECKIT FILES (Formal Requirements)
 │   ├── speckit.swiftui.swift-migration-data-managers.specify

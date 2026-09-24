@@ -77,8 +77,8 @@ Align iOS implementation with the approved admin prototypes:
 ### 7) Movie selector prototype exposes internal movie IDs unnecessarily
 - The prototype currently renders movie tags like `id:12`, `id:7`, `id:18` in the admin create movie list, and compact update rows also show IDs.
 - References:
-  - `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html:252-276`
-  - `.ai/workflows/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html:327-333`
+  - `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html:252-276`
+  - `.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/adminvc-adminupdate-redesign.prototype.html:327-333`
 - Required by design:
   - show poster + title only in the create-mode movie list
   - show compact venue/movie text without ID tags in update mode

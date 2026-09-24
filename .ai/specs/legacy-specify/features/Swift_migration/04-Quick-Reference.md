@@ -238,7 +238,7 @@ Quality Metrics:
 1. **Before rollout**, commit data managers to a feature branch
    ```bash
    git checkout -b feat/swift-data-managers
-   git add .ai/workflows/features/Swift_migration/
+   git add .ai/specs/legacy-specify/features/Swift_migration/
    git add SwiftCinemas/SwiftLoginScreen/Networking/SharedDataManager.swift
    git add SwiftCinemas/SwiftLoginScreen/Managers/
    git commit -m "Add data manager implementations"
@@ -274,7 +274,7 @@ Quality Metrics:
 ```markdown
 ## Data Manager Pattern (NEW)
 - **Pattern Name:** Shared Static Data Manager
-- **File:** `.ai/workflows/features/Swift_migration/`
+- **File:** `.ai/specs/legacy-specify/features/Swift_migration/`
 - **When to use:** Encapsulating backend calls for a resource domain
 - **Key files:** MoviesDataManager, SeatsDataManager, CheckoutDataManager
 - **Example:** `MoviesDataManager.shared.fetchPaging(query:)`

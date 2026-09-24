@@ -1,9 +1,9 @@
 # Implementation Plan - VenuesVC / VenuesMigration Redesign
 
 ## Source of truth
-- Tasks: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
-- Spec: `/.ai/workflows/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.specify`
-- Prototype: `/.ai/workflows/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html`
+- Tasks: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.tasks`
+- Spec: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/speckit.swiftuifeatures.venuesvc-redesign.specify`
+- Prototype: `/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes/venuesvc-redesign.prototype.html`
 
 ## Exact view controllers / views
 - UIKit VC: `SwiftCinemas/SwiftLoginScreen/VenuesVC.swift`

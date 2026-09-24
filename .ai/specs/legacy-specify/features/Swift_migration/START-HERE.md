@@ -405,7 +405,7 @@ let movies = try await MoviesDataManager.shared.fetchPaging(query: [:])
 
 ## ✨ Final Checklist Before Starting
 
-- [ ] All team members have access to `.ai/workflows/features/Swift_migration/`
+- [ ] All team members have access to `.ai/specs/legacy-specify/features/Swift_migration/`
 - [ ] Tech lead has reviewed `.specify` and `plan` files
 - [ ] Product manager approved timeline and budget
 - [ ] QA team reviewed testing strategy

@@ -13,7 +13,8 @@
 - `mbooks-controller-dao-flow` - Trace `mbooks-quarkus` request handling from `BookController` through service/DAO layers to isolate data-flow bugs with minimal-safe fixes.
 - `hibernate-session-c3p0-debug` - Diagnose Hibernate session lifecycle, transaction boundaries, and c3p0 pool issues in `mbook-quarkus` and `mbooks-quarkus`.
 - `dalogin-downstream-http-client-debug` - Trace and debug outbound HTTP calls from `dalogin-quarkus` servlets through `ServiceClient` into `mbook`/`mbooks` endpoints.
-- `html-prototype-uikit-redesign` - Implement UIKit parity from `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/workflows/features/SwiftUIFeatures/prototypes` using Speckit-driven gap analysis and admin/adminupdate-tested layout patterns.
+- `html-prototype-uikit-redesign` - Implement UIKit parity from `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes` using Speckit-driven gap analysis and admin/adminupdate-tested layout patterns.
 - `swift-rest-contract-tests` - Build deterministic XCTest service contract tests for `MbooksService`/`LoginGatewayService` with mocked default mode and opt-in live mode.
 - `swift-datamanager-integration` - Apply API response to DataManager integration patterns to reduce global state and keep service/data boundaries stable.
 - `api-smoke-restassured` - Run and maintain minimal Java RestAssured smoke tests in `k8infra/api-smoke-restassured` as the primary backend smoke path.
+- `quarkus-local-test-mysql` - Run Quarkus `@QuarkusTest` suites locally against the Oracle `/usr/local/mysql` install, prompting the user when MySQL is down and working around the local 8080/8081 port and proxy pitfalls.

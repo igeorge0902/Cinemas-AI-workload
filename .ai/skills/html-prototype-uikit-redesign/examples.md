@@ -2,7 +2,7 @@
 
 ## Example 1: AdminVC/AdminUpdateVC from Prototype
 ### Input
-Apply `adminvc-adminupdate-redesign.prototype.html` from `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/workflows/features/SwiftUIFeatures/prototypes` and fix safe-area clipping in `AdminVC` and `AdminUpdateVC`.
+Apply `adminvc-adminupdate-redesign.prototype.html` from `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes` and fix safe-area clipping in `AdminVC` and `AdminUpdateVC`.
 
 ### Output
 - Reads prototype + Speckit docs (`analyze`, `plan`, `specify`, `tasks`).
