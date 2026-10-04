@@ -1,0 +1,408 @@
+".ai/agents/definitions/Cinemas DevOps Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-11
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-http-client-observability.tasks
+  s_a9695dab946056::t_a046ae6cff5b40 29,66,68-71
+".ai/agents/definitions/Cinemas Performance Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+".ai/agents/definitions/Cinemas AI Researcher.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+".ai/agents/definitions/Cinemas Quick Engineer.agent.md"
+  s_e4629ecde6496c::t_b7184f9530f630 1-8,16,26-27,30,33-35
+  s_5b3ae8bf242d68::t_7be19be0e40fcf 17-24
+  s_5b3ae8bf242d68::t_759c79c6ef73a2 9-15,25,28-29,31-32
+.ai/agents/ROUTING-TELEMETRY.md
+  s_06c7ade199c66d::t_cddb35fd43fc39 146
+  s_3524a4040a89c9::t_6e468951311401 1-2,15-24,27,36,65-72,78-80,82-85,88-89,92-99,104-118,120-123,125-129,142,154-155,159,161-164,185
+  s_06c7ade199c66d::t_5c717de4deac31 166-179
+  s_e4629ecde6496c::t_4b050efbe72158 28-30
+  s_0da8358a1bb31d::t_f19d5c433b5590 25-26,31-35,37-64,73-77,81,86-87,90-91,100-103,119,124,130-141,143-145,147-153,156-158,160,165,180-184,186-188
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 3-14
+".ai/agents/definitions/Cinemas Database Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-11
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-family-split.tasks
+  s_a9695dab946056::t_8ebb78a5fe56fc 5,13,23-27,29,32-35,38,41,43,45,47-49,56-58,61-64,76,82-83
+  s_a9695dab946056::t_f99f819d4142fc 69,73-75
+.ai/retrieval/references/CONTRACTS_INDEX.md
+  s_b4198878601df4::t_be897a050a26ed 24
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.plan
+  s_5b3ae8bf242d68::t_e06dc76468f288 61,93,230
+  s_5b3ae8bf242d68::t_6c27af36583f81 125-126,134-136,140-142,144-212
+  s_2a635711a8a1f1::t_72c8a567b1b581 1-60,62-92,94-124,127-133,137-139,143,213-229,231-233
+.gitignore
+  s_6b1926b059f4fe::t_9f7a25ecf41c55 17
+  s_3524a4040a89c9::t_6e468951311401 15-16,18-21
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.specify
+  s_b4198878601df4::t_be897a050a26ed 1-4,13,17-27,43-45,112-115,117-120,123-125,127-141,145-147,149-153,155-157,159-161,165,172-182,185-186,190-202,204,208,238-249,252,254,258-262,271-273,278-283,285-287,291-294,296,298,303-305,309-311,314
+  s_ec1df57d0190dd::t_54c49351eb7849 183-184,187-189,255-257,270
+  s_b88ea6a3adac9f::t_57da94109222e4 142-143,295
+  s_47d38badaa53d9::t_5823aafab7fb87 223,269
+  s_75890764e8fc22::t_bf8e5d746ed138 8,28-35,42,144,162,166-167,221-222,226,232-235,267
+  s_8a2c246c78bd44::t_f8b64e0e7b39a1 6-7,16,78-83,89-111,126,148,154,158,163-164,168-169,171,203,205-207,250-251,253,265,274-276,284,297,299,308,316
+  s_c6003b36a5d0c8::t_3bb29c9700992c 288
+  s_e6fb73d917a318::t_6561e1c4c199f8 9,11,15,38-41,236,277,301
+  s_2a635711a8a1f1::t_d4faf264d1a1c6 12
+  s_75890764e8fc22::t_dd48a567c6c7f1 14
+  s_e6fb73d917a318::t_1a8a18132c6971 263
+  s_11ad27876715ca::t_9829ef10b6f2d3 36-37
+  s_b88ea6a3adac9f::t_cab52d674ca0fd 48-77,84-88,170,306,315,317
+  s_c6003b36a5d0c8::t_3b5d8770f268a6 5,10,46-47,116,121-122,209-220,224-225,227-231,237,264,266,268,289-290,300,302,307,312-313
+.ai/agents/ROUTING-DIAGRAMS.md
+  s_3524a4040a89c9::t_6e468951311401 1-5,7-20,26-30,32,43-59
+  s_e4629ecde6496c::t_c15479525d993a 6,22-25
+  s_5b3ae8bf242d68::t_759c79c6ef73a2 21,33-37
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 31,38-42
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-persistence-servlet-adaptation.tasks
+  s_a9695dab946056::t_b919ca83999e62 83,85-86
+  s_a9695dab946056::t_4baecec64acd90 28-29,32-33,35,38-39,42-45,47,54-55,57,72
+".ai/agents/definitions/Cinemas Router.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-18,21-24,42-44,51-55
+  s_5b3ae8bf242d68::t_759c79c6ef73a2 33-37
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 38-41,56-57
+  s_5b3ae8bf242d68::t_7be19be0e40fcf 45-50
+  s_e4629ecde6496c::t_d114bd4b1b428e 19-20,25-32
+".ai/agents/definitions/Cinemas Backend Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-11
+".ai/agents/definitions/Cinemas Security Reviewer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-11
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.database-schema.md
+  s_8a2c246c78bd44::t_b1bc406db6c0e3 4,71-78,82-86,92-95,347-348,376-377,394-395,397-398
+  s_ec1df57d0190dd::t_96bd64a21f1ee7 36-39,105-114
+  s_e6fb73d917a318::t_6561e1c4c199f8 5,137,139,142-144,147-149,152,157,174-175,208,210-212,215-218,222-225,229-230,232,237,263-265,300,321,330,370,373-374,388,392-393,399
+  s_75890764e8fc22::t_d1d75d685e4a5b 11-13,24-35,103-104,125,127,140-141,145,150,156,167,169,171-173,202-206,213,221,226-228,231,233-236,238-256,260-262,267,273-280,284,290-296,301-304,306-307,309,311-317,322-329,331-333,346,358-365,367,371-372,375,380-382,386-387,389-391,400
+  s_3207a3bc76f047::t_35cfb37964f8c0 45-48
+  s_11ad27876715ca::t_2aeff433064599 101-102,122-124,126,128-130,133,146,151,168,190,356-357,369
+  s_5766ceea415f1e::t_449c7ce8a0fae5 135
+  s_b88ea6a3adac9f::t_d24edbed312bf4 50-70,79-81,87-91,96-98,349,378-379,396
+  s_5766ceea415f1e::t_d94e7e51a1c817 161-162,194-195,197-199
+  s_75890764e8fc22::t_dd48a567c6c7f1 345
+  s_3207a3bc76f047::t_e0e32a390791aa 40-44
+  s_3207a3bc76f047::t_ad7207aab3e206 14-23
+  s_5766ceea415f1e::t_3be23d8bd5cfa8 1-3,6-10,49,99-100,115-121,131-132,134,136,138,153-155,158-160,163-166,170,176-189,191-193,196,200-201,207,209,214,219-220,257-259,266,268-272,281-283,285-289,297-299,305,308,310,318-320,334-344,350-355,366,368,383-385
+.ai/agents/AGENTS.md
+  s_e4629ecde6496c::t_1c179bd45bef56 505-506,514
+  s_5b3ae8bf242d68::t_7604d3b794ed7f 412-413
+  s_3524a4040a89c9::t_9a1c1289d51824 482,484,492-498
+  s_5b3ae8bf242d68::t_759c79c6ef73a2 507-513
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 483,499-503
+  s_5b3ae8bf242d68::t_7be19be0e40fcf 515-519
+  s_5b3ae8bf242d68::t_0fb491ba8a9336 504
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.tasks
+  s_5b3ae8bf242d68::t_7be19be0e40fcf 18-44,47
+  s_2a635711a8a1f1::t_72c8a567b1b581 1-2
+  s_5b3ae8bf242d68::t_e06dc76468f288 3-6,10,77-101,106-115,117
+  s_5b3ae8bf242d68::t_de6b19511b608e 11-17,45-46,48-76
+  s_5b3ae8bf242d68::t_6c27af36583f81 7-9,102-105,116
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-datasource-legacy-removal.tasks
+  s_a9695dab946056::t_b14e054e0f8279 4-5,8,10-12,16,19-25,27,31-34,39-40,42,45,49-50,67-68
+  s_a9695dab946056::t_6a80639853279c 56,59
+".ai/agents/definitions/Cinemas Testing Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-7,12-14
+  s_5b3ae8bf242d68::t_cc90c3a7b1b3f8 8-11
+".ai/agents/definitions/Cinemas C++ Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-logging-migration.tasks
+  s_a9695dab946056::t_eb9d3f3c16af3e 2,8,10,15,17,19,31
+  s_a9695dab946056::t_3610b9c4ae6bc3 38
+".ai/agents/definitions/Cinemas iOS Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-sqlaccess-cdi-injection.tasks
+  s_a9695dab946056::t_56516ede8025dd 4,15-17,25-26,28,31-37,41-49,52-55,58-68,71,87-91,96-97
+  s_a9695dab946056::t_6d6b5052ce225e 72-74,76
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-login-logout-error-handling.tasks
+  s_a9695dab946056::t_3f560ae1b569f4 49
+  s_a9695dab946056::t_a806e595107057 13,24,26-27,65
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.architecture.md
+  s_8a2c246c78bd44::t_b2df12d83f71cc 7,35-36,55-56,74-75,90-92,104,115-121,123-125,128-132,251,253,256-257,259,261,279,281-284,287,320-326
+  s_e6fb73d917a318::t_6561e1c4c199f8 4,8,22-23,71,153-158,308-312,314-315
+  s_e6fb73d917a318::t_1a8a18132c6971 40
+  s_b88ea6a3adac9f::t_57da94109222e4 68,87,142-144
+  s_ec1df57d0190dd::t_0437ba4530564c 134-141
+  s_47d38badaa53d9::t_5823aafab7fb87 195-197,200-204,214,216,218,221
+  s_c6003b36a5d0c8::t_3bb29c9700992c 9
+  s_b88ea6a3adac9f::t_d24edbed312bf4 32-34,50-51,57-58,69,88,122,126-127,248-249,252,254,280,292-293,301-304,317-319
+  s_5b3ae8bf242d68::t_102e7350dbd773 194,213,219,229,250,255,258,262,265,294
+  s_47d38badaa53d9::t_c25ce43c26cb9c 19
+  s_c6003b36a5d0c8::t_194b9e6b5732ee 1-3,5-6,10-18,24-31,37-39,41-49,52-54,59-67,70,72-73,76-84,86,89,93-103,105-114,133,161-177,179-190,205-212,220,222-228,230-247,260,263-264,266-278,285-286,289-291,295-300,327-335
+  s_75890764e8fc22::t_bf8e5d746ed138 20-21,85,145-152,159-160,178,191-193,198-199,215,217,288,305-307,313,316
+".ai/agents/definitions/Cinemas Web Engineer.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+.ai/agents/agents-role.yaml
+  s_e4629ecde6496c::t_4985faf50fcdda 565,601-608,621-632,634,644-650,699-700
+  s_5b3ae8bf242d68::t_7be19be0e40fcf 563-564
+  s_e4629ecde6496c::t_0a89e4313437eb 522,524-541,545
+  s_3524a4040a89c9::t_6e468951311401 521,546-560,566-600,610,612-620,651-698
+  s_5b3ae8bf242d68::t_759c79c6ef73a2 523,542-544,561-562,633,635-643,701
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 609,611
+.ai/README.md
+  s_5b3ae8bf242d68::t_2bec91d7bdf798 35-37
+  s_3524a4040a89c9::t_6e468951311401 33-34
+".ai/agents/definitions/Cinemas Business Analyst.agent.md"
+  s_3524a4040a89c9::t_6e468951311401 1-10
+.ai/specs/legacy-specify/features/SwiftUI_migration/speckit.migration.alertcontrollers.implementation-plan.md
+  s_2b45393e6cebcb::t_4d5098c5cf37f9 27-28
+  s_2b45393e6cebcb::t_1ac6521ea7ce51 546-548
+  s_2b45393e6cebcb::t_d25209ac7ada55 558-559,563,566-572
+  s_2b45393e6cebcb::t_a3a19dc0d5ae38 335-338
+  s_2b45393e6cebcb::t_281b920839bd32 384-396
+  s_2b45393e6cebcb::t_6c517995ef1a8f 5-18
+  s_2b45393e6cebcb::t_5081dfe819fc57 99,102,117-266,519-520
+  s_2b45393e6cebcb::t_71506cef1f9e69 588,599,602,604
+  s_2b45393e6cebcb::t_6b58b6f221a14b 1-4,29-40,45-47,65,68,73-80,82-87,91,110,267,312,317,372,382,398-399,416,432,440,453,463,479,490,525,528,552-554,556-557,564-565,573-575,577-579,589-591,593,595
+  s_2b45393e6cebcb::t_a12ca8a09274db 43-44
+  s_2b45393e6cebcb::t_e6e4763dbdc339 88-89
+  s_2b45393e6cebcb::t_fd92d37d67062c 494-516
+  s_2b45393e6cebcb::t_88b8a271bc19f5 112-114
+  s_2b45393e6cebcb::t_ff00766e8fe222 560-562
+  s_2b45393e6cebcb::t_0d2e83e32d4df5 580-583
+  s_2b45393e6cebcb::t_c07429a07e7012 487-488
+  s_2b45393e6cebcb::t_ceac018b16880e 19-21,24-26
+  s_2b45393e6cebcb::t_5acba2958fcf0e 41-42
+  s_2b45393e6cebcb::t_5471b3bd5f3152 48-50,62-64
+  s_2b45393e6cebcb::t_c49ca10321e045 66-67
+  s_2b45393e6cebcb::t_5354c418ac9e66 69-72
+  s_2b45393e6cebcb::t_280b319a04ea99 81
+  s_2b45393e6cebcb::t_65c765125cd592 90
+  s_2b45393e6cebcb::t_a43494c5d0be2b 92-94,96-98
+  s_2b45393e6cebcb::t_362768f47ee4df 100-101
+  s_2b45393e6cebcb::t_83caa5412938a5 103-105,107-109
+  s_2b45393e6cebcb::t_f1b94cb7e24bb4 111
+  s_2b45393e6cebcb::t_39db25a19845aa 115-116
+  s_2b45393e6cebcb::t_994770bdc657db 268-270,309-311
+  s_2b45393e6cebcb::t_cbb2586e5010a3 313-316
+  s_2b45393e6cebcb::t_deab0f614b226e 318-320,332-334
+  s_2b45393e6cebcb::t_4987bc39be811e 339-341,369-371
+  s_2b45393e6cebcb::t_833f79cd74112b 373-375,379-381
+  s_2b45393e6cebcb::t_df2aa967564e50 383
+  s_2b45393e6cebcb::t_c782f29adba1fb 397
+  s_2b45393e6cebcb::t_4639b97c506d3a 400-402,413-415
+  s_2b45393e6cebcb::t_79ea51b163416c 417-419,429-431
+  s_2b45393e6cebcb::t_524d44358aa448 433-435,437-439
+  s_2b45393e6cebcb::t_a5ddae7ab3489d 441-443,450-452
+  s_2b45393e6cebcb::t_478e928ddafa7f 454-456,460-462
+  s_2b45393e6cebcb::t_a68bcc3d17c089 464-466,476-478
+  s_2b45393e6cebcb::t_366a2167299e5c 480-482,484-486
+  s_2b45393e6cebcb::t_d9edccbb0530fa 489
+  s_2b45393e6cebcb::t_ef83b987d21118 491-493
+  s_2b45393e6cebcb::t_ac999e9cd3930d 517-518
+  s_2b45393e6cebcb::t_d7399d258f11af 521-524
+  s_2b45393e6cebcb::t_6d1432e963af03 526-527
+  s_2b45393e6cebcb::t_838195badea057 529-531,543-545
+  s_2b45393e6cebcb::t_b3cb0573c4b7f3 549-551
+  s_2b45393e6cebcb::t_5037b24f963794 555
+  s_2b45393e6cebcb::t_73f575d07bea02 576
+  s_2b45393e6cebcb::t_4ff314e615e6de 584-587
+  s_2b45393e6cebcb::t_923a62808a34cc 592
+  s_2b45393e6cebcb::t_a604f66c743b11 594
+  s_2b45393e6cebcb::t_7443b99eee353b 596-598
+  s_2b45393e6cebcb::t_76b71f739e2139 600-601
+  s_2b45393e6cebcb::t_e53c6ea58b0941 603
+  s_2b45393e6cebcb::t_55f2ed3efd8f3a 605
+  s_2b45393e6cebcb::t_77ac8c765bd0e9 22-23,51-61,95,106,271-308,321-331,342-368,376-378,403-412,420-428,436,444-449,457-459,467-475,483,532-542
+.ai/specs/check_ai_layout.py
+  s_3524a4040a89c9::t_6e468951311401 68-91,119-120
+.ai/specs/legacy-specify/features/System/speckit.system.dalogin-connection-pool-analysis.tasks
+  s_a9695dab946056::t_b14e054e0f8279 4-7
+".ai/agents/definitions/Cinemas Scout.agent.md"
+  s_e4629ecde6496c::t_36743886d7e01f 1-14
+".github/agents/Cinemas AI Researcher.agent.md"
+  s_3524a4040a89c9::t_c601019bfa263b 1
+".github/agents/Cinemas Backend Engineer.agent.md"
+  s_3524a4040a89c9::t_4b22ef34b03c41 1
+".github/agents/Cinemas Business Analyst.agent.md"
+  s_3524a4040a89c9::t_db7243eddbd1db 1
+".github/agents/Cinemas C++ Engineer.agent.md"
+  s_3524a4040a89c9::t_e93e71b1d1e758 1
+".github/agents/Cinemas Database Engineer.agent.md"
+  s_3524a4040a89c9::t_2437fa45c92b39 1
+".github/agents/Cinemas DevOps Engineer.agent.md"
+  s_3524a4040a89c9::t_457fc3f2e48136 1
+".github/agents/Cinemas Performance Engineer.agent.md"
+  s_3524a4040a89c9::t_96d4720072ba3e 1
+".github/agents/Cinemas Quick Engineer.agent.md"
+  s_e4629ecde6496c::t_f53da6322d1ee6 1
+".github/agents/Cinemas Router.agent.md"
+  s_3524a4040a89c9::t_586ea88bdb6268 1
+".github/agents/Cinemas Scout.agent.md"
+  s_e4629ecde6496c::t_8fe29f5eed121b 1
+".github/agents/Cinemas Security Reviewer.agent.md"
+  s_3524a4040a89c9::t_4419b6b34915db 1
+".github/agents/Cinemas Testing Engineer.agent.md"
+  s_3524a4040a89c9::t_acd9885972c250 1
+".github/agents/Cinemas Web Engineer.agent.md"
+  s_3524a4040a89c9::t_589a6fbabf0d5d 1
+".github/agents/Cinemas iOS Engineer.agent.md"
+  s_3524a4040a89c9::t_69b3fa0c608deb 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c53210ab8920ebb93b67a659ddc5030e2781522a",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_06c7ade199c66d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a789b851-e59a-4534-a7a1-885fbe6675c0",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_0da8358a1bb31d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "10559772-9fb9-4ac1-8657-ac5adf990491",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_11ad27876715ca": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7beec12b-70cc-4089-963a-352f627f4e8c",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_2a635711a8a1f1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "3cf9d440-a390-4f07-8ab6-aca6a09cd6f1",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_2b45393e6cebcb": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "1aead770-5e07-4954-869c-a2b4a38df241",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_3207a3bc76f047": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "aeda075c-22ba-46e0-9233-2d30313ebf37",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_3524a4040a89c9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e265e234-77c0-448c-a200-7ec0844af118",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_47d38badaa53d9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "45eaf8ce-3f7b-499f-a7ea-b15f4595d8fa",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_5766ceea415f1e": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "fdd7951d-19c2-444b-8e94-7aa229c4f056",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_5b3ae8bf242d68": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "657d32ba-cdf9-4727-9c43-2985a4cede78",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_6b1926b059f4fe": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1791124412422",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_75890764e8fc22": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e11ab919-4276-4e10-9d7a-247808f63c1d",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_8a2c246c78bd44": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "8c74946b-a219-4766-a4b7-24bfaa74ae35",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_a9695dab946056": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "93f3afd2-e72e-4783-9a0a-0fcd26adfeee",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_b4198878601df4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "125b085d-e115-465b-88aa-fa3abb52feb2",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_b88ea6a3adac9f": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "871ba637-681c-4382-9442-d05ec18cddc5",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_c6003b36a5d0c8": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "35f2981e-6614-473e-bcec-ba4e1447adf5",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_e4629ecde6496c": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b145dd9a-d593-4c23-8802-98f9ee7b09e7",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_e6fb73d917a318": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d1c362cb-7324-4fd8-b913-c3866ce32050",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_ec1df57d0190dd": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "f788aa0b-c268-47de-b06a-30e088ae2ad3",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
