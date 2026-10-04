@@ -1,0 +1,317 @@
+# Feature Specification: Subscription-Filtered Screen News over WebSocket
+
+**Feature Branch**: N/A (spec authored in place; no branch created)  
+**Created**: 2026-10-03  
+**Status**: Draft, user-approved scope (2026-10-03)  
+**Identity/persistence clarification**: User-directed (2026-10-04): required new authenticated `mbook-quarkus` persistence endpoint; WebSocket client ID is the existing iOS deviceid; server-side simple-web-api active-session lookup (integration not implemented).  
+**Identity trust-model correction**: User-directed (2026-10-04): the active-session list holds authenticated users, so fresh unique list membership of the supplied deviceid is sufficient WebSocket identity; no separate WebSocket caller-session binding is required (see "Accepted WebSocket identity trust model").  
+**Storage decision**: User-directed correction (2026-10-03): shared `login_.news_settings`, literal lowercase `yes`/`no`; row presence is not eligibility.  
+**Owner constraints**: USER-APPROVED REQUIRED target (2026-10-03): `news_settings.logins_id NOT NULL` + `UNIQUE (logins_id)`; not deployed.  
+**Architecture**: [`speckit.system.screen-news-websocket-subscriptions.architecture.md`](./speckit.system.screen-news-websocket-subscriptions.architecture.md)  
+**Database schema**: [Current baseline, approved owner constraints and pending hardening](./speckit.system.screen-news-websocket-subscriptions.database-schema.md)  
+**Plan / Tasks**: [`speckit.system.screen-news-websocket-subscriptions.plan`](./speckit.system.screen-news-websocket-subscriptions.plan), [`speckit.system.screen-news-websocket-subscriptions.tasks`](./speckit.system.screen-news-websocket-subscriptions.tasks)  
+**Input**: User description: "add feature specify about websocket server receiving client ids on connection and the server will just send message if the user is subscribed to receiving news on screen add, update or delete."
+**User storage correction**: "news_settings table will hold if the user is subscribed to certain kind of news, now newsScreening. so the columns may grow, but it shall contain yes, or put to no, once unsubscribed"
+**User owner-constraint confirmation**: "yes, i omitted the direct answer, but yes: Enforce one row per user with a NOT NULL plus UNIQUE change"
+**User identity correction (2026-10-04)**: "correct: GET /simple-service-webapp/webapi/myresource/admin holds users, that are authenticated, so membership is enough."
+
+## Domain terminology (repository evidence)
+
+- **Screen** = a scheduled screening record (movie + venue + date/time + screen id + screening-date id), not a UI screen.
+  Evidence: `mbooks-quarkus` admin operations `/book/admin/addscreen`, `/book/admin/updatescreen`,
+  `/book/admin/deletescreen` in `VenueController`; `DAO.insertNewScreen/updateScreen/deleteScreen`;
+  iOS admin flows `AdminVC` / `AdminUpdateVC`.
+- **Screen news** = the notification produced when a screen changes. Today only *add* publishes one
+  (`publishAddedMovie` → `AddMovie {movie, date, venue, screeningId, screeningDatesId}` → topic
+  `ios-movies-notifications2`). Update and delete publish nothing.
+- **News subscription** = a per-user news preference. Evidence: `mbook-quarkus` entity `NewsSettings`
+  (`news_settings.newsScreening`, linked to `logins`). No code currently reads or writes it.
+  **Decided by user (2026-10-03)**: `news_settings` is shared per-user news preferences, currently
+  `newsScreening`, with future columns for other news categories. Exact lowercase text
+  `newsScreening='yes'` = subscribed; `newsScreening='no'` = unsubscribed. Row existence is
+  **not** eligibility. Subscribe ensures a settings row and sets only this column to `yes`;
+  unsubscribe sets only this column to `no`, retaining the row and all unrelated preferences.
+  Missing row defaults off; new managed rows start at `no` unless explicitly subscribing.
+  Existing NULL/unknown values never imply opt-in; validation errors must be explicit.
+  `login_.news_settings` is present in the designated schema snapshot
+  `k8infra/mysql_8/Dump20260524.sql:372–379`, but its user FK is nullable and non-unique and it has
+  a nullable `VARCHAR(255)` preference. `logins_id NOT NULL` + `UNIQUE (logins_id)` are
+  **USER-APPROVED REQUIRED target constraints**, not deployed: at most one row per account,
+  every settings row has an owner. They do not create rows for every user; no blanket backfill.
+  Preference-column NOT NULL/default/CHECK remain pending approval. Shared-row storage is decided,
+  not an open dedicated-table-versus-reuse choice.
+- **WebSocket server** = `@ServerEndpoint("/ws")` in `mbook-quarkus` (exposed as `/mbook-1/ws`, used by iOS
+  `URLManager.webSocketURL`) and an identical endpoint in `mbooks-quarkus` (`/mbooks-1/ws`). Both currently
+  **broadcast every screen-add message to every connected session**, without identifying the client or checking a subscription.
+- **iOS menu screen** = `MenuVC` (`SwiftCinemas/SwiftLoginScreen/MenuVC.swift`), a UIKit screen with the profile card,
+  `Admin` button, `Back`/`Purchases` navigation, and logout. It has no news control today.
+- **Client ID** = the existing iOS **deviceid**, sent on connect and reconnect, not a newly
+  generated app identifier. Repository spelling is `deviceId`: `currentDeviceId()` in
+  `SwiftCinemas/SwiftLoginScreen/ciphertext.swift:11–14` returns
+  `UIDevice.current.identifierForVendor?.uuidString ?? ""`; `LoginVC.swift:94–101` passes it
+  to sign-in, and `Networking/BackendServices.swift` sends the `deviceId` login parameter
+  and saves it in UserDefaults. It is **not** proof of identity or guaranteed permanent across
+  reinstalls/vendor-ID changes. Empty/unavailable ID fails eligibility; do not synthesize a fallback.
+
+### Verified active-session lookup boundary (definitions only)
+
+- User's **simple-web-api** corresponds here to `simple-service-webapp-quarkus`:
+  **GET `/simple-service-webapp/webapi/myresource/admin`**. Root `/simple-service-webapp`
+  and REST subpath `/webapi` are in `src/main/resources/application.properties:4,7`;
+  `src/main/java/com/example/rest/ImageResource.java` owns `@Path("/myresource")`,
+  `@GET @Path("/admin")` and `getSessions()`.
+- That resource forwards incoming **Cookie** to configured `admin.service-url` +
+  **GET `/login/activeSessions`**, and passes upstream status/body through; IO failure returns
+  502. The lookup source is **dalogin**, not a simple-service database or the `Sessions` DTO.
+  `dalogin-quarkus/src/main/java/com/dalogin/servlets/ActiveSessionsServlet.java` reads
+  ServletContext **`activeUsers`** and emits a JSON array with **`id`** (enumeration index),
+  **`sessionId`** (servlet session ID), **`user`** (session username), **`deviceId`**,
+  **`creationTime`**. No `status`, `active`, expiry, or numeric account-ID field exists.
+  Missing user/device attributes become empty strings; invalidated sessions caught during
+  iteration are skipped. `simple-service-webapp-quarkus/.../api/Sessions.java` has
+  `getId/getSessions/getDeviceId`, but this proxy does not serialize that DTO; `sessions`
+  is not the actual upstream `sessionId` field.
+- `dalogin-quarkus/.../listeners/CustomHttpSessionListener.java` registers sessions at creation
+  (before login attributes), evicts older sessions when the same `deviceId` is added, and
+  attempts removal/logout cleanup on destruction. `HelloWorld.java:createSession` sets
+  `user`/`deviceId` after successful login persistence and sets a 30-minute inactivity interval.
+  **User-confirmed (2026-10-04)**: entries returned by this list are active authenticated users,
+  so membership is the identity source for WebSocket delivery. Entries with blank `user` or
+  `deviceId` (e.g. registered before login attributes) are invalid records, not members.
+  creationTime is not an expiry proof; results must be fresh so that logout, expiry, removal or a
+  changed mapping stops delivery. The map is ServletContext-local; replica coverage/routing is a
+  planning prerequisite.
+- **Authorization gap, not a deployed service contract**: `ImageResource.getSessions()` has
+  no caller/service authorization check; `ActiveSessionsServlet.doGet()` has none either.
+  `dalogin-quarkus/.../filters/AuthFilter.java` maps `/admin/*`, purchases, checkout and logout,
+  **not `/activeSessions`**; `src/main/resources/META-INF/web.xml` adds no such security mapping.
+  Cookie forwarding does not prove authorization. Planning MUST establish narrowly authorized
+  server-to-server access to both hops; this internal service authorization secures the admin
+  list itself and is a separate planning concern, **not** a second caller-session requirement for
+  WebSocket identity. Do not reuse browser/admin credentials unchecked or expose this session list to iOS.
+- Required target resolution: use the authoritative simple-web-api lookup to find the entries
+  whose `deviceId` equals the supplied deviceid. Exactly one resolved authenticated `user` (one
+  entry, or several entries that agree on the same user) is a match; map that server-returned
+  `user` to `login_.logins.id`. No separate WebSocket session credential is required.
+  `mbook-quarkus/src/main/java/com/jeet/db/DAO.java:getUser` already queries `Logins` by `user`;
+  missing user yields sentinel `id == 0`. No matching entry => no delivery; lookup error, invalid
+  record or conflicting users => no delivery with explicit error logging. Reject missing/non-unique
+  account resolution; never use the array `id`, device ID or login `uuid` as `logins_id`.
+
+### Accepted WebSocket identity trust model (user-directed, 2026-10-04)
+
+- Fresh membership of the supplied deviceid in the authoritative active-session list establishes
+  the **authenticated user associated with that deviceid** under the accepted trust model. It is
+  **not** cryptographic proof that the socket sender owns that device.
+- Residual risk (accepted, documented): anyone able to present another user's currently active
+  deviceId can be mapped to that user and receive that user's screen news while the user is
+  subscribed. This design claims no independent spoof protection on the socket. Exposure is
+  limited to screen-news payloads (FR-009 contains no personal data); it never authorizes
+  preference reads/writes, which stay on the authenticated mbook endpoint (FR-016).
+- Delivery still requires the resolved user's `newsScreening` to be exactly `yes`.
+
+## Contract IDs *(mandatory)*
+
+- **CID-MBOOK-WS-SCREEN-NEWS** (new, `planned`): screen-news delivery over the existing `mbook-quarkus` `/mbook-1/ws` endpoint.
+- Screen-news subscription read/write (new, `planned`): the authenticated endpoint used by the iOS menu (FR-015, FR-016). Planning assigns its contract ID and path and registers it in `CONTRACTS_INDEX.md`.
+- **CID-MBOOKS-SEATS** (referenced only): unchanged. It is listed because `/mbooks-1/ws` is documented as carrying realtime seat updates (see FR-012).
+
+## Definition of Done *(mandatory)*
+
+- [x] Feature has a spec.
+- [x] Architecture diagram linked (see header).
+- [ ] Implementation matches spec intent and acceptance criteria.
+- [ ] Implementation is tested and test evidence is recorded (including negative recipient-filtering cases).
+- [ ] `@testing-engineer` gate completed.
+- [ ] `@security-specialist` gate completed (accepted membership-only deviceid trust assumption and residual risk, internal admin-list authorization, revocation/freshness, subscription endpoint limited to the caller's own preference).
+- [ ] `@performance-engineer` gate completed.
+- [ ] Contract IDs are up to date in `.ai/retrieval/references/CONTRACTS_INDEX.md`.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - Subscribed user receives screen news live (Priority: P1)
+
+A signed-in user who has opted in to screen news keeps the app open. When an admin adds, updates, or deletes a screen, the user's connected clients get a notification right away.
+
+**Why this priority**: This is the core value of the feature. Without it, nothing is delivered.
+
+**Independent Test**: Connect one authenticated, subscribed client. Then perform one screen add, one update, and one delete. Verify that exactly one matching message arrives for each operation.
+
+**Acceptance Scenarios**:
+
+`C1`/`C2` below are symbolic existing deviceid values, not newly generated client labels.
+
+1. **Given** an authenticated user whose shared settings row has exact `newsScreening='yes'` and an open connection that declared client ID `C1`, **When** a screen is successfully added, **Then** `C1` receives exactly one message with event type `created` and the fields in FR-009.
+2. **Given** the same setup, **When** a screen is successfully updated, **Then** `C1` receives exactly one `updated` message.
+3. **Given** the same setup, **When** a screen is successfully deleted, **Then** `C1` receives exactly one `deleted` message that identifies the deleted screen.
+4. **Given** the same setup, **When** a screen add/update/delete **fails** (e.g., the operation returns a conflict/error), **Then** no message is sent.
+5. **Given** a connection that supplies deviceid `C1`, no separate session credential on the socket, and a fresh authoritative active-session list in which `C1` matches exactly one authenticated user whose `logins.id` resolves and whose `newsScreening` is exactly `yes`, **When** a screen change succeeds, **Then** that connection receives exactly one screen-news message.
+
+---
+
+### User Story 2 - Users who are not subscribed receive nothing (Priority: P1)
+
+Users who have not opted in, or who opted out, and connections whose deviceid cannot be tied to an authenticated user through active-session membership must not receive screen news.
+
+**Why this priority**: The request depends on this rule ("send only if subscribed"). Today's broadcast-to-all behavior breaks it.
+
+**Independent Test**: Connect four clients: active member subscribed, active member not subscribed, deviceid with no matching active entry, and no/empty deviceid. Trigger one screen change. Only the subscribed member's client should receive the message.
+
+**Acceptance Scenarios**:
+
+1. **Given** an authenticated user with no settings row, or with a shared row whose `newsScreening='no'` (even if other categories are enabled), **When** each of `created`, `updated`, and `deleted` occurs, **Then** none of their connections receives a screen-news message.
+2. **Given** a connection whose deviceid has **no matching entry** in the active-session list (unknown, logged out, expired or removed), **When** a screen change occurs, **Then** that connection receives no screen-news message.
+3. **Given** user A is subscribed and user B is not, **When** a connection presents B's active deviceid (even if it also supplies A's username), **Then** it receives nothing. Eligibility follows the user resolved from membership, never a client-supplied name.
+4. **Given** a connection that does not provide a client ID, or provides one that is empty or malformed, **When** a screen change occurs, **Then** that connection receives no screen-news message.
+5. **Given** an otherwise eligible connection whose subscription lookup fails, **When** each of `created`, `updated`, and `deleted` is processed, **Then** no screen-news message is delivered to that connection, and the lookup error is recorded as an error, not as a fabricated `no` or missing row.
+6. **Given** a settings row with NULL, unknown, noncanonical text (including uppercase or whitespace variants), or duplicate rows for the user, **When** preference loading or any screen-news gate runs, **Then** no opt-in is inferred, delivery fails closed, and a validation error is logged without exposing stored values or personal data. The menu shows an error/retry state, not a successful off state.
+7. **Given** a connection presents a deviceid that is currently active for subscribed user A, **When** an event is delivered, **Then** under the accepted trust model it is treated as A and may receive A's screen news. This is the documented residual risk, not a spoof-protection test; it never grants preference access.
+8. **Given** no active match, an entry with empty user/device metadata, entries for the same deviceid naming conflicting users, a stale mapping, or missing/non-unique `logins.id` resolution, **When** eligibility is checked, **Then** no arbitrary match is selected, no delivery occurs, and invalid/conflicting cases are logged explicitly.
+9. **Given** an unavailable, timed-out, unauthorized, malformed, or incomplete session API response, **When** connecting, reconnecting or delivering, **Then** delivery fails closed with an explicit error category; stale cached identity and a successful empty/off result must not mask the error.
+10. **Given** a client-supplied username, a forwarded browser/admin cookie, or a cached earlier result without a fresh matching membership entry, **When** connecting or delivering, **Then** screen-news eligibility is not granted, and no admin session list is returned to iOS in any case.
+
+---
+
+### User Story 3 - Subscription changes take effect without reinstalling or re-logging (Priority: P2)
+
+A user can turn screen news on or off. Changes apply to the next screen event, and revocation applies to connections that are already open.
+
+**Why this priority**: Revocation must be honored. Otherwise, opting out has no effect.
+
+**Independent Test**: With a client connected, unsubscribe the user and trigger a screen change, then confirm nothing arrives. Resubscribe, trigger another change, and confirm a message arrives.
+
+**Concrete acceptance scenario**: a subscribed user with an open WebSocket connection opts out (`newsScreening='no'`), the same connection remains open and the connection registry entry remains present, no subsequent `created`/`updated`/`deleted` screening messages are delivered to any of that user's devices, and existing non-news traffic and other independently subscribed categories continue as otherwise eligible. When the user opts back in (`newsScreening='yes'`), the same open socket resumes delivery of the next screening event without reconnecting.
+
+**Acceptance Scenarios**:
+
+1. **Given** a subscribed user with an open connection, **When** the subscription is revoked and then a screen change occurs, **Then** `newsScreening='no'` is persisted, the existing socket remains open, the socket/connection registry entry is not removed, and no message is delivered to any of that user's connections.
+2. **Given** an unsubscribed user with an open connection, **When** they subscribe and a screen change occurs afterward, **Then** the value is updated to `newsScreening='yes'`, the same open socket resumes delivery of the next screening event without reconnecting, and other independently subscribed categories or non-news traffic remain unaffected.
+3. **Given** a subscribed user, **When** the user logs out or the session expires or is removed from the active-session list, **Then** that connection stops receiving screen news under the normal disconnect/session-lifecycle rules; an opt-out itself does not force disconnect/reconnect or registry removal, and invalid auth or failed transport continue to follow normal socket lifecycle handling.
+
+---
+
+### User Story 4 - Disconnect, reconnect, and multiple clients (Priority: P2)
+
+One user may be connected from several clients at once, for example two iOS devices. Clients also reconnect: iOS `WebSocketManager` reconnects automatically after 3 seconds.
+
+**Independent Test**: Connect the same subscribed user from client IDs `C1` and `C2`, trigger a change, and verify each client gets exactly one message. Disconnect `C1`, trigger again, and verify only `C2` receives it.
+
+**Acceptance Scenarios**:
+
+1. **Given** a subscribed user connected as `C1` and `C2`, **When** a screen change occurs, **Then** each connection receives exactly one message.
+2. **Given** `C1` has disconnected, **When** a screen change occurs, **Then** only `C2` receives it, and the server does not keep targeting `C1`.
+3. **Given** subscribed `C1` disconnects and reconnects with the same client ID while it is still a fresh active member, **When** the menu reloads and a later screen change occurs, **Then** `newsScreening` remains `yes`, the menu shows on, and `C1` receives the event once without resubscribing. The stale and new connections must not both receive it.
+4. **Given** a screen change occurs while a client is disconnected, **Then** this feature does not need to deliver it on reconnect. See Assumptions for missed-event handling.
+5. **Given** a subscribed user, **When** they log out or their session expires and then sign in again to the same account, **Then** `newsScreening` remains `yes` and the menu shows on; delivery resumes only on connections whose deviceid is a fresh member for the new session.
+6. **Given** user A's device signs in as user B using the same deviceid, **When** reconnecting or processing a later event, **Then** A's mapping is discarded; a fresh lookup maps the deviceid to B's membership entry and evaluates B's preference. A's yes must never authorize B.
+7. **Given** lookup succeeded at connect but the session expires, is replaced, or is removed before an event, **When** delivery is attempted, **Then** the fresh membership lookup rejects the old mapping. Reconnect repeats the lookup; disconnect removes the connection registration without changing preferences.
+
+---
+
+### User Story 5 - Manage screen-news subscription from the iOS menu screen (Priority: P1)
+
+A signed-in iOS user opens the menu screen (`MenuVC`), sees whether screen news is on or off, and turns it on or off. The choice is saved on the server and controls delivery.
+
+**Why this priority**: The user asked for this ("we need to handle user subscribe from the ios menu screen"). Without it, users have no way to opt in, so nobody would receive screen news.
+
+**Independent Test**: Sign in on iOS, open the menu, and check that the control matches the server state. Turn it on, trigger a screen change, and confirm delivery. Turn it off, trigger another change, and confirm nothing arrives. Repeat the save with the backend unavailable and confirm the error path.
+
+**Acceptance Scenarios**:
+
+1. **Given** a signed-in user whose shared settings row has exact `newsScreening='yes'`, **When** the menu screen opens, **Then** the read returns enabled = true and the control shows **on** once loading finishes. Until then, it cannot be changed and does not show an assumed value.
+2. **Given** a signed-in user with no settings row or exact `newsScreening='no'`, **When** the menu screen opens, **Then** a successful read returns enabled = false and the control shows **off**. Row presence and unrelated category values do not enable screen news.
+3. **Given** the initial preference load fails (including a storage lookup error, network error, or timeout), **When** the menu screen is shown, **Then** the control cannot be changed, an error or retry state is visible, and no on/off value is presented as the server state; a failed lookup is not returned as enabled = false.
+4. **Given** a signed-in user with the control off, **When** they turn it on and the server confirms the save, **Then** the control shows on, and reopening the menu (or reinstalling the app and signing in) shows on, read back from the server.
+5. **Given** a signed-in user with the control on, **When** they turn it off and the server confirms the save, **Then** the control shows off, and the server state read on the next load is off.
+6. **Given** a save that fails, times out, or is rejected (including an expired session), **When** the user changes the control, **Then** no success is shown, the control returns to the last server-confirmed state, and an error is visible. Known failed transactions leave the preference unchanged; an ambiguous commit/response timeout requires a reload after recovery, not a claim of rollback.
+7. **Given** a save is in progress, **When** the user taps the control again, **Then** no second, conflicting save is sent until the first one finishes.
+8. **Given** a signed-out user (or a menu shown without a valid session), **When** the menu screen is shown, **Then** the control cannot change any preference, no save request is sent, and no local-only value is treated as a subscription.
+9. **Given** a subscribed user with one or more open WebSocket connections (on this or another device), **When** they turn screen news off in the menu and the save is confirmed, **Then** no connection of that user receives screen news for screen changes after the confirmed save, without reconnecting.
+10. **Given** an unsubscribed user with an open WebSocket connection, **When** they turn screen news on in the menu and the save is confirmed, **Then** that connection receives the next screen change, without reconnecting.
+11. **Given** user A, **When** a preference request includes user B's name or reuses user B's client ID, **Then** only user A's own preference is read or changed.
+12. **Given** a signed-in user with no settings row, **When** subscribe is repeated (including concurrent requests) and each success is acknowledged after commit, **Then** exactly one shared row exists for that user with `newsScreening='yes'`; unrelated columns and other users' settings are unchanged.
+13. **Given** a signed-in user with a shared settings row, **When** unsubscribe is repeated, **Then** successful requests retain that row with `newsScreening='no'`; login rows, unrelated preferences, and other users' records remain unchanged. If no row existed, the managed write ensures one row with `no`, idempotently.
+14. **Given** a new managed settings row is initialized without a subscribe request, **When** initialization commits, **Then** `newsScreening='no'` and no other category is enabled by default. No future category columns are implemented by this feature.
+15. **Given** existing duplicate, NULL-owner, or invalid preference data, **When** hardening is planned, **Then** reconciliation is explicitly reviewed and authorized before constraints; there is no automatic opt-in, silent value normalization, or destructive cleanup.
+16. **Given** the approved owner constraints have been deployed after explicit reconciliation, **When** a write supplies a NULL `logins_id` or inserts/updates a second settings row for the same account, **Then** the database rejects it without changing existing rows. No row is automatically created for accounts with no settings row; they remain off.
+
+### Edge Cases
+
+- A malformed or unknown event arrives from the event source: no client receives it, and the problem is recorded in the server logs.
+- A send to one connection fails (the socket is dead): other recipients are unaffected, and the dead connection is dropped.
+- A delete targets a screen whose details are no longer available: the message still carries the identifiers in FR-009.
+- Both services consume the same topic today (`mbook` and `mbooks`). A subscribed client must not get duplicate copies of one event because of this (FR-012).
+- The existing unrelated `ios-users-notifications` broadcast on `/mbook-1/ws` is out of scope. It must keep working as it does today unless the plan decides otherwise (see Open Questions).
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: On connect and every reconnect, the client MUST provide its existing deviceid (`deviceId` in repository code) as the WebSocket client ID, reusing `currentDeviceId()`, not generating a new identifier. Transport is a planning choice. The server MUST associate it with this connection and resolve identity only through FR-002, not retain an identity across session replacement. No separate WebSocket session credential is required.
+- **FR-002**: The server MUST use a server-side lookup through simple-web-api's existing active-session admin API (verified boundary above), which holds authenticated users (user-confirmed 2026-10-04). If the supplied deviceid matches entries resolving to exactly one authenticated `user`, that user is the connection's identity and is mapped to `logins.id`; this fresh, valid membership is sufficient even without an independent session credential on the socket. Unknown deviceid/no matching entry MUST yield no delivery. Lookup errors, invalid records (blank user/deviceId), conflicting users for one deviceid, or missing/non-unique account resolution MUST yield no delivery with explicit logging. Client-supplied usernames, cookies alone, or stale results MUST NOT grant eligibility. Membership identifies the user under the accepted trust model, not cryptographic device ownership (see trust model above). Internal service authorization of the admin list is a separate implementation prerequisite.
+- **FR-003**: A connection that has no resolvable authenticated user MUST NOT receive screen-news messages. Whether such connections are refused or kept open for other traffic is left to planning.
+- **FR-004**: The system MUST deliver screen news to all eligible open devices across **all users** with exact `newsScreening='yes'` at delivery time, not just the admin/actor's devices. Only connections whose deviceid resolves through fresh active-session membership under FR-002/FR-008 are eligible.
+- **FR-005**: Screen-news messages MUST be produced for successful screen create, update, and delete operations. Failed operations MUST NOT produce messages.
+- **FR-006**: Subscription revocation and logout/session invalidation MUST stop delivery to that user's already-open connections for subsequent screen-news events. A successful unsubscribe writes `newsScreening='no'` and MUST NOT close, disconnect, reconnect, or remove an otherwise valid socket/connection registry entry for the device; the socket stays open and only screening-news delivery is suppressed for the user's current preference. Other independently subscribed categories and existing non-news traffic remain eligible as otherwise permitted.
+- **FR-007**: A new subscription MUST take effect for subsequent screen-news events on already-open connections without requiring a reconnect. A successful re-subscribe writes `newsScreening='yes'` and resumes screening events on the same open socket when the next screen-created/updated/deleted event occurs; normal disconnect/logout/session lifecycle/error handling still apply outside the preference toggle.
+- **FR-008**: Disconnected connections MUST be removed from delivery. Every reconnect MUST repeat the active-session membership lookup with the existing deviceid. A reconnect with the same deviceid for the same user MUST NOT duplicate delivery. Logout, expiry, removal, replacement or same-device user switch MUST discard stale identity; re-check fresh membership mapping before each event's delivery. Planning must define lookup freshness, invalidation and replica coverage without permitting stale mappings to authorize delivery. A preference-level ineligibility event is not the same as a dead socket removal; it suppresses screening news without removing otherwise valid connection metadata.
+- **FR-009**: Each screen-news message MUST contain at least: event type (`created` | `updated` | `deleted`), the screening-date identifier, and the screen identifier. `created` and `updated` messages MUST also include movie, venue, and date where available. The message MUST NOT contain other users' data, client IDs, or session tokens.
+- **FR-010**: The existing screen-add message fields consumed today (`movie`, `date`, `venue`, `screeningId`, `screeningDatesId`) MUST be either preserved or migrated with a coordinated client change. Planning must document which option is chosen.
+- **FR-011**: Existing persisted-news behavior (`events` storage and the `/news/{user}` lookup in `mbook-quarkus`) MUST NOT regress.
+- **FR-012**: No WebSocket endpoint in the project may deliver screen news to a connection that is not eligible under FR-004. This includes the current unfiltered broadcast on `/mbooks-1/ws`. Any non-news traffic on that endpoint, such as documented seat updates, MUST be unaffected.
+- **FR-013**: Delivery decisions (delivered or skipped, with the reason category) MUST be observable through existing logging. Logs MUST NOT include tokens or full personal data.
+- **FR-014**: Screen-news subscription is a single user-level opt-in covering `created`, `updated`, and `deleted` across all devices, without per-event-type, per-venue, or per-movie filters. Storage is **decided**: existing shared `login_.news_settings`, currently `newsScreening`, extensible with future category columns. Exact lowercase text `yes` means subscribed and `no` means unsubscribed; row existence MUST NOT grant eligibility. Subscribe MUST ensure one settings row for the session-resolved user and set only `newsScreening='yes'`. Unsubscribe MUST ensure/set `newsScreening='no'`, retaining the shared row and every unrelated column. Both operations MUST be idempotent, including concurrent requests, without duplicates or whole-row replacement. Missing row defaults off; new managed rows MUST use `no` unless explicitly subscribing, and other category defaults MUST NOT enable anything. Existing NULL/unknown/noncanonical values MUST NOT imply opt-in and MUST produce explicit validation/logging/error handling, not silent successful reads or automatic conversion. Duplicate rows are integrity errors pending reviewed reconciliation. Storage lookup failures MUST be errors: fail closed for delivery, return no fabricated `no` state/menu success. Preserve login rows, unrelated preferences, and other users' records. **USER-APPROVED REQUIRED target schema**: signed `logins_id INT NOT NULL` + `UNIQUE (logins_id)`, with existing FK and id PK intact. These enforce at most one row per account and an owner for every settings row, not automatic row creation for all users; no blanket backfill. The dump remains nullable/non-unique, not migrated. NULL/duplicate owners require explicit authorized reconciliation, not silent deletion or arbitrary merging; deployment still requires planning. Preference-column `newsScreening NOT NULL DEFAULT 'no'` and CHECK validation remain pending approval; exact application validation is required by the decided text semantics. Keep literal text, not ENUM/boolean. *(Resolved: user-directed shared-row yes/no correction and owner-constraint confirmation, 2026-10-03.)*
+- **FR-015**: Subscription management is **in scope** and lives on the **iOS menu screen** (`MenuVC`). Signed-in users MUST be able to see their current screen-news subscription state and turn it on or off there. A web (AngularJS) control is out of scope. *(Resolved: user-directed, 2026-10-03.)*
+- **FR-016**: A **new authenticated `mbook-quarkus` endpoint to persist the subscription is REQUIRED**, not implemented/deployed. Authenticated reads for MenuVC remain REQUIRED too; planning chooses exact path, method, request/response payload and whether reads/writes share a resource. Both act only on the **server-resolved user's** own shared `news_settings.newsScreening`, applying FR-014 and commit semantics in FR-018. Client IDs (including a WebSocket deviceid resolved through membership), client-supplied user names or IDs, and menu state MUST NOT decide or authorize whose preference is read/written; this endpoint keeps its own authentication. Existing public/path-user resources are not proof of suitable authorization for this new endpoint.
+- **FR-017**: On opening the menu screen, the app MUST load the preference from the server and show it. While loading, or after a failed load, the control MUST NOT be changeable and MUST NOT present an assumed value as the server state.
+- **FR-018**: The server MUST acknowledge a subscription write as successful only after its transaction commits; failed writes MUST NOT be acknowledged as success. A change MUST be shown as successful only after the server confirms persistence. On failure, timeout, rejection, or session expiry, the app MUST show an error and return the control to the last server-confirmed state. Known failed transactions MUST roll back; ambiguous commit/response failures MUST be reconciled by reloading server state after recovery, not presented as confirmed success or confirmed rollback. Only one save may be in progress at a time from the control.
+- **FR-019**: Without a valid session, the menu control MUST NOT send preference changes or store a local-only value that acts as a subscription. Delivery always follows the server-side preference (FR-004).
+- **FR-020**: The server-side preference MUST persist across app restarts, reinstalls, reconnects, and devices for the same user. Account/session lifecycle changes (including logout or session expiry) and disconnection MUST NOT automatically delete the subscription preference; session invalidation stops delivery, not opt-in persistence. The value shown in the menu is always read back from the server.
+- **FR-021**: A confirmed preference change MUST apply to screen events that happen after the confirmation on **all** of that user's already-open connections, without reconnecting (extends FR-006 and FR-007). This feature does not deliver events that happened before an opt-in. Unsubscribe suppresses subsequent screening-created/updated/deleted news on all of the user's devices because the preference is user-level, while other independently subscribed categories and existing non-news traffic continue according to their normal eligibility. Socket lifetime still follows normal disconnect/logout/session lifecycle/error handling; no invalid-auth or failed-transport socket must be promised to remain connected simply because the user is unsubscribed.
+
+### Key Entities
+
+- **Connection**: one open WebSocket session with supplied deviceid, membership-resolved account (or none), and connect/disconnect times. Registry metadata is transient.
+- **Client ID**: existing deviceid reused from login. Fresh active-list membership identifies its authenticated user under the accepted trust model; it is not an account ID, cryptographic ownership proof, or authority for preference access. Conflicting users are rejected, not resolved by choosing one.
+- **Active-session metadata**: existing dalogin ServletContext list of authenticated users obtained through simple-web-api; the authoritative WebSocket identity source. Reuse it; no new persistent client/device-to-user subscription table is required.
+- **Shared news settings**: at most one `login_.news_settings` row per account, mapped by `NewsSettings`, with an owner for every row: `logins_id NOT NULL` + `UNIQUE (logins_id)` are USER-APPROVED REQUIRED target constraints, not deployed. `newsScreening` stores exact `yes`/`no` (FR-014); future columns can hold other category preferences. Missing row defaults off; no blanket backfill. Unsubscribe retains this row. Preference-column NOT NULL/default/CHECK remain pending approval.
+- **Screen-news event**: an immutable record of one successful screen create, update, or delete, with the FR-009 fields.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: In acceptance tests, 100% of screen-news messages reach only eligible connections. Zero messages reach unsubscribed users or connections whose deviceid has no fresh, unique active-session match. (A party presenting another user's active deviceid is the accepted residual risk, not measured as spoof protection.)
+- **SC-002**: Each eligible open connection receives exactly one message per successful screen operation, with no duplicates, across the create, update, and delete scenarios.
+- **SC-003**: After revocation or logout, zero subsequent screen-news messages reach that user's connections.
+- **SC-004**: Under normal local/cluster conditions, a subscribed, connected client sees the notification within 5 seconds of the admin operation succeeding. This is an observed target, not a delivery guarantee.
+- **SC-005**: Existing iOS screen-add handling and the `/news/{user}` lookup pass their regression checks unchanged, or with the coordinated change documented under FR-010.
+- **SC-006**: In acceptance tests of User Story 5, the menu control matches the server state after every load and confirmed save, and zero failed saves are shown as successful.
+- **SC-007**: After a confirmed opt-out from the menu, zero screen-news messages reach any of that user's open connections for later screen changes. After a confirmed opt-in, the next screen change reaches each of the user's eligible open connections exactly once.
+
+## Assumptions
+
+- "Screen" means a scheduled screening. "Add/update/delete" maps to the existing admin screen operations, based on the evidence above.
+- The target endpoint is `mbook-quarkus` `/mbook-1/ws`, because that service accesses account data and `NewsSettings`, and iOS already connects to it. The active ServletContext session source belongs to **dalogin**, exposed through the **simple-service-webapp-quarkus** facade. `/mbooks-1/ws` is affected only through FR-012.
+- Delivery is live and best-effort to currently connected eligible clients. This feature adds no new guarantees for ordering, persistence, retry, or offline replay. Missed events remain covered, if at all, by the existing persisted-news path.
+- *(User-directed, 2026-10-04)* WebSocket identity is fresh unique membership in the authoritative simple-web-api active-session list under FR-002; no separate WebSocket caller-session binding. Accepted residual risk: presenting another user's active deviceid maps to that user. Exact internal service authorization, freshness and replica coverage remain planning; forwarding a cookie alone does not establish service authorization.
+- Admin authorization for screen operations is unchanged and out of scope.
+- Client-ID source is **resolved (2026-10-04)**: reuse existing deviceid; no new generation/persistence scheme. Only transport (handshake parameter, header, or first message) remains planning, with no news before membership resolution.
+- *(Accepted by user approval, 2026-10-03)* Subscription granularity is one user-level opt-in covering created, updated, and deleted (FR-014). No per-movie or per-venue filters were requested.
+- *(Decided by user correction and confirmation, 2026-10-03)* Shared `login_.news_settings.newsScreening` stores literal lowercase `yes`/`no` (FR-014); owner `logins_id NOT NULL` + `UNIQUE (logins_id)` are USER-APPROVED REQUIRED target constraints. Neither is an open design choice or a deployed fact. Preference-column NOT NULL/default/CHECK remain pending approval. Deployment, live metadata verification, explicit preflight/reconciliation, and account-deletion policy remain planning work, as do subscription endpoint path/payload. Future categories are not built here.
+- How the menu control is presented (for example, a switch inside `MenuVC`) and its accessibility labels are planning and design details. The behavior in FR-015 to FR-019 is binding.
+
+## Cross-client impact
+
+- **iOS (`SwiftCinemas`)**: `WebSocketManager` connects without a client ID and only prints received text. It must send existing deviceid on connect and on its automatic 3-second reconnect, handle `created`, `updated`, and `deleted`, and tolerate no news when ineligible. It must not call or receive the admin session list. `MenuVC` needs the authenticated mbook preference read and required new persistence endpoint (FR-015 to FR-019). The admin flows (`AdminVC`, `AdminUpdateVC`) trigger events.
+- **AngularJS Film-Review SPA**: no WebSocket client was found. Out of scope: FR-015 places subscription management on the iOS menu only, and web live news was not requested.
+- **Ops**: the Apache WebSocket `ProxyPass` ordering for `/mbook-1/ws` and `/mbooks-1/ws` must be preserved. The proxy must forward the deviceid transport chosen in planning; no socket session credential is required by FR-002.
+
+## Open Questions
+
+1. ~~FR-014: subscription granularity~~ **Resolved (2026-10-03)**: one opt-in covering all three event types, default off.
+2. ~~FR-015: Is subscription management in scope?~~ **Resolved (2026-10-03)**: yes, on the iOS menu screen only. Web is out of scope.
+3. Should `/mbook-1/ws` keep broadcasting the unrelated `ios-users-notifications` topic to all connections? Is the `/mbooks-1/ws` screen-news broadcast removed, or filtered the same way?
+   The unrelated feed remains preserved under FR-011; any change needs separate approval. Planning only chooses suppression versus equivalent filtering for mbooks screen news, preserving seat traffic.
+4. Required before delivery implementation: authorize internal access to simple-web-api and downstream activeSessions (separate from WebSocket identity); define membership freshness, invalidation and complete multi-replica lookup. Caller-session binding is not required (user-directed 2026-10-04).
+5. Required new mbook persistence endpoint and menu reads: exact route/method/payload/CID remain to plan, not deployed. No new concrete endpoint signature is selected by this clarification; the contract index remains unchanged.

@@ -21,6 +21,7 @@ Rules:
 | CID-MBOOKS-SEATS | mbooks-quarkus | GET | /mbooks-1/rest/book/seats/{screeningDateId} | @backend-dev | @frontend-dev, @ios-dev | P1 | active |
 | CID-MBOOKS-TRENDING | mbooks-quarkus | GET | /mbooks-1/rest/book/trending-movies | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
 | CID-MBOOKS-TIMELINE | mbooks-quarkus | GET | /mbooks-1/rest/book/timeline-feed | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
+| CID-MBOOK-WS-SCREEN-NEWS | mbook-quarkus | WebSocket | /mbook-1/ws | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
 
 ## Required References in Spec/Tasks
 

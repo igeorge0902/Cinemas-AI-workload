@@ -1,10 +1,10 @@
 Tasks: dalogin connection pool implementation analysis (Agroal vs HikariCP)
 
 Phase 1 — Current state (`@backend-dev`)
-- [ ] Confirm Agroal is supplied through `quarkus-jdbc-mysql` in `dalogin-quarkus/pom.xml`.
-- [ ] Record the current pool configuration values.
-- [ ] Confirm no HikariCP dependency exists in the module today.
-- [ ] Record pool settings used by `mbook-quarkus` and `mbooks-quarkus` for comparison.
+- [x] Confirm Agroal is supplied through `quarkus-jdbc-mysql` in `dalogin-quarkus/pom.xml`.
+- [x] Record the current pool configuration values.
+- [x] Confirm no HikariCP dependency exists in the module today.
+- [x] Record pool settings used by `mbook-quarkus` and `mbooks-quarkus` for comparison.
 - [ ] Check the MySQL server-side maximum connection limit.
 
 Phase 2 — Integration comparison (`@backend-dev`)

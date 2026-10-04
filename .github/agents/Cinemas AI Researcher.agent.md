@@ -1,0 +1,1 @@
+../../.ai/agents/definitions/Cinemas AI Researcher.agent.md

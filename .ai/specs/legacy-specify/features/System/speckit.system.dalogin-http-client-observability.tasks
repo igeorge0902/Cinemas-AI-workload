@@ -26,7 +26,7 @@ Phase 4 — ClientResponseFilter (`@backend-dev`)
 - [x] Capture: target URI, HTTP method, response status.
 - [x] Emit DEBUG on 2xx/3xx, WARN on 4xx, ERROR on 5xx.
 - [x] Register `ClientCallResponseFilter` in `ServiceClient` constructor alongside `RequestFilter`.
-- [ ] Verify filter fires for all 8 outbound call paths.
+- [x] Verify filter fires for all 8 outbound call paths.
 - [ ] Ensure exception path logging exists for client/network failures before HTTP response is available.
 
 Phase 5 — ClientRequestFilter START events (`@backend-dev`)
@@ -63,12 +63,12 @@ Phase 9 — Log routing (`@backend-dev` + `@devops`)
 - [ ] Verify rotation/retention policy for `http-client.log` is documented.
 
 Phase 10 — Verification (`@testing-engineer` + `@performance-engineer`)
-- [ ] Verify all 8 ServiceClient call paths produce START + END structured log events.
+- [x] Verify all 8 ServiceClient call paths produce START + END structured log events.
 - [ ] Verify 5xx and exception paths produce ERROR events.
-- [ ] Verify RequestFilter DEBUG output for header injection.
-- [ ] Verify servlet listener DEBUG lifecycle logs and structure.
-- [ ] Verify servlet `doGet`/`doPost` entry/completion logs include servlet name and required HTTP context fields.
-- [ ] Verify ServiceClient request logs include URI/path/params and response logs include status.
+- [x] Verify RequestFilter DEBUG output for header injection.
+- [x] Verify servlet listener DEBUG lifecycle logs and structure.
+- [x] Verify servlet `doGet`/`doPost` entry/completion logs include servlet name and required HTTP context fields.
+- [x] Verify ServiceClient request logs include URI/path/params and response logs include status.
 - [ ] Verify masking rules in logs match SEC-001/002/003.
 - [ ] Capture overhead baseline (latency delta with/without logging).
 - [ ] Produce evidence bundle: sample logs per call path + negative-path samples + routing proof.

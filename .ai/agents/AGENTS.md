@@ -409,6 +409,8 @@ Create new `.run.xml` files in `.run/`. For Maven configs, set the settings file
   - `simple-service-webapp-quarkus`: `ImageResourceTest.java` — `@QuarkusTest` verifying the health endpoint returns `"Got it"` and missing images return 404.
   - Appium: `TestNavigations.java` — iOS UI test (Movies → Category → Venue → Seats → Checkout). Run via **appium - mvn test** or **appium - java direct (testng)** run configs. See `appium/README.md` for full setup.
   - Python: `k8infra/test-login.py` and `k8infra/test-login-admin.py` — end-to-end API smoke tests over HTTPS. Run via **k8s - test-login.py** / **k8s - test-login-admin.py** run configs.
+  - k6: `k6/api2.js` — login → admin → logout loop; reads the git-ignored `k6/api2.properties`. Run one iteration with `k6 run --vus 1 --iterations 1 --duration 10s k6/api2.js`.
+- **Execute first, triage after:** when asked to run a validation, start only the services you were told to start, using the existing artifacts and config, and run the test immediately. Do not pre-audit source, stale JARs, cookie flags, or unchanged request/response contracts. Do not block on concerns the user has already resolved. Investigate only what an actual failure points to, then report the observed results.
 
 ## Git repositories
 Each service is a separate Git repository under the `igeorge0902` organisation:
@@ -477,12 +479,43 @@ All of the following files are designed to guide AI coding agents. They are vers
 |------|---------|----------|
 | **`.ai/agents/AGENTS.md`** | Comprehensive system architecture (this file) — entity relationships, payment workflows, refactoring roadmap, L2 caching deep-dive | Architecture decisions, entity-level changes |
 | **`.ai/agents/agents-role.yaml`** | Agent role definitions (backend-dev, devops, ios-dev) for specialised task routing | AI agent orchestration |
+| **`.ai/agents/definitions/Cinemas Router.agent.md`** | Umbrella entry point that classifies cross-domain requests and delegates the smallest owning specialist set | GitHub Copilot custom agents |
+| **`.ai/agents/ROUTING-TELEMETRY.md`** | Retained routing telemetry protocol; currently disabled | `Cinemas Router` |
+| **`.ai/agents/ROUTING-DIAGRAMS.md`** | Derived overview of dependency routing and the telemetry lifecycle | Maintainers |
 | **`.ai/retrieval/instructions.md`** | Workflow guide with critical file locations, common mistakes, hardcoded contracts, run configurations | Day-to-day development |
 | **`.ai/skills/skills-github.md`** | 16 copy-paste-ready code patterns: REST endpoints, Hibernate entities, HMAC auth, booking/payment flow, WebSocket, Quarkus config, Film-Review SPA routes, iOS async/await services, Appium page objects, Python API tests, Prometheus metrics, MySQL procedures, deployment steps, code review checklist | Any developer needing a working code example fast |
 | **`.ai/retrieval/references/QUICKSTART.md`** | 5-minute local setup, deploy steps, troubleshooting commands | New developers, quick onboarding |
 | **`docs/system-documentation.html`** | Inline SVG diagrams (architecture, auth flow, booking flow, entity relationships), Hibernate caching deep-dive | Visual learners, architecture review |
 | **`.ai/constitution/constitution.md`** | Speckit AI context — project identity, tech stack, critical decisions, hardcoded contracts, debugging patterns (primary reference for AI agents) | AI agents (loaded first) |
 | **`.ai/specs/legacy-specify/features/`** | Feature tracking & migration specs (e.g., `SwiftUI_migration/`, `System/`, `WebUI/`) | Feature planning, migration tracking |
+
+### Umbrella routing
+
+Select **Cinemas Router** for cross-domain work or when the owning role is unclear. Canonical
+custom-agent definitions live under `.ai/agents/definitions/`; `.github/agents/` contains discovery
+symlinks only. A directly selected specialist retains its task, and explicit `/speckit.*` commands
+retain the Speckit lifecycle.
+
+The router applies `agents-role.yaml` `umbrellaRouting.selectionPolicy` and delegates only to named
+specialists. Routing telemetry is disabled: no new or updated manifests, telemetry usage queries,
+or routing token/AI-credit handoff tables. Existing records under `.ai/generated/routing-telemetry/`
+and the protocol are preserved. Re-enablement requires an explicit user request.
+Application OpenTelemetry remains separate and unchanged.
+
+`modelTiers` assigns each stage a cost tier. Fast-tier work goes to **Cinemas Scout**
+(`gpt-6-luna`, read-only lookups) or **Cinemas Quick Engineer** (`mai-code-1.1-flash`, edits
+limited to two files, or three named linked documents under the schema-documentation exception).
+Schema design, migrations, and repairs go to **Cinemas Database Engineer**. Fully specified
+documentation edits that record an approved schema decision go directly to the MAI-backed
+**Cinemas Quick Engineer**, without an intermediary or nested delegation. This exception
+permits prose, approval labels, and diagram annotations only, not SQL changes or new design.
+All other protected areas and incidents still go to a domain specialist on the runtime-default
+model. A fast agent replies `ESCALATE` when work exceeds its scope.
+
+For eligible code writing, use **specialist design -> router dispatch to Quick Engineer ->
+owning specialist review**. Specialists return exact file/symbol/pattern/behaviour/error-case
+handoffs instead of nesting agents. Protected implementation stays with its specialist;
+design preparation does not override exclusions. Respect task-specific deferred validation.
 
 ## Where to start editing
 - Auth/session bugs: `dalogin-quarkus/src/main/java/com/dalogin/filters/` and `.../servlets/`.

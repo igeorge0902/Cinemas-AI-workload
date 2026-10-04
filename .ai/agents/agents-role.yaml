@@ -518,3 +518,184 @@ agents:
       - task: add unit tests for low-level behavior
         trigger: intent_match
         priority: medium
+
+  - name: fast-lane
+    # Low-cost tier; see modelTiers for the narrow schema-documentation exception.
+    scope:
+      - lookup
+      - mechanical-edit
+      - summarization
+    vocabulary:
+      - locate
+      - rename
+      - bump
+      - summarize
+      - typo
+      - config-value
+    direct_tasks:
+      - task: locate code, config, or docs and report evidence
+        trigger: intent_match
+        priority: low
+      - task: apply a fully specified edit in at most two files
+        trigger: intent_match
+        priority: low
+      - task: synchronize approved schema decisions in up to three explicitly named documentation files without design or SQL changes
+        trigger: intent_match
+        priority: low
+
+umbrellaRouting:
+  # Enacted only when the user selects the umbrella agent. A directly selected
+  # specialist keeps the task, and explicit /speckit.* commands keep their lifecycle.
+  umbrellaAgent: Cinemas Router
+  defaultAgent: none
+  selectionPolicy:
+    - Route to the smallest set of specialists that fully owns the requested outcome.
+    - Explicit /speckit.* commands bypass umbrella routing and follow speckit_lifecycle.
+    - For incidents, diagnose with the owning domain specialist before requesting edits from another domain.
+    - Database contract or schema work precedes dependent backend and client changes.
+    - Backend API contract work precedes dependent web or iOS integration changes.
+    - Deployment and observability changes follow service validation unless the deployment itself is the incident.
+    - Testing Engineer verifies changed behavior after implementation; it does not replace the owning implementation specialist.
+    - Security review is read-only first; route remediation to the owning implementation specialist after findings are established.
+    - Independent specialists may run in parallel; dependent stages run in order.
+    - Assign each stage a tier from modelTiers; use fast only within its criteria and protected-area rules, including the narrow schema-documentation exception.
+    - Route schema design, migrations, and database repairs to Cinemas Database Engineer; route fully specified documentation edits directly to Cinemas Quick Engineer when the documentation exception applies, without a Database Engineer intermediary or nested delegation.
+    - For eligible code writing, use specialist design then router dispatch to Cinemas Quick Engineer then owning specialist review; specialists return bounded handoffs rather than nesting agents.
+    - A code handoff must name exact files, symbols, existing patterns, behaviour, error cases, acceptance criteria and validation; fast-tier protected-area exclusions still apply and missing design decisions remain with the specialist.
+    - A fast-tier ESCALATE reply reroutes to the owning specialist as a new stage, reusing the evidence gathered.
+    - If no route is trustworthy, use AGENTS.md and then ask the user rather than guessing.
+  specialists:
+    - name: Cinemas Backend Engineer
+      roles: [backend-dev]
+      triggers: [backend-api, backend-auth, downstream-client, backend-test]
+    - name: Cinemas DevOps Engineer
+      roles: [devops]
+      triggers: [kubernetes, ci-cd, runtime-observability, deployment]
+    - name: Cinemas iOS Engineer
+      roles: [ios-dev]
+      triggers: [ios-ui, ios-networking, ios-session, ios-test]
+    - name: Cinemas Database Engineer
+      roles: [database-dev]
+      triggers: [database-schema, database-query, database-integrity, database-repair]
+    - name: Cinemas Web Engineer
+      roles: [frontend-dev]
+      triggers: [web-ui, web-routing, web-integration, web-accessibility]
+    - name: Cinemas Testing Engineer
+      roles: [testing-engineer]
+      triggers: [test-automation, regression-test, flaky-test, coverage-analysis]
+    - name: Cinemas Security Reviewer
+      roles: [security-specialist]
+      triggers: [security-review, auth-security, dependency-security, secret-handling]
+    - name: Cinemas Performance Engineer
+      roles: [performance-engineer]
+      triggers: [performance-test, profiling, performance-tuning, performance-budget]
+    - name: Cinemas AI Researcher
+      roles: [ai-researcher]
+      triggers: [ai-experiment, ai-evaluation, ai-dataset, ai-drift]
+    - name: Cinemas Business Analyst
+      roles: [business-analyst]
+      triggers: [requirements, acceptance-criteria, process-analysis, backlog-priority]
+    - name: Cinemas C++ Engineer
+      roles: [cpp-developer]
+      triggers: [cpp-feature, cpp-memory-safety, cpp-performance, cpp-test]
+    - name: Cinemas Quick Engineer
+      roles: [fast-lane]
+      tier: fast
+      triggers: [quick-edit]
+    - name: Cinemas Scout
+      roles: [fast-lane]
+      tier: fast
+      triggers: [lookup]
+  routerHandles: [route-classification, final-handoff]
+  telemetry:
+    enabled: false
+    protocol: .ai/agents/ROUTING-TELEMETRY.md
+    output: .ai/generated/routing-telemetry/
+    lifecycle: [route-start, stage-start, stage-end, route-end]
+    attribution:
+      exact: child session or delegation ID linked by runtime telemetry
+      estimated: non-overlapping stage time window
+      unavailable: no trustworthy runtime join
+    privacy: summaries and identifiers only; never prompts, secrets, response bodies, or source content
+
+modelTiers:
+  # Models are pinned in agent frontmatter (`model:`); this section is the routing policy.
+  # Measured local cost, Sep-Oct 2026 (AI credits per 1M input tokens): gpt-6-luna ~2.2,
+  # mai-code-1.1-flash ~4.6, gpt-5.6-luna ~4.6, claude-sonnet-5 ~34, claude-opus-5 ~90.
+  fast:
+    agents:
+      Cinemas Scout: gpt-6-luna
+      Cinemas Quick Engineer: mai-code-1.1-flash
+    fallbackModel: gpt-5.6-luna
+    criteria:
+      - Read-only lookup, evidence gathering, or log/report/doc summary; or
+      - A fully specified edit in at most two files that follows an existing pattern and has a known validation command.
+      - A documentation-only edit in up to three explicitly named linked documents recording an already approved schema decision, with exact wording or semantics supplied and a known validation command.
+    protectedAreas: [auth, hmac, session, cookies, payments, seat-locking, transactions, database-schema, database-repair, kubernetes, cross-client-contract, security, incident]
+    documentationException:
+      area: database-schema
+      agent: Cinemas Quick Engineer
+      requirements:
+        - Record an already approved decision only; no new schema design, investigation, SQL derivation, or contract decisions.
+        - Change documentation prose, approval labels, or diagram annotations only; do not create or alter SQL blocks, schema files, migrations, repair scripts, application code, or database state.
+        - Name all target files and the validation command in the handoff; maximum three linked documentation files.
+        - All other protected-area exclusions remain in force, including incidents.
+      dispatch: Directly from the router; no Database Engineer intermediary or nested delegation.
+  standard:
+    agents: all domain specialists
+    model: runtime-default
+    criteria:
+      - Anything not fast, including diagnosis, design, multi-file or cross-module changes, protected areas, and incidents.
+  escalation: A fast agent replies `ESCALATE` when out of scope; the router reroutes to the owning specialist and never retries the fast tier for the same work.
+
+triggerRouting:
+  version: v1
+  defaultAgent: none
+  phraseToAgent:
+    - {trigger: backend-api, agent: backend-dev, intent: add repair or review a Quarkus REST endpoint or service rule}
+    - {trigger: backend-auth, agent: backend-dev, intent: change backend authentication session filters or HMAC handling}
+    - {trigger: downstream-client, agent: backend-dev, intent: change backend service-to-service calls or propagated headers}
+    - {trigger: backend-test, agent: backend-dev, intent: add a backend unit or integration test with implementation context}
+    - {trigger: kubernetes, agent: devops, intent: change Kubernetes manifests ingress services or runtime configuration}
+    - {trigger: ci-cd, agent: devops, intent: change build test deployment or release automation}
+    - {trigger: runtime-observability, agent: devops, intent: configure or diagnose metrics logs OpenTelemetry Tempo or Grafana}
+    - {trigger: deployment, agent: devops, intent: package deploy expose or troubleshoot a service}
+    - {trigger: ios-ui, agent: ios-dev, intent: build or repair UIKit or SwiftUI screens and navigation}
+    - {trigger: ios-networking, agent: ios-dev, intent: change APIClient Endpoint service wrappers or decoding}
+    - {trigger: ios-session, agent: ios-dev, intent: change iOS authentication session headers or keychain behavior}
+    - {trigger: ios-test, agent: ios-dev, intent: add iOS unit UI or networking tests}
+    - {trigger: database-schema, agent: database-dev, intent: change MySQL schema migrations triggers or stored procedures}
+    - {trigger: database-query, agent: database-dev, intent: create diagnose or optimize SQL queries and indexes}
+    - {trigger: database-integrity, agent: database-dev, intent: validate relational constraints transactions or data consistency}
+    - {trigger: database-repair, agent: database-dev, intent: create a bounded data repair or backfill}
+    - {trigger: web-ui, agent: frontend-dev, intent: build or repair AngularJS templates controllers or styling}
+    - {trigger: web-routing, agent: frontend-dev, intent: change browser routes navigation or SPA behavior}
+    - {trigger: web-integration, agent: frontend-dev, intent: integrate the web UI with backend endpoints and contracts}
+    - {trigger: web-accessibility, agent: frontend-dev, intent: improve frontend accessibility forms or responsive behavior}
+    - {trigger: test-automation, agent: testing-engineer, intent: create or maintain Appium API integration or end-to-end suites}
+    - {trigger: regression-test, agent: testing-engineer, intent: reproduce a defect and add a regression test}
+    - {trigger: flaky-test, agent: testing-engineer, intent: diagnose and stabilize nondeterministic tests}
+    - {trigger: coverage-analysis, agent: testing-engineer, intent: assess test coverage gaps and release risk}
+    - {trigger: security-review, agent: security-specialist, intent: inspect code or configuration for exploitable vulnerabilities}
+    - {trigger: auth-security, agent: security-specialist, intent: review authorization authentication cookies headers or transport}
+    - {trigger: dependency-security, agent: security-specialist, intent: assess dependency vulnerabilities and remediation}
+    - {trigger: secret-handling, agent: security-specialist, intent: review secret storage exposure or rotation}
+    - {trigger: performance-test, agent: performance-engineer, intent: create or run load stress or benchmark scenarios}
+    - {trigger: profiling, agent: performance-engineer, intent: profile CPU memory IO database or request hot spots}
+    - {trigger: performance-tuning, agent: performance-engineer, intent: tune cache query service or concurrency performance}
+    - {trigger: performance-budget, agent: performance-engineer, intent: define measurable latency throughput or resource budgets}
+    - {trigger: ai-experiment, agent: ai-researcher, intent: design an AI or prompt experiment with success metrics}
+    - {trigger: ai-evaluation, agent: ai-researcher, intent: compare model or prompt behavior with an evaluation set}
+    - {trigger: ai-dataset, agent: ai-researcher, intent: prepare or assess a dataset for model work}
+    - {trigger: ai-drift, agent: ai-researcher, intent: analyze AI output quality regressions or drift}
+    - {trigger: requirements, agent: business-analyst, intent: refine a request into scoped user stories and constraints}
+    - {trigger: acceptance-criteria, agent: business-analyst, intent: write measurable acceptance criteria and edge cases}
+    - {trigger: process-analysis, agent: business-analyst, intent: map a business workflow dependencies and risks}
+    - {trigger: backlog-priority, agent: business-analyst, intent: prioritize work by value risk and dependency}
+    - {trigger: cpp-feature, agent: cpp-developer, intent: implement or refactor C++ and OpenCV functionality}
+    - {trigger: cpp-memory-safety, agent: cpp-developer, intent: diagnose ownership lifetime or undefined behavior}
+    - {trigger: cpp-performance, agent: cpp-developer, intent: optimize performance-critical C++ code}
+    - {trigger: cpp-test, agent: cpp-developer, intent: add low-level C++ tests}
+    - {trigger: lookup, agent: fast-lane, intent: locate code config or docs and summarize evidence without edits}
+    - {trigger: quick-edit, agent: fast-lane, intent: apply a fully specified mechanical edit in at most two files}
+    - {trigger: quick-edit, agent: fast-lane, intent: record an approved schema decision in up to three named documentation files under the modelTiers documentation exception}

@@ -10,7 +10,7 @@ runs after that pass has landed.
 Phase 1 — Preconditions (`@backend-dev`)
 - [ ] Confirm the combined pass (`speckit.system.dalogin-persistence-servlet-adaptation.tasks`)
       has landed and its `LoginFlowTest` gate passed.
-- [ ] Confirm `PersistenceOperationException` and the final family beans exist to build on.
+- [x] Confirm `PersistenceOperationException` and the final family beans exist to build on.
 - [x] `OQ-001` resolved: atomic `establishLogin` rolls back the partial device write.
 - [ ] Resolve `OQ-003` (whether `device_states.state` becomes enforced).
 - [ ] Record a baseline: current response codes for login and logout with the database stopped.
@@ -21,10 +21,10 @@ Phase 2 — Remaining failure signal (`@backend-dev`)
 - [ ] Confirm no logout call still returns a discardable `boolean`.
 
 Phase 3 — Absorbed login verification (`@backend-dev`)
-- [ ] Confirm the combined adaptation implemented `FR-001`-`FR-007`.
+- [x] Confirm the combined adaptation implemented `FR-001`-`FR-007`.
 - [ ] Confirm both login and registration-without-voucher publish session attributes after commit.
-- [ ] Confirm persistence failure invalidates the pending session and returns 5xx.
-- [ ] Confirm the 100 ms token retry is absent.
+- [x] Confirm persistence failure invalidates the pending session and returns 5xx.
+- [x] Confirm the 100 ms token retry is absent.
 
 Phase 4 — Logout call sites (`@backend-dev`)
 - [ ] Make `sessionDestroyed` the single caller of the logout procedure (`FR-009`).
@@ -46,7 +46,7 @@ Phase 5 — Schema (`@backend-dev`)
 - [ ] Confirm rotation still occurs on re-login and on logout (`AC-011`, `FR-013`).
 - [ ] Record, for each changed trigger or procedure, the Java behaviour that depends on it
       (`FR-015`).
-- [ ] Confirm no change was made to `RAND()` token generation or the `last_insert_id()` predicate —
+- [x] Confirm no change was made to `RAND()` token generation or the `last_insert_id()` predicate —
       both are out of scope.
 
 Phase 6 — Verification (`@testing-engineer`)
@@ -62,7 +62,7 @@ Phase 7 — Closure (`@backend-dev`)
 - [ ] Confirm every `FR` has a corresponding change or a recorded decision not to act.
 - [ ] Hand `MV-001`-`MV-003` to the owner for manual verification.
 - [ ] Hand `AC-007` (token rejected after logout) to the owner if not automated.
-- [ ] Record `B-012` (`RAND()` tokens) and `B-013` (`last_insert_id()` tautology) as follow-up
+- [x] Record `B-012` (`RAND()` tokens) and `B-013` (`last_insert_id()` tautology) as follow-up
       features.
 - [ ] Update `speckit.system.refactoring-mentions-roadmap.plan` if these findings change its
       priorities.

@@ -2,7 +2,7 @@ Tasks: dalogin SQLAccess family split
 
 Phase 1 — Preconditions (`@backend-dev`)
 - [ ] Confirm CDI method/resource edits are complete in the current unified pass; do not compile yet.
-- [ ] Confirm all data-access methods are injectable instance methods.
+- [x] Confirm all data-access methods are injectable instance methods.
 - [ ] Record baseline behavior for every functional flow group.
 
 Phase 2 — Boundary agreement (`@backend-dev`)
@@ -10,7 +10,7 @@ Phase 2 — Boundary agreement (`@backend-dev`)
 - [x] `OQ-002` settled: device/token and session are one family (table ownership, `FR-017`).
 - [x] `OQ-003` settled: callerless `insertVoucher`/`copyToken2` wrappers are kept, not deleted.
 - [ ] List every method that must expose a connection-accepting form for `wrapUpRegistration`.
-- [ ] Assign `copyToken2` by owned table rather than by method name.
+- [x] Assign `copyToken2` by owned table rather than by method name.
 - [ ] Produce the final method-to-family assignment table.
 - [ ] Record the agreed table in the spec.
 - [ ] Create one persistence subpackage (folder) per family and place each family's bean, records,
@@ -20,67 +20,67 @@ Phase 2 — Boundary agreement (`@backend-dev`)
       names.
 
 Phase 3 — Shared support extraction (`@backend-dev`)
-- [ ] Create the shared support type.
-- [ ] Move `generateUUID`.
-- [ ] Move `logSQLException`.
-- [ ] Move `ignoreSQLException`.
-- [ ] Move `jsonSQLError`.
+- [x] Create the shared support type.
+- [x] Move `generateUUID`.
+- [x] Move `logSQLException`.
+- [x] Move `ignoreSQLException`.
+- [x] Move `jsonSQLError`.
 - [ ] Confirm the shared type performs no connection access.
-- [ ] Update references across the module.
+- [x] Update references across the module.
 
 Phase 4 — Family extraction (`@backend-dev`)
-- [ ] Extract the merged device/session/token family.
-- [ ] Extract the password-reset family.
-- [ ] Extract the voucher family.
-- [ ] Extract the login/registration family.
+- [x] Extract the merged device/session/token family.
+- [x] Extract the password-reset family.
+- [x] Extract the voucher family.
+- [x] Extract the login/registration family.
 - [ ] Do not touch callers here; each is edited once in
       `speckit.system.dalogin-persistence-servlet-adaptation.tasks` Phase 4.
-- [ ] Place `wrapUpRegistration` in the login/registration family.
+- [x] Place `wrapUpRegistration` in the login/registration family.
 - [ ] Give `insert_voucher`, `insert_device_`, `insert_sessionCreated`, and `copy_token2` a
       package-visible connection-accepting form in their owning family.
-- [ ] Add atomic `establishLogin` in the merged device/session family using the
+- [x] Add atomic `establishLogin` in the merged device/session family using the
       connection-accepting device, session, and token methods.
-- [ ] Preserve the `insert_voucher` -> `insert_device_` -> `insert_sessionCreated` -> `copy_token2`
+- [x] Preserve the `insert_voucher` -> `insert_device_` -> `insert_sessionCreated` -> `copy_token2`
       order; it is a trigger-chain dependency (`FR-016`), not a stylistic choice.
-- [ ] Carry `insertVoucher` and `copyToken2` forward unchanged into the voucher family, each
+- [x] Carry `insertVoucher` and `copyToken2` forward unchanged into the voucher family, each
       delegating to its connection-accepting form (`OQ-003` settled: keep, do not delete).
-- [ ] Rewrite `wrapUpRegistration` to pass its own `Connection` to all four participants.
-- [ ] Confirm no connection-accepting method closes, commits, or rolls back its argument.
-- [ ] Confirm pool return happens only through try-with-resources on the owning connection; no
+- [x] Rewrite `wrapUpRegistration` to pass its own `Connection` to all four participants.
+- [x] Confirm no connection-accepting method closes, commits, or rolls back its argument.
+- [x] Confirm pool return happens only through try-with-resources on the owning connection; no
       explicit pool management or lifecycle close is added (Quarkus/Agroal owns it).
 - [ ] Do not compile between families; complete the unified adaptation pass first.
 - [ ] Confirm each family bean is `@ApplicationScoped` with only a datasource field.
 
 Phase 5 — Monolith removal (`@backend-dev`)
 - [ ] Confirm `SQLAccess` is empty.
-- [ ] Delete `SQLAccess`.
-- [ ] Confirm no pass-through facade replaced it.
-- [ ] Confirm no remaining import of `com.dalogin.SQLAccess`.
+- [x] Delete `SQLAccess`.
+- [x] Confirm no pass-through facade replaced it.
+- [x] Confirm no remaining import of `com.dalogin.SQLAccess`.
 
 Phase 6 — Caller tightening (`@backend-dev`)
-- [ ] Ensure each servlet injects only the families it uses.
-- [ ] Ensure both filters inject only the families they use.
-- [ ] Ensure `CustomHttpSessionListener` injects only the families it uses.
-- [ ] Remove now-unused imports across the 16 former caller files.
+- [x] Ensure each servlet injects only the families it uses.
+- [x] Ensure both filters inject only the families they use.
+- [x] Ensure `CustomHttpSessionListener` injects only the families it uses.
+- [x] Remove now-unused imports across the 16 former caller files.
 
 Phase 7 — Verification (`@testing-engineer`)
 - [ ] Run `LoginFlowTest` after the complete combined pass — the automated gate (`FR-019`).
       Command and required flags: `.ai/skills/quarkus-local-test-mysql/SKILL.md`.
-- [ ] Exercise login and logout.
+- [x] Exercise login and logout.
 - [ ] Exercise registration with and without voucher.
 - [ ] Exercise voucher activation, reset, and registration completion.
 - [ ] Exercise password change and forgot-password flows.
-- [ ] Exercise device registration and token retrieval.
-- [ ] Exercise admin and purchase-related servlets.
-- [ ] Confirm session creation and destruction behavior.
-- [ ] Confirm no bean outside the device/session family issues SQL against `devices`,
+- [x] Exercise device registration and token retrieval.
+- [x] Exercise admin and purchase-related servlets.
+- [x] Confirm session creation and destruction behavior.
+- [x] Confirm no bean outside the device/session family issues SQL against `devices`,
       `device_states`, `Tokens`, or `Last_seen` (`AC-012`).
 - [ ] Confirm all responses match the Phase 1 baseline.
 
 Phase 8 — Closure (`@backend-dev`)
 - [ ] Diff all moved SQL statements against the originals and confirm verbatim movement.
-- [ ] Confirm no SQL is duplicated across families.
-- [ ] Confirm each of the four `wrapUpRegistration` statements appears exactly once.
+- [x] Confirm no SQL is duplicated across families.
+- [x] Confirm each of the four `wrapUpRegistration` statements appears exactly once.
 - [ ] Confirm the final structure matches the Phase 2 assignment table.
 - [ ] Update `speckit.system.refactoring-mentions-roadmap.plan` items 1 and 2.
 - [ ] Consider adding a dalogin persistence-flow skill mirroring `mbooks-controller-dao-flow`.

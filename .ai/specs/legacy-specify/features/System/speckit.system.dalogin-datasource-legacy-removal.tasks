@@ -1,62 +1,62 @@
 Tasks: dalogin datasource legacy connection removal
 
 Phase 1 — Baseline confirmation (`@backend-dev`)
-- [ ] Confirm `application.properties` datasource keys are complete and authoritative.
-- [ ] Confirm `k8infra/quarkus-backend.yaml` and `k8infra/kubernetes.yaml` supply
+- [x] Confirm `application.properties` datasource keys are complete and authoritative.
+- [x] Confirm `k8infra/quarkus-backend.yaml` and `k8infra/kubernetes.yaml` supply
       `QUARKUS_DATASOURCE_DB_KIND/USERNAME/PASSWORD/JDBC_URL` for the dalogin deployment, so the
       module runs on minikube through the same Agroal path as localhost.
-- [ ] Inventory every `DB_URL` reader: `CustomServletContextListener` (fallback),
+- [x] Inventory every `DB_URL` reader: `CustomServletContextListener` (fallback),
       `SystemConstants.extractCatalog()`, and the `DB_URL` env entries in both k8infra manifests.
-- [ ] Confirm no runtime path depends on the `DB_URL` environment variable once those are removed.
-- [ ] Confirm `com.dalogin.utils.test` has zero references anywhere in the module.
-- [ ] Confirm no caller catches `ClassNotFoundException` from `getConnection()`.
+- [x] Confirm no runtime path depends on the `DB_URL` environment variable once those are removed.
+- [x] Confirm `com.dalogin.utils.test` has zero references anywhere in the module.
+- [x] Confirm no caller catches `ClassNotFoundException` from `getConnection()`.
 
 Phase 2 — Configuration (`@backend-dev`)
 - [ ] Set `quarkus.datasource.jdbc.acquisition-timeout` explicitly (replace the commented-out line).
-- [ ] Verify `min-size=5` / `max-size=20` are still appropriate and configuration-driven.
+- [x] Verify `min-size=5` / `max-size=20` are still appropriate and configuration-driven.
 
 Phase 3 — DBConnectionManager simplification (`@backend-dev`)
-- [ ] Remove the `DBConnectionManager(String url, String u, String p)` constructor.
-- [ ] Remove the `dbURL`, `user`, and `password` fields.
-- [ ] Remove the `DriverManager.getConnection(...)` fallback branch.
-- [ ] Remove the `Class.forName("com.mysql.cj.jdbc.Driver")` call.
-- [ ] Narrow the signature from `throws SQLException, ClassNotFoundException` to `throws SQLException`.
-- [ ] Demote the acquisition log from INFO to DEBUG.
-- [ ] Replace `conn.getCatalog()` in the log message with the configured catalog name.
+- [x] Remove the `DBConnectionManager(String url, String u, String p)` constructor.
+- [x] Remove the `dbURL`, `user`, and `password` fields.
+- [x] Remove the `DriverManager.getConnection(...)` fallback branch.
+- [x] Remove the `Class.forName("com.mysql.cj.jdbc.Driver")` call.
+- [x] Narrow the signature from `throws SQLException, ClassNotFoundException` to `throws SQLException`.
+- [x] Demote the acquisition log from INFO to DEBUG.
+- [x] Replace `conn.getCatalog()` in the log message with the configured catalog name.
 - [ ] Make a null/missing `DataSource` an explicit, clearly-messaged failure.
-- [ ] Remove the no-op `closeConnection()`; pool lifecycle is owned by Quarkus/Agroal.
+- [x] Remove the no-op `closeConnection()`; pool lifecycle is owned by Quarkus/Agroal.
 - [ ] Confirm the returned `Connection` still works with existing try-with-resources callers.
 
 Phase 4 — Listener cleanup (`@backend-dev`)
-- [ ] Remove the `if (dataSource != null) ... else ...` branch in `contextInitialized`.
-- [ ] Remove the hardcoded `"sqluser"` / `"sqluserpw"` literals.
-- [ ] Remove the `DB_URL` environment fallback.
-- [ ] Remove the `contextDestroyed` call to `closeConnection()` if that method was dropped.
+- [x] Remove the `if (dataSource != null) ... else ...` branch in `contextInitialized`.
+- [x] Remove the hardcoded `"sqluser"` / `"sqluserpw"` literals.
+- [x] Remove the `DB_URL` environment fallback.
+- [x] Remove the `contextDestroyed` call to `closeConnection()` if that method was dropped.
 - [ ] Leave the `"DBManager"` servlet-context attribute in place at this edit step only; it is
       deleted in Phase 5 of `speckit.system.dalogin-persistence-servlet-adaptation.tasks`.
 
 Phase 5 — Dead code deletion (`@backend-dev`)
-- [ ] Delete `src/main/java/com/dalogin/utils/test.java`.
-- [ ] Confirm its `DriverManager`, `Class.forName`, and `sqluserpw-1982` literal are gone with it.
+- [x] Delete `src/main/java/com/dalogin/utils/test.java`.
+- [x] Confirm its `DriverManager`, `Class.forName`, and `sqluserpw-1982` literal are gone with it.
 - [ ] Confirm the hardcoded `SALT` / `IV` constants and sample password hash are gone with it.
-- [ ] `SystemConstants.DB_CATALOG` / `extractCatalog()` lose their last readers once `utils/test`
+- [x] `SystemConstants.DB_CATALOG` / `extractCatalog()` lose their last readers once `utils/test`
       and `DBConnectionManager` are gone in the combined pass: delete them and their `DB_URL` read.
       Keep `getServiceUrl()`, which is still used by the purchase/admin servlets.
-- [ ] Remove the dead `DB_URL` env entries from `k8infra/quarkus-backend.yaml` and
+- [x] Remove the dead `DB_URL` env entries from `k8infra/quarkus-backend.yaml` and
       `k8infra/kubernetes.yaml` (dalogin containers only; leave `DB_URL_BOOKS`).
 
 Phase 6 — Security review (`@security-specialist`)
-- [ ] Verify no credentials remain anywhere in `dalogin-quarkus` production source.
-- [ ] Verify connection logs do not emit credentials or the full JDBC URL.
+- [x] Verify no credentials remain anywhere in `dalogin-quarkus` production source.
+- [x] Verify connection logs do not emit credentials or the full JDBC URL.
 - [ ] Confirm failure messages name the configuration problem without leaking secrets.
 
 Phase 7 — Combined-pass handoff (`@backend-dev`)
 - [ ] Continue directly into CDI injection, family splitting, and Servlet adaptation without
       compiling this component independently.
-- [ ] After the complete combined pass, compile and confirm the narrowed `getConnection()` signature
+- [x] After the complete combined pass, compile and confirm the narrowed `getConnection()` signature
       broke no caller.
 - [ ] Confirm MySQL is running with the `login_` schema and the `GI` test user.
-- [ ] Start `dalogin` and confirm clean startup.
+- [x] Start `dalogin` and confirm clean startup.
 - [ ] Start once with the datasource deliberately misconfigured and confirm the fail-fast message
       names the datasource, then restore.
 - [ ] Run the available login test flow in `LoginFlowTest` (command and required flags:
@@ -64,8 +64,8 @@ Phase 7 — Combined-pass handoff (`@backend-dev`)
 - [ ] Confirm it passes without `mbook` or `mbooks` running.
 
 Phase 8 — Closure (`@backend-dev`)
-- [ ] Grep the module for `DriverManager`, `Class.forName`, `sqluserpw`, `sqluserpw-1982`, and `DB_URL` and confirm zero hits.
-- [ ] Confirm every `SQLAccess` connection usage is inside try-with-resources.
+- [x] Grep the module for `DriverManager`, `Class.forName`, `sqluserpw`, `sqluserpw-1982`, and `DB_URL` and confirm zero hits.
+- [x] Confirm every `SQLAccess` connection usage is inside try-with-resources.
 - [ ] Update `speckit.system.refactoring-mentions-roadmap.plan` inventory item 2 status.
 - [ ] Hand off `MV-001`-`MV-002` to the repository owner for manual exercise.
 

@@ -1,0 +1,117 @@
+# Tasks: Screen-news WebSocket subscriptions
+
+Feature: [Specification](./speckit.system.screen-news-websocket-subscriptions.specify)
+Plan: [Implementation plan](./speckit.system.screen-news-websocket-subscriptions.plan)
+
+Status: Planning only; no implementation or command execution.
+Each task states prerequisites explicitly. Schema review, compile-only checks and file-based
+dry-run review form the final no-launch gate; none run between edits or during planning.
+Behavioural tests, executable database checks and deployment require separate authorization.
+
+## Fastest-suitable routing and execution order
+
+Choose the lowest-cost eligible tier, not an assumed benchmark ranking of model speed.
+Dependencies and approval gates take precedence over model preference. Fast tasks are
+dispatched directly by the router; specialists do not nest a second delegation.
+No tasks below have been executed.
+
+### Specialist design -> router dispatch -> MAI implementation -> specialist review
+
+For each code-writing task T04-T14, the owning specialist first decides the design and
+identifies any genuinely eligible mechanical coding slices. Return those handoffs to the
+router rather than spawning Quick Engineer. The router dispatches qualifying slices to
+`mai-code-1.1-flash`; the owning specialist then reviews correctness and integration before
+the parent task is complete. This review is a distinct step, not a repeated implementation.
+
+Each handoff must include exact files (maximum two), symbols and insertion points,
+existing patterns, required behaviour/error cases, interfaces already decided,
+acceptance criteria, dependencies and the final validation command. Name the owning
+reviewer. No unanswered design choices may be passed to MAI. Stage large contents in
+session `.txt` files and preserve the no-command-between-edits restriction: readback now,
+compile/schema/dry-run validation at T15a/T15b only.
+
+Potential fast slices include isolated menu labels/layout following existing UI patterns
+and a known non-protected test case following an existing fixture. These are candidates,
+not already approved assignments: the specialist must provide the concrete handoff.
+Authentication/session/device wiring, transaction handling, schema SQL, recipient
+authorization and cross-client payload implementation remain specialist-owned under
+the current protected-area policy, even after the design is supplied.
+
+After review, the specialist reports accepted changes or a precise correction; the router
+owns any further eligible dispatch. Design-sensitive defects return to the specialist,
+not a speculative MAI retry. Already fully specified eligible work needs no artificial
+design stage.
+
+| Priority among ready work | Task or bounded subtask | Agent / configured model | Boundary |
+|---|---|---|---|
+| Fast code writing | Eligible mechanical slices of T04-T14 | Quick Engineer / `mai-code-1.1-flash` | Owning specialist supplies the complete handoff; router dispatches; specialist reviews. At most two files and no protected implementation. Commands deferred to the final gate. |
+| Fast mechanical | T15b command execution only | Quick Engineer / `mai-code-1.1-flash` | Specialists first supply exact commands, source list and prerequisites. Run once at the final gate, capture exit status, no code changes, app launch or dependency installation. Escalate failures to the owner. |
+| Fast mechanical | T18 approved schema-documentation status edits only | Quick Engineer / `mai-code-1.1-flash` | After T17 evidence is supplied, update exact approved prose/labels in at most three named documents. No SQL edits or contract decisions. |
+| Fast read-only | T15b compile-log summary | Scout / `gpt-6-luna` | Report compiler diagnostics and exit status only; no command execution, diagnosis or edits. Use only when a large log needs a separate summary. |
+| Standard | T01, T02 | Backend Engineer; DevOps for service configuration / runtime-default | API/auth/session decisions and protected service boundaries. User approves outstanding choices. |
+| Standard | T03 | Database Engineer / runtime-default | Schema/migration design and reconciliation, not mechanical documentation. |
+| Standard | T04-T10 | Backend Engineer / runtime-default | Transactions, session resolution, recipient filtering, event contracts and coordinated changes. |
+| Standard | T11-T13 | iOS Engineer / runtime-default | Session/device networking, cross-client payloads and menu-state behaviour; not fully specified mechanical edits. |
+| Standard | T14 | Testing Engineer; iOS Engineer for iOS tests / runtime-default | Regression design includes protected behaviour and concurrency. |
+| Standard | T15a | Database Engineer; Testing Engineer for dry-run review / runtime-default | Schema correctness and behavioural/contract judgment cannot be delegated to a log-summary agent. |
+| Standard | T15b command preparation and failure diagnosis | Backend/iOS Engineers / runtime-default | Verify no-launch compiler invocation, app-target membership and prerequisites; diagnose failures. |
+| Standard | T15c, T16 | Testing, Security and Performance specialists / runtime-default | Authorized runtime evidence and review gates; never substitute compile success. |
+| Standard | T17 | Database and DevOps Engineers / runtime-default | Explicitly authorized schema application and deployment. |
+| Standard | T18 contract activation and final reconciliation | Backend Engineer / runtime-default | Verify rollout and contract status; supply exact schema-documentation updates to the fast lane separately. |
+
+Dependency-ready batches, with fast eligible subtasks first **within** each batch:
+
+1. T01, T02, T03 and T08 can start independently; resolve prerequisite approvals before dependent work.
+2. T04 after T03; T06 after T02; T09 and T11 after T08. Run independent work in parallel only when files do not overlap.
+3. T05 after T01/T04; T07 after T04/T06.
+4. T10 after T07/T08/T09; T12 after T01/T05; T13 after T12.
+5. T14 after T05/T10/T11/T13; then T15a and specialist preparation for T15b. The MAI command-only subtask runs after preparation, not before.
+6. T15c only after T15a/T15b and explicit runtime authorization; then T16.
+7. T17 only after T03/T16 and rollout authorization; then T18, with supplied mechanical schema-documentation edits going directly to MAI.
+
+Do not split protected implementation into nominally small edits to bypass routing rules.
+Additional mechanical work can use Quick Engineer only when exact changes, at most two
+files (three for the narrow schema-documentation exception), a known validation command,
+and all protected-area exclusions are satisfied.
+
+## P0 - Confirm prerequisites
+
+- [ ] T01 - Confirm preference API contract (backend). Dependencies: none. Approve D1's proposed authenticated read/write routes and payload, or choose the existing-pattern alternative. Register the agreed contract in `.ai/retrieval/references/CONTRACTS_INDEX.md`. A dalogin forwarding route is a proposal, not an approved requirement.
+- [ ] T02 - Confirm active-session service access and freshness (backend/DevOps). Dependencies: none. Resolve D2/D3: authorized server-side access to `/simple-service-webapp/webapi/myresource/admin`, timeout, fresh snapshot per event, and complete session view for the target deployment. Record the accepted device-ID membership trust model without adding independent socket-session binding.
+- [ ] T03 - Prepare database rollout (database). Dependencies: none. Produce scoped read-only preflight and approved `logins_id INT NOT NULL` plus `UNIQUE(logins_id)` migration artifacts beside `k8infra/mysql_8/` scripts. Preserve FK, PK and other settings. Define explicit NULL/duplicate reconciliation and rollback; do not execute, delete ambiguous rows, or auto-opt-in. DEFAULT/CHECK changes require separate approval.
+
+## P1 - Focused backend refactor
+
+- [ ] T04 - Add preference persistence (backend). Dependencies: T03. Update `mbook-quarkus` `eventModel/NewsSettings.java` and `db/DAO.java`: read exact `yes`/`no`, missing row off, invalid/duplicate/error explicit failure. Transactional writes change only `newsScreening`, preserve future preferences, and acknowledge after commit. Serialize concurrent same-user writes; do not assume UNIQUE has been deployed.
+- [ ] T05 - Expose authenticated preference reads/writes (backend). Dependencies: T01, T04. Add the agreed `mbook-quarkus` resource and narrowly necessary filter changes. Add dalogin forwarding only if T01 approves it. Resolve the caller from authenticated context; reject foreign-user changes, invalid bodies, and signed-out calls.
+- [ ] T06 - Add active-session lookup (backend). Dependencies: T02. Add a bounded client/parser in `mbook-quarkus/broadcasting`; integrate the approved access mechanism at the required service boundaries. Match `deviceId` to one non-blank authenticated `user`; ignore response `id` as a database key. Fail explicitly on timeout, malformed or conflicting mappings.
+- [ ] T07 - Register device IDs and implement recipient filtering (backend). Dependencies: T04, T06. Update `mbook-quarkus/broadcasting/WebSocketServer.java` and add a small testable gate. Resolve session-list `user` to `logins.id`; deliver only for exact `newsScreening='yes'`. Remove dead connections, not unsubscribed connections. Reconnect/user changes must not reuse stale identity; preserve existing non-news broadcasts.
+- [ ] T08 - Extend event type compatibly (backend). Dependencies: none. Update both services' `eventModel/AddMovie.java` with created/updated/deleted discrimination, preserving existing fields and legacy decoding. Document the coordinated JSON WebSocket envelope; keep unrelated messages unchanged.
+- [ ] T09 - Wire successful screen changes (backend). Dependencies: T08. Update `mbooks-quarkus/rest/VenueController.java`, producer and tightly coupled `db/DAO.java` failure signalling. Publish only after a successful transaction; capture delete identifiers before removal. Do not introduce an outbox or event-platform redesign.
+- [ ] T10 - Integrate gated consumption and remove bypass (backend). Dependencies: T07, T08, T09. Update `mbook-quarkus/broadcasting/KafkaMoviesListener.java` to obtain one fresh session snapshot per event and send through the gate. Preserve created-news persistence and `/news/{user}`. Suppress unfiltered screen-news forwarding in the mbooks consumer without removing its WebSocket endpoint or seat/non-news traffic.
+
+## P2 - iOS integration
+
+- [ ] T11 - Send the existing device ID and decode screening events (iOS). Dependencies: T08. Update `SwiftCinemas/SwiftLoginScreen/BroadCasting/Websocket.swift`: use `currentDeviceId()` on connect/reconnect, safely encode the agreed transport, handle created/updated/deleted messages, and preserve existing non-news handling. No new identifier or persistent client table.
+- [ ] T12 - Add typed preference networking (iOS). Dependencies: T01, T05. Extend the existing `Networking/BackendServices.swift` / `DataManagers/AuthDataManager.swift` patterns for authenticated load/save and explicit error propagation; do not expose the admin session list.
+- [ ] T13 - Add the menu preference control (iOS). Dependencies: T12. Update `MenuVC.swift`: load confirmed server state, disable while loading/saving, prevent repeat taps, show save errors and restore/reload confirmed state, and block signed-out edits. Unsubscribe writes `no` without closing the socket; subscribe resumes subsequent events on the same socket.
+
+## P3 - Final consolidated verification (deferred)
+
+- [ ] T14 - Add focused regression coverage (backend/iOS). Dependencies: T05, T10, T11, T13. Write tests for yes/no/missing/invalid preferences, concurrent writes, rejected NULL/duplicate owners, valid/unknown/conflicting device membership, lookup outage, user switching, expired/removed sessions, legacy/new event decoding, successful versus failed mutations, and menu load/save failures. Test bodies can be written with implementation; do not run between edits.
+- [ ] T15a - Validate database schema and perform dry-run review (testing/database). Dependencies: T03, T14. Follow Plan V1/V4: compare DDL and mappings against dump definitions, confirm approved constraints/FK types and reconciliation preconditions, and review final file/contract diffs with fixture scenarios. No live DB connection or migration execution; write a session-scoped report. Static SQL review is not engine execution proof.
+- [ ] T15b - Validate compilation without app/service launch (backend/iOS). Dependencies: T14. Follow Plan V2/V3: module-local Maven compile or test-compile with tests skipped and no automatic service/container startup; changed-file Swift parse and whole app-target typecheck using existing simulator dependency products. Verify target Sources membership and compiler exit status. No app launch, simulator boot or runtime tests. Missing prerequisites are blockers, not permission to rebuild/install.
+- [ ] T15c - Run separately authorized behavioural validation (testing). Dependencies: T15a, T15b, explicit runtime-validation authorization. Use smallest existing unit/module/iOS tests, then live-stack add/update/delete, failed mutations, multi-device recipients, session removal/user switching, unsubscribe keeping the same socket open, other traffic preserved, resubscribe without reconnect and no mbooks broadcast bypass. Confirm the five-second observed target. Optional executable schema checks use only an authorized isolated schema-only fixture database. Record evidence; compile/dry-run success alone does not complete this task.
+- [ ] T16 - Complete required review gates (testing/security/performance). Dependencies: T15c. Record required specification gate evidence, service-access protections, accepted membership-only residual risk, non-disclosure of session lists, and bounded lookup behaviour. No new tooling or broad unrelated audit.
+
+## P4 - Explicit rollout (not authorized by planning alone)
+
+- [ ] T17 - Apply approved database and deploy coordinated changes (database/DevOps). Dependencies: T03, T16. With target-environment authorization, execute preflight/reconciliation and owner constraints before deploying code that relies on them. Configure approved service access, deploy backend and iOS compatibly, and run scoped smoke checks. Preserve independently subscribed categories and non-news feeds.
+- [ ] T18 - Close feature documentation (backend). Dependencies: T17. Update specification completion evidence and contract statuses only after verified rollout. Retain unresolved proposals as such; do not claim unexecuted work complete.
+
+## File-edit workflow
+
+Stage large replacements in session-scoped `.txt` files, read current target content,
+then apply precise file-scoped edits and read back the affected ranges. Preserve unrelated
+dirty edits. No compile, build, test, service or database runs between edits; temporary content
+must not replace whole unrelated files or enter source control.

@@ -12,3 +12,10 @@
 !k6/api2.js
 !k6/README.md
 !k6/api2.properties.example
+
+# Local per-request agent routing and usage telemetry
+.ai/generated/routing-telemetry/
+
+# GitHub discovers canonical agent definitions through symlinks here.
+!.github/agents/
+!.github/agents/**

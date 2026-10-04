@@ -14,7 +14,6 @@ LEGACY_DIRS = [
     ".specify",
     ".claude/skills",
     ".claude/commands",
-    ".github/agents",
     ".github/skills",
     ".github/references",
 ]
@@ -66,6 +65,30 @@ def check_file(path: Path) -> str | None:
     return f"{path}: legacy file exists but is not a pointer stub"
 
 
+def check_agent_discovery_links(root: Path) -> list[str]:
+    discovery_dir = root / ".github/agents"
+    if not discovery_dir.exists():
+        return []
+    if not discovery_dir.is_dir():
+        return [f"{discovery_dir}: expected directory or missing, found non-directory"]
+
+    canonical_dir = (root / ".ai/agents").resolve()
+    errors: list[str] = []
+    for entry in discovery_dir.iterdir():
+        if not entry.is_symlink():
+            errors.append(f"{entry}: agent discovery entry must be a symlink into .ai/agents")
+            continue
+        try:
+            target = entry.resolve(strict=True)
+            target.relative_to(canonical_dir)
+        except (FileNotFoundError, ValueError):
+            errors.append(f"{entry}: symlink must resolve to a file under .ai/agents")
+            continue
+        if not target.is_file() or not target.name.endswith(".agent.md"):
+            errors.append(f"{entry}: symlink target must be an .agent.md file")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate AI assets live under .ai only.")
     parser.add_argument(
@@ -93,6 +116,8 @@ def main() -> int:
         if issue:
             errors.append(issue)
 
+    errors.extend(check_agent_discovery_links(root))
+
     if warnings:
         print("AI layout warnings:")
         for w in warnings:
@@ -111,4 +136,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

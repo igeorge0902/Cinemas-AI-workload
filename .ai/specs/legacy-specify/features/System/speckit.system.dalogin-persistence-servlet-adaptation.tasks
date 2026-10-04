@@ -25,36 +25,36 @@ Phase 1 — Combined baseline (`@backend-dev`, `@testing-engineer`)
 
 Phase 2 — Persistence foundation (`@backend-dev`)
 - [ ] Complete datasource legacy removal without compiling.
-- [ ] Create final CDI-backed family beans directly.
-- [ ] Place each family in its own persistence subpackage with the domain naming agreed in
+- [x] Create final CDI-backed family beans directly.
+- [x] Place each family in its own persistence subpackage with the domain naming agreed in
       `speckit.system.dalogin-sqlaccess-family-split.tasks` Phase 2.
 - [ ] Move every SQLAccess method to its final family.
-- [ ] Apply explicit ResultSet closing and transaction cleanup required by CDI injection.
-- [ ] Add shared SQL support and cross-family connection-accepting forms.
+- [x] Apply explicit ResultSet closing and transaction cleanup required by CDI injection.
+- [x] Add shared SQL support and cross-family connection-accepting forms.
 - [ ] Preserve the registration procedure order.
-- [ ] Add atomic `DeviceSessionManager.establishLogin` for device/session/token creation.
+- [x] Add atomic `DeviceSessionManager.establishLogin` for device/session/token creation.
 
 Phase 3 — Servlet HTTP types (`@backend-dev`)
-- [ ] Add shared stateless `ServletResponses`.
-- [ ] Add injected stateless `CryptoService` with request-local cipher state.
+- [x] Add shared stateless `ServletResponses`.
+- [x] Add injected stateless `CryptoService` with request-local cipher state.
 - [ ] Migrate seven Servlet `AesUtil` fields and `ChangePswFilter` to `CryptoService`.
 - [ ] Add immutable DTOs for every complex request-processing flow.
-- [ ] Implement every complex request DTO as a Java record.
-- [ ] Keep simple pass-through request reads explicit in their Servlet.
-- [ ] Do not add empty or ceremonial DTOs for simple/no-input flows.
-- [ ] Add endpoint-specific response helpers for all 14 Servlets.
+- [x] Implement every complex request DTO as a Java record.
+- [x] Keep simple pass-through request reads explicit in their Servlet.
+- [x] Do not add empty or ceremonial DTOs for simple/no-input flows.
+- [x] Add endpoint-specific response helpers for all 14 Servlets.
 - [ ] Share helpers only after proving wire contracts identical.
-- [ ] Keep all DTO/helper types outside persistence packages.
+- [x] Keep all DTO/helper types outside persistence packages.
 
 Phase 4 — Final caller migration (`@backend-dev`)
 - [ ] Edit each Servlet once into its final shape.
 - [ ] Refactor every declared GET and POST handler, not only the SQLAccess-calling path.
 - [ ] Review and refactor each Servlet's private request/response/persistence helpers.
 - [ ] Inject only final family beans.
-- [ ] Confirm no Servlet injects `DataSource` or acquires `Connection` directly.
-- [ ] Replace every static/context-bound SQLAccess call.
+- [x] Confirm no Servlet injects `DataSource` or acquires `Connection` directly.
+- [x] Replace every static/context-bound SQLAccess call.
 - [ ] Replace complex direct input parsing with DTO factories.
-- [ ] Preserve simple pass-through reads without introducing unnecessary models.
+- [x] Preserve simple pass-through reads without introducing unnecessary models.
 - [ ] Replace direct response construction with named helper operations.
 - [ ] Migrate filters/listeners directly to final family beans.
 - [ ] Preserve orchestration, session mutation, crypto, redirects, downstream clients, and logging.
@@ -69,7 +69,7 @@ Phase 4 — Final caller migration (`@backend-dev`)
 - [ ] Remove the obsolete 100 ms token retry.
 
 Phase 5 — Legacy deletion (`@backend-dev`)
-- [ ] Delete empty monolithic `SQLAccess`.
+- [x] Delete empty monolithic `SQLAccess`.
 - [ ] Remove DBManager ServletContext publication and legacy fallback/dead manager code.
 - [ ] Delete `SystemConstants.DB_CATALOG`/`extractCatalog()` (last readers gone) and the dead
       `DB_URL` env entries in `k8infra/quarkus-backend.yaml` and `k8infra/kubernetes.yaml`.
@@ -80,10 +80,10 @@ Phase 5 — Legacy deletion (`@backend-dev`)
 - [ ] Confirm no direct Servlet `JSONObject` construction or `PrintWriter` ownership remains.
 
 Phase 6 — First build (`@backend-dev`)
-- [ ] Compile for the first time only after Phases 2-5 are complete.
+- [x] Compile for the first time only after Phases 2-5 are complete.
 - [ ] Treat compiler errors as the remaining migration list.
-- [ ] Resolve every caller, import, signature, and type error.
-- [ ] Confirm no legacy static SQLAccess or DBManager call shape survives.
+- [x] Resolve every caller, import, signature, and type error.
+- [x] Confirm no legacy static SQLAccess or DBManager call shape survives.
 
 Phase 7 — Automated verification (`@testing-engineer`)
 - [ ] Run targeted `LoginFlowTest` with `.ai/skills/quarkus-local-test-mysql/SKILL.md`.
