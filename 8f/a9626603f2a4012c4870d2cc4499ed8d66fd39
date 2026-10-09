@@ -1,0 +1,174 @@
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.implementation-example.md
+  s_e8e4a3094a665d::t_75cd38d82b31ce 1073
+  s_e8e4a3094a665d::t_75cd1abd75fdbd 680
+  s_5b3ae8bf242d68::t_bd37a0574395fe 3-5,7-9
+  s_5b3ae8bf242d68::t_e913a98b85b570 1077-1078,1081
+  s_e8491678219037::t_0a96f69b6813c1 528,1079,1087
+  s_5b3ae8bf242d68::t_dbf0210fcc9678 1-2,10-525,527,534-583,585-635,637-675,677,679,681-756,758-773,775-805,807,809,816-818,820-821,823,826-840,844-893,896,898-948,950-1034,1037-1046,1048-1049,1053-1056,1061-1072,1074-1076,1080,1086
+  s_407f8e062c1ffb::t_6b41182ab8f71a 676,678,757,774,806,808,810-815,819,822,824-825,841-843,894-895,897,1035-1036
+  s_0dfb976905ff25::t_023eb421a70bf9 6
+  s_d91b4bf659c755::t_c5a657f8834ebe 526,529-533,1082-1085,1088
+  s_e8e4a3094a665d::t_6f816c31961935 584
+  s_e8e4a3094a665d::t_ff2d85425eb4c0 949
+  s_e8e4a3094a665d::t_99ce72760dce69 636
+  s_e8e4a3094a665d::t_61768308164d92 1047,1050-1052,1057-1060
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.plan
+  s_e8491678219037::t_1a557329944486 111
+  s_9aa842b8922876::t_8573c291b76ef4 44
+  s_5b3ae8bf242d68::t_488f7c2e57677b 13,110,112,120
+  s_407f8e062c1ffb::t_6b41182ab8f71a 35,57-59,113
+  s_d542c3081f1a54::t_976d8325cfb73f 52-53
+  s_5b3ae8bf242d68::t_0e24508c69c501 7,9-12,14,16-19,21-34,36-43,46-51,54-56,60-97,99-101,103-107,114-116,119,121-124,127,129-133,136,148-149,154-155
+  s_9aa842b8922876::t_787a30074e8a57 98,102
+  s_5b3ae8bf242d68::t_0dfae4640a3e0f 8
+  s_5b3ae8bf242d68::t_4051be985a1359 20
+  s_59f6d43c300142::t_4cf8aee1108ab9 158
+  s_e8491678219037::t_0a96f69b6813c1 108,157
+  s_d91b4bf659c755::t_c5a657f8834ebe 45,117-118,126,134-135,140,142,144-145,147,153,156
+  s_d542c3081f1a54::t_3805ee4bd208b5 15
+  s_5b3ae8bf242d68::t_e913a98b85b570 109,125,137-139,141,143,146
+  s_5b3ae8bf242d68::t_1a152916f4eccc 128
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.database-schema.md
+  s_5b3ae8bf242d68::t_8eb1d2018933bd 89-91,403-405
+  s_e8491678219037::t_1a557329944486 107
+  s_e8491678219037::t_0a96f69b6813c1 98-103,111,113
+  s_d91b4bf659c755::t_c5a657f8834ebe 6,104-106,108-110,112
+  s_d91b4bf659c755::t_3f02d9d15f1d12 227,230
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.tasks
+  s_5b3ae8bf242d68::t_e913a98b85b570 31-36,39,41,215,217-218,231-232,246,263
+  s_0dfb976905ff25::t_51c20978087093 4-19,21-23,29-30,260
+  s_d542c3081f1a54::t_346f5787667ab1 207
+  s_9aa842b8922876::t_315ef2f4311da7 128
+  s_407f8e062c1ffb::t_6b41182ab8f71a 130,138-141,149
+  s_5b3ae8bf242d68::t_0cb200df434f22 251
+  s_d91b4bf659c755::t_c5a657f8834ebe 28,38,86-90,92-94,96,216,219-220,222-230,234-235,237,244,257,261-262
+  s_d542c3081f1a54::t_9baaa269593e77 208
+  s_9aa842b8922876::t_75bfb39ed1ce6a 44,47
+  s_9aa842b8922876::t_ee2f40be4f1848 68-69
+  s_5b3ae8bf242d68::t_1c374c751582e0 42-43,45-46,48-56,60-67,70-72,74,76,78-80,82-85,100,102-104,110-111,173,256,258
+  s_e8491678219037::t_0a96f69b6813c1 37,40,221,239-241
+  s_d542c3081f1a54::t_f91ca1a80af378 135-137,142-144
+  s_5b3ae8bf242d68::t_f7ff4026392f61 3,24-27,95,97-99,101,105-109,112-127,129,131-134,145-148,150-172,174-206,209-214,233,236,238,242-243,250,252-254,259
+  s_0dfb976905ff25::t_d2d73989fd00ff 20
+  s_59f6d43c300142::t_ea680df29af12f 245,247-249
+  s_9aa842b8922876::t_6e5b04af2c6224 73,75,77,81
+  s_5b3ae8bf242d68::t_37b5efb2b80ee9 57
+  s_e8491678219037::t_1a557329944486 91,255
+  s_9aa842b8922876::t_a7967bb4ffa487 58-59
+.ai/retrieval/references/CONTRACTS_INDEX.md
+  s_2ce2ed8c346e88::t_464e6b332a844d 25
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.specify
+  s_ea0327aa11754e::t_d72b744d305bd2 304
+  s_5b3ae8bf242d68::t_6e2bf2be5de829 248
+  s_ea0327aa11754e::t_3086bf7711cb68 114
+  s_5b3ae8bf242d68::t_231818a02e220f 88-89,249,263,295,305
+.ai/specs/legacy-specify/features/System/speckit.system.screen-news-websocket-subscriptions.architecture.md
+  s_ea0327aa11754e::t_f7ab0669667c70 48,55
+  s_5b3ae8bf242d68::t_a6187107b0a325 56-58,63,69,82-84,89,92,124,179,190,201,207-208,276-277,302
+  s_407f8e062c1ffb::t_e48aac99dad23e 178,188,193-200,225-255,327
+  s_ea0327aa11754e::t_68b49c9a619601 187
+  s_ea0327aa11754e::t_187977e43bb32f 177
+  s_ea0327aa11754e::t_013913b1402383 224
+  s_5b3ae8bf242d68::t_72888eb25dbb43 325,328-335
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8fa9626603f2a4012c4870d2cc4499ed8d66fd39",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_0dfb976905ff25": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d6f91b66-d8b2-4c7d-aed5-717e73a26d69",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_2ce2ed8c346e88": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "cf264bf4-ab61-4a84-8e7b-7410aebf1637",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_407f8e062c1ffb": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d4cc8500-68f8-4d4e-8e30-eb206280920c",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_59f6d43c300142": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "4dcd19cb-7ce2-4023-aee7-b38769a33d7d",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_5b3ae8bf242d68": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "657d32ba-cdf9-4727-9c43-2985a4cede78",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_9aa842b8922876": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "be1e131c-8a12-4e3f-b0c0-45bfdc289483",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_d542c3081f1a54": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "56865d6b-416c-45f6-b015-58b00155c732",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_d91b4bf659c755": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "db4d2c90-e0b8-46c0-9c1b-dc362c2ea2ff",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_e8491678219037": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "04594ac2-2751-4651-b08e-ffc9861fb10c",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_e8e4a3094a665d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "725edf02-d1db-4ebb-b20a-8698c10a3749",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_ea0327aa11754e": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "0f58a32a-f937-49f4-ac59-c588bf1eb1c8",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
