@@ -3,6 +3,7 @@
 **Created**: 2026-10-03  
 **Updated**: 2026-10-04 — required mbook persistence endpoint and deviceid/session lookup clarification; user-directed: active-list membership is sufficient WebSocket identity; owner constraints unchanged  
 **Status**: Shared layout/text semantics DECIDED; `logins_id NOT NULL` + `UNIQUE (logins_id)` USER-APPROVED REQUIRED target, not deployed; preference-column hardening pending approval  
+**SQL deliverable confirmed (2026-10-08)**: new full standalone schema-and-data RC, not a migration; isolated import/insertion acceptance required before final Backend Engineer review. No execution authorized by this documentation update.
 **Spec**: [Screen-news subscriptions](./speckit.system.screen-news-websocket-subscriptions.specify)  
 **Architecture**: [Components and flows](./speckit.system.screen-news-websocket-subscriptions.architecture.md)
 
@@ -85,23 +86,31 @@ deviceid, not cryptographic device ownership; anyone presenting another user's a
 be mapped to that user (documented residual risk, no independent spoof protection claimed). The
 deviceid never authorizes reads/writes of `news_settings`; those use the authenticated mbook endpoint.
 
-**Planning prerequisite, not deployed safe service access**: neither the facade nor upstream
-servlet checks caller/service authorization; `dalogin-quarkus/.../filters/AuthFilter.java` does not
-map `/activeSessions`, and `src/main/resources/META-INF/web.xml` adds no such security mapping.
-Cookie forwarding alone is insufficient. Protect both hops with narrowly scoped internal service
-authorization (securing the list itself, not a second caller-session requirement); no unchecked
-browser/admin credential reuse or admin-list exposure to iOS. Define fresh per-event lookup,
-logout/expiry/removal/replacement invalidation, complete replica coverage and reconnect re-lookup;
+**Admin-list access**: authorization of the facade and upstream servlet is out of scope
+(user-directed, 2026-10-04). The list is dalogin in-memory state; there is no DB query for active users,
+and it is never exposed to iOS. The lookup is fresh per event, with re-lookup on reconnect;
 no delivery for missing, invalid, conflicting or stale mappings or on lookup outage/denial/malformed response.
 Same-device user switch discards old identity and resolves the new session's account/preference.
 Disconnect removes transient registration, not settings. Reuse existing active-session metadata:
 **no new persistent client table or deviceid column/FK in news_settings** is required.
 
 This is documentation only: no migration installed, SQL executed, database connected, application
-changed, or dump modified. **Schema baseline**: the user-designated snapshot
-`k8infra/mysql_8/Dump20260524.sql` (mysqldump of `login_` from MySQL server 8.0.45, completed
-2026-05-24). The evidence below is schema metadata only; no data rows are reproduced or used
-to infer consent. It is snapshot evidence, not a live-database inspection; later drift is unknown.
+changed, or dump modified. **User-confirmed baseline**: `k8infra/mysql_8/Dump20260524.sql` is the
+latest working dump and includes events. Its recorded repository contents define `login_`; this
+confirmation does not establish exhaustive `book` schema/data coverage. The canonical
+`mysql_8/book.sql` is separate schema evidence, not proof of the current `book` data. The evidence
+below is schema metadata only; no data rows are reproduced or used to infer consent. It is not a
+live-database inspection.
+
+### SQL product and acceptance boundary
+
+Database Engineer owns T01 generation and T10 SQL evidence in the existing tasks/plan. The user confirms the May dump is the latest working source and includes events; record its checksum and preserve a separate untouched byte-for-byte copy, including user dirty content, before generating SQL. The repository dump content covers only `login_`, while canonical `mysql_8/book.sql` is separate `book` schema evidence, not proof of the current `book` data. This settles source identity but not exhaustive schema/data coverage. Generate a separate new full RC (planned `k8infra/mysql_8/screen_news_standalone_rc.sql`), never overwrite working/original dumps. Preserve full source schema/seed/data, unrelated objects, triggers/routines, PK/FK behavior, charset/collation and the `login_`/`book` boundary; identify the actual source for any `book` schema/data needed by the full RC without inventing or silently substituting seeds.
+
+RC alone must restore a fresh empty MySQL target without source/migration/previous-schema dependencies. ALTER examples below and `04-db-migration-runbook.md` are intermediate delta/rollout references, **not the final product or required RC import steps**. Only approved bounded changes are included; preference NOT NULL/default/CHECK, cleanup/backfill and unrelated redesign remain unapproved.
+
+After all edits: statically map the real final entities/API models and DAO reads/writes to RC tables/columns (actual/implicit annotations, types, nullability, ids/defaults, FKs, uniqueness and exact String yes/no), including `eventType` persistence/transient treatment without a repeat event-sending runtime test, then execute full RC-only import and representative insertion checks in isolated disposable MySQL before T12. T10 defines required intact-data/object comparisons, duplicate/NULL/orphan-owner detection with no silent cleanup, positive writes, negative duplicate/NULL/missing-FK checks, generated ids/defaults and trigger checks. Record SQL versus real ORM roundtrip evidence honestly; matching parameterized SQL is allowed without Java/runtime tests, not proof that the API/ORM ran.
+
+Existing `CREATE DATABASE`/`USE` and qualified references make a default-schema switch on a shared server unsafe. Require a disposable instance without live connectivity/credentials, or reviewed complete retargeting plus grants restricted to disposable schemas. Never restore over working/live DBs. SQL failure requires scoped fixes, RC regeneration and fresh-target retest, not hand repairing the target. The safe isolated harness and full dual-schema/model alignment remain acceptance prerequisites; source identity is user-confirmed. T11 still requires separate approval; no live inspection, migration or rollout is authorized here.
 
 **Preference toggle behavior (user-level, not connection-level)**: successful unsubscribe writes
 `newsScreening='no'` and does not close, disconnect, reconnect, or remove an otherwise valid
@@ -215,9 +224,10 @@ Retain all shared preference columns. Preference-column NOT NULL/default/CHECK a
 -- ILLUSTRATIVE ONLY — NOT EXECUTED; reconcile NULL/duplicate owners before migration.
 ALTER TABLE `login_`.`news_settings`
   MODIFY COLUMN `logins_id` INT NOT NULL,
-  ADD UNIQUE KEY `uq_news_settings_logins` (`logins_id`);
+  ADD UNIQUE KEY `UK_NEWS_SETTINGS_LOGINS_ID` (`logins_id`);
 ```
 
+- T01 uses `UK_NEWS_SETTINGS_LOGINS_ID` consistently for the RC/intermediate delta. The older rollout runbook's `uq_news_settings_logins` denotes the same uniqueness requirement, not a second index to add.
 - Preserve the signed INT auto-increment `id` PK. Signed INT `logins_id` matches `logins.id`;
   it is not a client ID, UUID text, or a new subscription identity. Approved NOT NULL + UNIQUE
   enforce at most one owned shared row per account, not a row for every account. The unique index
@@ -390,10 +400,9 @@ MySQL CHECK version precondition, idempotent scoped writes, and the dual-schema 
 SQL is not parser-tested/executed; Mermaid is not renderer-tested. No installations or DB connections.
 
 Outstanding: live drift after the 2026-05-24 snapshot; migration/reconciliation authorization;
-preference-column NOT NULL/default/CHECK approval;
-account deletion/retention policy; internal service authorization of the simple-web-api lookup and
-membership freshness/replica coverage; required new mbook persistence endpoint and read route/contract;
-deviceid transport; and architecture publication/replica details. Deviceid reuse, shared-row layout and literal
+account deletion/retention policy; replica coverage. Resolved: the subscription API is
+`GET`/`PUT /mbook-1/rest/news-settings/screen` (via dalogin `/login/newsSettings/screen`), the transport is `?deviceId=`,
+there is no CHECK/DEFAULT on `newsScreening`, and admin-list authorization is out of scope. The migration artifact is task T01. Deviceid reuse, shared-row layout and literal
 yes/no semantics, required owner NOT NULL/UNIQUE constraints and membership-only WebSocket identity
 (with its accepted residual risk) are approved, not outstanding choices.
 These remaining questions do not authorize

@@ -22,6 +22,7 @@ Rules:
 | CID-MBOOKS-TRENDING | mbooks-quarkus | GET | /mbooks-1/rest/book/trending-movies | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
 | CID-MBOOKS-TIMELINE | mbooks-quarkus | GET | /mbooks-1/rest/book/timeline-feed | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
 | CID-MBOOK-WS-SCREEN-NEWS | mbook-quarkus | WebSocket | /mbook-1/ws | @backend-dev | @frontend-dev, @ios-dev | P2 | planned |
+| CID-MBOOK-NEWS-SETTINGS-SCREEN | mbook-quarkus (via dalogin AdminServlet /login/admin/newsSettings/screen) | REST GET/PUT | /mbook-1/rest/news-settings/screen | @backend-dev | @ios-dev | P2 | planned |
 
 ## Required References in Spec/Tasks
 

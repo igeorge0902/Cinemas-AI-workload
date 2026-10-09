@@ -4,230 +4,155 @@ Feature: `speckit.system.screen-news-websocket-subscriptions.specify`
 Architecture: `speckit.system.screen-news-websocket-subscriptions.architecture.md`
 Database schema: `speckit.system.screen-news-websocket-subscriptions.database-schema.md`
 Tasks: `speckit.system.screen-news-websocket-subscriptions.tasks`
-Contract IDs: `CID-MBOOK-WS-SCREEN-NEWS` (planned), `CID-MBOOK-NEWS-SCREENING-PREF` (proposed, to register)
-Status: Plan only. Nothing has been implemented, built, tested or run. Proposals marked **PROPOSED** are not user-approved.
+Contract IDs: `CID-MBOOK-WS-SCREEN-NEWS`, `CID-MBOOK-NEWS-SETTINGS-SCREEN`
+Status: Implemented and accepted for the authorized T00-T10/T12 scope on 2026-10-09. All three backend module compiles and isolated standalone SQL acceptance passed; iOS was statically reviewed only. T11, working/live database changes and deployment remain deferred. See the tasks file's execution acceptance for checksums, evidence limits and user-directed residual authentication risks.
 
-## Intent
+## 1. Scope
 
-This is a quick, focused refactor. It delivers per-user, opt-in screen news over the existing mbook WebSocket `/mbook-1/ws`:
+In scope:
+0. Prerequisite: mbook gets the mbooks controller → service → DAO and `ApiResponseFactory` layering (task T00). Routes and responses do not change.
+1. An iOS `MenuVC` toggle that reads and writes the logged-in user's screen-news subscription.
+2. The subscription API: dalogin `GET`/`PUT /login/admin/newsSettings/screen` forwards to mbook `GET`/`PUT /mbook-1/rest/news-settings/screen`.
+3. mbook `/mbook-1/ws` identifies each socket by `deviceId` and sends screen news only to subscribed users.
+4. mbooks screen add, update and delete publish `eventType` after commit.
+5. mbooks `/mbooks-1/ws` stops broadcasting screen news.
+6. `news_settings` uniqueness: one row per `logins_id`.
+7. Database Engineer delivers a separate **full standalone schema-and-data RC SQL dump**, derived from an untouched copy of the actual working dump, with required isolated full-import/insertion evidence. A migration script is not the final product. Delivered as `k8infra/mysql_8/screen_news_standalone_rc.sql`, using the user-confirmed login source and the explicitly accepted older `mysql_8/book.sql` supplement.
 
-- The preference is `login_.news_settings.newsScreening`, stored as the exact literals `yes`/`no`. A missing row means off.
-- The iOS `MenuVC` reads and writes the user's own preference through one authenticated endpoint.
-- The socket client ID is the existing iOS deviceid. Connect and reconnect send the same ID, and no client table is added.
-- Before each send, the server maps deviceid -> `user` using fresh active-session membership, then maps `user` -> `logins.id`.
-- Successful mbooks screen add, update or delete publishes on the existing Kafka topic `ios-movies-notifications2`. mbook delivers only to eligible open sockets.
-- mbooks `/mbooks-1/ws` must no longer bypass the filter by broadcasting screen news unfiltered.
+Out of scope:
+- Auth of simple-service-webapp `GET /webapi/myresource/admin`.
+- AngularJS UI, toast/presentation redesign, `newsTrending` and other categories.
+- `/news/{user}` and user notifications (`ios-users-notifications`).
+- Outbox, new tables, CHECK/DEFAULT constraints and other schema changes.
+- Persistent socket-client registry, polling, account-deletion policy.
+- Fixing the existing `user/` and `device/` filter regexes (see note in §3).
 
-Non-goals:
-- No outbox, events-table schema change or event-architecture redesign.
-- No AngularJS UI.
-- No framework conversion, polling or lifecycle redesign.
-- No persistent socket-client table.
-- No fixes to unrelated notifications.
-- No `newsTrending` or other categories.
-- No account-deletion policy.
+## 2. Decisions
 
-## Sequencing
+| ID | Decision |
+|---|---|
+| D1 | Subscription API name: `news-settings` with sub-resource `/screen`. |
+| D2 | iOS calls dalogin only via `loginPath("admin/newsSettings/screen")`. Extend the existing `AdminServlet` with the exact mapping `/admin/newsSettings/screen`; no new servlet. Keep `performTask` and existing session/token/activation checks unchanged. Only the active handler branches to new `callNewsSettingsAndRespond` with its existing attributes. Activation `"S"` uses unchanged `handleActivationRequired`/`prepareActivationRequired` and account-profile call, returning legacy 300 and activation headers with no settings call or mutation. Existing `/admin` behaviour and responses remain unchanged. |
+| D3 | dalogin forwards with the same headers as `AdminServlet`: `user`, `token2` (`deviceSessionManager.getToken2(deviceId)`) and `TIME_` (session creation time), plus `X-Token`, `Ciphertext` and cookies via `RequestFilter`. |
+| D4 | The mbook `CookieFilter` and `CiphertextFilter` path conditions also match `^/?(rest/)?news-settings/screen$`. |
+| D5 | Active users come from simple-service-webapp `GET /simple-service-webapp/webapi/myresource/admin`, a proxy of dalogin's in-memory `/login/activeSessions`. No DB query is made for active users. |
+| D6 | The recipient check runs at send time. When a different user logs in on a device, the next event uses that user's subscription. |
+| D7 | Delivery requires exactly `newsScreening == "yes"`. A missing row, `no`, NULL or any other value means no delivery. |
+| D8 | Schema: `news_settings.logins_id` becomes `INT NOT NULL` and gains `UNIQUE (logins_id)`. PK and FK are unchanged. |
+| D9 | The WS client ID is the iOS `currentDeviceId()`, sent as `?deviceId=` on every connect and reconnect. |
+| D10 | Unsubscribing keeps the socket open. Resubscribing resumes delivery on the same socket. |
+| D11 | mbook is refactored first, following `.ai/skills/mbooks-controller-dao-flow/SKILL.md`. `BookController` and `BookingHandlerImpl` are replaced by `AccountController`/`NewsController` with `AccountService`/`NewsService`. New mbook code (news-settings, recipient lookup) uses the services. The existing 5 endpoints keep identical status codes, header names/values and semantic JSON body shape (field types, nullability). JSON key order and equivalent escaping are not contract requirements. |
+| D12 | USER-CONFIRMED SQL deliverable: full standalone schema + seed/data dump, not migration. Database Engineer identifies/preserves the working source, generates a new RC, matches actual final models/DAO writes and records required disposable MySQL import/insertion checks before T12. No execution is authorized by this documentation turn. |
 
-P0 decisions (gates) -> P1 DB preflight and migration artifact (no execution) -> P2 mbook preference service and endpoint -> P3 identity lookup and per-event gate -> P4 event type wiring and mbooks suppression -> P5 iOS -> P6 consolidated validation (deferred, after code is ready) -> P7 deployment and closure.
+## 3. Contracts
 
-P2/P3 and P5 may proceed in parallel once their P0 gate is resolved. P4 depends on P3, because the gate must exist before update and delete start publishing. Runs happen only in P6/P7, never between edits.
+### 3.1 iOS → dalogin
 
-## Prerequisite decisions
+```
+GET  /login/admin/newsSettings/screen            -> 200 {"enabled":true|false}
+PUT  /login/admin/newsSettings/screen  {"enabled":true|false}  -> 200 {"enabled":<committed value>}
+```
 
-Genuine blockers. A phase cannot finish without these:
+- Headers: the existing `SessionHeaderProvider` set (`X-Token`, `Ciphertext`, `X-Device`) plus the session cookie.
+- The existing `AuthFilter` `/admin/*` mapping protects the route; no filter change. No session returns its existing 502 error and is not forwarded. Keep AdminServlet's `processRequest`, `performTask`, existing checks and handler token2 lookup/exception handling unchanged; add no token/token2/activation-null or session-identity guards. Only `handleLoginForActivedUser` selects the new news-settings method versus the current account-profile method using its existing attributes. POST on the news path returns 405 with `Allow: GET, PUT`. Existing `/admin` GET/POST responses remain unchanged.
+- Activation `"S"` for news GET/PUT reuses unchanged `handleActivationRequired`: `prepareActivationRequired` sets **300**, `Response: S` and `X-Token`, then `callServiceAndRespond` retrieves/writes the existing account-profile body. No news-settings call or mutation occurs. This body is not `ScreenNews`; iOS uses existing 300 activation response handling (`APIClient` throws `AppError.activationRequired` before settings decoding).
+- For active news requests only, dalogin passes the mbook status and body through unchanged, including the unrelated filter 403 in §3.2.
 
-**D1 — Preference endpoint auth and contract (blocks P2 endpoint and P5 MenuVC).**
-- **PROPOSED:** Follow the existing dalogin `AdminServlet` pattern.
-  - iOS calls a new dalogin session-backed route, for example `GET`/`PUT /login/newsSettings`, with the existing session headers.
-  - dalogin takes `user` from the HttpSession, never from the client. It forwards to mbook `/mbook-1/rest/user/{user}/{token1}/news/screening` with `user`, `token2` and `TIME_` headers, as `AdminServlet` does.
-  - GET returns `{"enabled":true|false}`. PUT takes `{"enabled":bool}` and returns the committed `{"enabled":bool}`.
-  - On error, return the existing error envelope; an invalid stored value is a 5xx, never `false`.
-  - Extend the mbook `CookieFilter` and `CiphertextFilter` path regexes to the new subpath.
-- **Alternative:** iOS calls mbook directly, and mbook validates the dalogin session itself. This needs new auth plumbing, so it is not recommended.
-- Needs owner approval and a `CONTRACTS_INDEX.md` entry.
+### 3.2 dalogin → mbook
 
-**D2 — Service-to-service auth for the active-session list (blocks P3 go-live).**
-- Today `ImageResource` `/myresource/admin` has no auth and forwards only Cookie.
-- dalogin `AuthFilter` does not protect `/login/activeSessions`.
-- Apache publicly proxies `/simple-service-webapp` (`k8infra/quarkus-backend.yaml:295`).
-- Choose an internal credential, for example a shared secret header from config or secret, checked at both hops.
-- If unconfigured, fail closed, with no anonymous or credential fallback.
-- The raw list is never sent to iOS. Public exposure of the existing route is a pre-existing risk; record it, and do not widen it.
+```
+GET  /mbook-1/rest/news-settings/screen
+PUT  /mbook-1/rest/news-settings/screen   Content-Type: application/json  {"enabled":bool}
+Headers: user, token2, TIME_, X-Token, Ciphertext, Cookie: XSRF-TOKEN=...
+```
 
-**D3 — Freshness and replica completeness (blocks P3 go-live).**
-- The dalogin `activeUsers` map is local to the ServletContext. All current Deployments are `replicas: 1`.
-- **PROPOSED:**
-  - Fetch the list once per Kafka event with a short timeout and no cache, preserving the approved fresh-membership rule.
-  - Record that the design is correct only while dalogin runs a single replica. Scaling dalogin requires a shared session view first.
+| Case | Status | Body |
+|---|---|---|
+| GET, row `yes` | 200 | `{"enabled":true}` |
+| GET, row `no` or missing row | 200 | `{"enabled":false}` |
+| GET, row value not `yes`/`no` | 500 | `{"error":"invalid_news_setting"}` |
+| PUT valid | 200 | `{"enabled":<bool written>}` |
+| PUT body missing `enabled` or not a boolean | 400 | `{"error":"invalid_body"}` |
+| `user` header unknown in `logins` | 404 | `{"error":"user_not_found"}` |
+| Filter mismatch (Ciphertext ≠ token2, XSRF) | 403 | existing filter body |
+| DB error | 500 | `{"error":"db_error"}` |
 
-**D4 — Migration and reconciliation authorization (blocks the P1 apply and the reliance on UNIQUE in P2).**
-- The NOT NULL + UNIQUE on `logins_id` is approved but not deployed.
-- Applying it requires a live preflight and an owner-approved reconciliation for any NULLs or duplicates, with no arbitrary deletes, merges or backfills.
-- `newsScreening NOT NULL DEFAULT 'no'` and the CHECK constraint stay **pending approval**. They are not part of this plan's migration unless they are approved separately.
+- PUT upserts by `logins_id`. It writes only `newsScreening` (`yes`/`no`), keeps the existing row id, and commits before responding.
+- Body fields `user`, `loginId` and `deviceId` are ignored.
 
-Implementation details. These are chosen here and may be revisited without blocking:
+Note: mbook filters use `UriInfo.getPath()`, which includes `rest/`. D4's regex accepts both forms. The existing `user/` and `device/` patterns are left unchanged.
 
-- **I1 — deviceid transport:** a query parameter `?deviceId=` on the WS handshake URL, the same value on reconnect. mbook reads it from `Session.getRequestParameterMap()`. An empty ID means ineligible.
-- **I2 — Ineligible sockets:** keep them open. They receive non-news traffic, and resubscribing works without reconnecting.
-- **I3 — mbooks suppression:** stop forwarding screen news in the mbooks `KafkaListener`. Keep the `/mbooks-1/ws` endpoint and `broadcastMessage` for seat traffic. The only `broadcastMessage` caller found in code is that listener; verify in P4.
-- **I4 — Write without UNIQUE deployed:** lock the parent `logins` row with `FOR UPDATE`, then UPDATE the existing row or INSERT. If more than one row exists, fail with a logged error.
-  - Once UNIQUE is deployed, an upsert on `logins_id` updates only `newsScreening`. Never use `INSERT IGNORE`.
-  - Acknowledge only after commit. If the commit outcome is ambiguous, the client reloads.
+### 3.3 WebSocket `/mbook-1/ws?deviceId=<id>`
 
-## Design decisions
+- `@OnOpen`: a missing or blank `deviceId` closes with `CloseReason.CloseCodes.VIOLATED_POLICY`. Otherwise the session is registered under `deviceId`. A device may have several sessions.
+- `@OnClose`/`@OnError` remove that session only.
+- Message (text JSON): the existing `AddMovie` fields plus `"eventType":"created|updated|deleted"` and `"category":"screening"`.
 
-- **Event types (FR-010 compatibility):**
-  - Add a nullable `eventType` (`created|updated|deleted`; null = created) to both `AddMovie` classes, keeping `serialVersionUID = 1L`. In mbook, mark the field `@Transient`.
-  - Java serialization tolerates the added field, so old messages decode as created.
-  - Persist only created events to `events`, as today, which keeps `/news/{user}` unchanged.
-- **WS payload:** mbook sends one JSON object per event, keeping the existing `AddMovie` field names plus `eventType` and `category:"screening"`. This replaces the raw base64 blob, which is a coordinated iOS change; iOS currently only prints it. Users-topic messages stay untouched.
-- **Registry:** a mbook `Session` -> deviceid map alongside the existing set. Disconnect, error or a failed send removes the entry. Unsubscribe never touches the registry.
-- **Gate (per event, per socket):**
-  - The deviceid must have exactly one non-blank `user` in the fresh list.
-  - `DAO.getUser` must return `id != 0`.
-  - `newsScreening` must equal `"yes"`.
-  - Any other outcome means skip. Errors, conflicts and invalid values are logged at warn or error; a plain not-subscribed is not logged.
-- **Publish semantics:** mbooks publishes update and delete only on the success branch, after the DAO transaction returns.
-  - Delete captures the screen and movie data before deleting.
-  - `DAO.updateScreen` swallows commit failures today. Propagate a repository-standard explicit failure on rollback so that no event follows a failed operation.
-  - Delivery stays best-effort and fire-and-forget, with no outbox.
+### 3.4 Event
 
-## Implementation phases
+`AddMovie.eventType` (String) is added in both mbook and mbooks. A null `eventType` on consume means `created`. The topic `ios-movies-notifications2` is unchanged.
 
-P1 DB: preflight queries plus a reviewed migration artifact for UNIQUE / NOT NULL. Execution is deferred to P7 and requires D4.
+## 4. Delivery algorithm (mbook `KafkaMoviesListener`)
 
-P2 mbook preference:
-- `NewsSettings` mapping.
-- A DAO read that returns a tri-state: yes, no/missing, or invalid/error.
-- A transactional write.
-- The resource under the user path, plus the filter regexes.
-- The dalogin forwarding route, per D1.
+For each record:
+1. Deserialize to `AddMovie`, then call the injected `NewsService.saveNewEvent(event)`, preserving the existing transaction and persistence ordering.
+2. Call `admin` once per record. Build `deviceId -> set(user)` from the JSON array (`deviceId`, `user` keys); skip blank values.
+3. For each registered `deviceId`:
+   - The device must map to exactly one user. Zero users or more than one means skip.
+   - Resolve the user via `AccountService.getUser(user)`; skip sentinel id 0. Load the subscription via `NewsSettingsService` using `logins.id`, and deliver only when the stored value is exactly `"yes"`.
+   - Send to every open session for that device. A send failure removes that session only.
+4. If the admin lookup fails or returns non-200, nothing is sent for this record. Log it and continue to the next record.
 
-P3 mbook identity and gate:
-- An active-session client calling simple-service-webapp `/webapi/myresource/admin` with the D2 credential and a timeout.
-- Strict parsing.
-- A `ScreenNewsGate` (pure, unit-testable).
-- The `WebSocketServer` deviceid registry and a `sendScreenNews` method.
-- `KafkaMoviesListener` switches to the gated send.
+## 5. Implementation order
 
-P4 events:
-- mbooks `VenueController` publishes update and delete.
-- `eventType` is added on both sides.
-- The `DAO.updateScreen` failure signal is fixed.
-- mbooks `KafkaListener` stops broadcasting screen news.
+Before SQL changes: the user confirms `k8infra/mysql_8/Dump20260524.sql` is the latest working dump and includes events. Record that confirmation and the file checksum, and preserve a separate untouched byte-for-byte copy including user dirty content before generating the RC. The repository dump's recorded contents cover `login_`; the canonical `mysql_8/book.sql` is separate evidence for `book`, not proof that the dump exhaustively covers that schema or its current data. Map actual coverage for the standalone RC without merging the `login_`/`book` boundary or treating source identity as unconfirmed; this confirmation does not authorize a live export. Original-source snapshots still precede any implementation-file edits (T-preflight).
 
-P5 iOS:
-- `WebSocketManager` appends the deviceid to the URL.
-- A decoder for the JSON event that ignores unknown messages.
-- A `MenuVC` toggle showing confirmed state only. While a save is pending the toggle is disabled; on failure it reverts and shows an error. It is hidden or disabled when signed out.
+0. Prerequisite: mbook layering refactor (T00). No behaviour change.
+1. Database Engineer generates a new full standalone RC (T01; planned path `k8infra/mysql_8/screen_news_standalone_rc.sql`, no file created now) from a separate untouched copy of the user-confirmed latest working dump. Preserve full source schema/data, unrelated objects, triggers/routines, PK/FK behavior and the `login_`/`book` split; include only approved bounded changes. RC alone must import into a fresh empty target without source/migration/previous-schema dependencies. The dump's repository contents cover `login_` and do not include `book`; identify the actual `book` schema/data source needed for the standalone RC, without assuming canonical `book.sql` proves current data or inventing seeds. The migration snippet/runbook is intermediate/rollout reference, never the final product or an RC import dependency.
+2. mbook: `NewsSettingsController`, `NewsSettingsService`, DAO methods, filter regex.
+3. dalogin (Backend Engineer, protected auth/session contract): `NewsSettings` client interface, `ServiceClient` methods, exact `/admin/newsSettings/screen` mapping and GET/PUT dispatch. Add only an active-handler branch and `callNewsSettingsAndRespond`, plus `AdminResponses.newsSettingsDownstream`; leave `performTask`, the inactive handler and account-profile method unchanged. Existing AuthFilter `/admin/*` mapping needs no edit.
+4. mbook: active-session client, WS registry, gated delivery.
+5. mbook/mbooks: `AddMovie.eventType`; mbooks publish for update/delete; mbooks `KafkaListener` stops broadcasting.
+6. iOS: WS `deviceId` query, `BackendServices` news-settings calls, `MenuVC` toggle.
+7. Static dry run, actual model matching, application compile-only gate and required bounded isolated SQL import/insertion checks (T10), after all edits.
+8. Final Backend Engineer review (T12), including model alignment and SQL acceptance evidence.
 
-P6 no-launch validation and P7 authorized behavioural validation/deployment: see
-Tasks T15a-T18. Both are deferred; planning executes neither.
+Steps 2 and 4 depend on step 0. Steps 1, 3 and 6 are independent of step 0. Steps 2–3 and 6 are independent of step 4. Step 5 depends on step 4.
 
-## Temp-file edit workflow (implementation)
+## 6. Working rules
 
-1. Before any change, `view` the exact current range of the target file. Never assume the content of dirty, concurrently edited files.
-2. Stage replacement content longer than about 30 lines in the session folder `files/<task-id>-<file>.txt`, not in the repo.
-3. Apply precise, file-scoped edits: replace only the viewed range, or create new files. Never do broad deletes, rewrite whole files, run sed or regex over trees, or use shell obfuscation.
-4. Read the edited range back. If the surroundings changed since the view, stop and re-merge by hand.
-5. Run no commands between edits. After implementation edits are complete, use the
-   consolidated schema/compile/dry-run gate below. Behavioural tests and deployment
-   require a separately authorized runtime-validation phase.
+- Do not run commands between edits. Stage large replacements in session `files/*.txt`, then apply them with view/edit.
+- Before the first edit, deletion or rename of each existing implementation file, capture its full current on-disk content verbatim in session `files/originals/<repo-relative-path>.txt`. Include user-owned uncommitted content; do not substitute git HEAD or overwrite snapshots. Mark new files as `new` in the execution record. Originals are reference/rollback artifacts, not staged replacements; capture any newly scoped file before touching it.
+- Never overwrite the working dump or its untouched copy; generate the separate RC from that preserved source and record source/copy/RC paths and checksums. All SQL execution waits until edits and static model matching are complete.
+- Do not commit, push or deploy without explicit approval.
+- The initial documentation-only authorization was subsequently superseded by explicit user authorization for T01-T10 and T12 implementation and isolated SQL acceptance. T11, working/live database changes and deployment remain deferred. Telemetry is disabled.
 
-## Validation strategy (deferred; no gate waived)
+## 7. Validation gate (after all edits)
 
-Implementation uses a consolidated **database schema + compile + dry-run** gate after
-all edits, not repeated commands between edits. No checks are executed while planning.
-These checks do not launch the iOS app, simulator, backend services or containers.
+| Check | Command / method |
+|---|---|
+| Schema/model mapping | Database Engineer compares RC with confirmed working copy and canonical `mysql_8` scripts; maps real final entities/API models and DAO writes to tables/columns, checking actual/implicit `@Entity`/`@Table`/`@Column`/`@JoinColumn`, types/lengths, nullability, ids/generation, defaults, FKs, uniqueness and exact String yes/no. See T10 for source paths and acceptance details; never invent columns from wire DTOs. |
+| Required isolated SQL acceptance | After all edits and static mapping, Database Engineer imports RC alone into a fresh empty disposable MySQL 8 target; verifies full source data/object preservation and FK integrity, detects duplicate/NULL/orphan owners and invalid preferences without silent cleanup, then runs representative valid insertion/update/re-read and duplicate/NULL/missing-FK rejection checks with constraints enabled. Check generated ids/defaults, trigger behavior, unchanged unrelated preferences and affected event writes. Use real ORM roundtrip only if feasible without application startup/Java tests; otherwise matching parameterized SQL is required and must be labeled SQL evidence, not ORM/API runtime evidence. Record version/SQL mode, isolation, final RC checksum and results. |
+| Compile | `./mvnw -q -DskipTests compile` in `mbook-quarkus`, `mbooks-quarkus` and `dalogin-quarkus`. |
+| Refactor | Static inspection finds no `BookingHandlerImpl`/`BookController` references in mbook source; compare the T00 changes against its preservation list. |
+| iOS | Static review only; no `swiftc` or `xcodebuild`. Swift compilation is not covered by this gate. |
+| Dry run | Read-only comparison of original snapshots with final contents, including new/deleted files. Routes, filter regex, headers and JSON keys match §3; AdminServlet remains minimally adapted and activation `"S"` returns existing 300 without subscription mutation. |
+| Final review | T12: Cinemas Backend Engineer reviews final changes, successful compiles, actual model alignment and Database Engineer's SQL import/insertion evidence for the final RC. Fix findings, rerun affected compiles; regenerate RC and repeat static matching/fresh-target SQL checks if impacted, then obtain approval. |
 
-### V1 - Database schema validation
+Application validation in T10 remains compile-only: no Java/runtime/Swift tests, application service startup or deployment. The sole additional execution allowance is the **required bounded isolated SQL import/insertion harness**, not migrations against working/live DBs. Existing dumps use `CREATE DATABASE`/`USE`, qualified names and definers: choosing another default schema on a shared server is unsafe. Prefer a disposable instance with no live connectivity/credentials, retaining canonical names there; alternatively require reviewed complete retargeting and grants confined to disposable schemas. MySQL startup is permitted only for that harness. A safe target/harness is a prerequisite, never assumed.
 
-Compare the proposed migration and mappings against relevant CREATE TABLE definitions
-in `k8infra/mysql_8/Dump20260524.sql`, without importing or displaying dumped data.
-Check signed INT compatibility with `logins.id`, preserved primary/foreign keys, and the
-approved `logins_id NOT NULL` plus UNIQUE owner constraint. Confirm migration preflight
-covers NULL owners, duplicate owners and orphans without arbitrary deletion or merging.
-Do not add unapproved DEFAULT/CHECK changes. Record the static result in session files.
+Dependency chain: T-preflight source identity/untouched copy → T01 separate RC generation → T10 static matching against final T02/T07 models/DAO → isolated full import/insertion validation → T12 final review. SQL failures require scoped fixes, RC regeneration and retest on a fresh target, never hand repairs to fake a pass. Compiles are run first, then failures triaged. Completion requires executed SQL acceptance and T12 approval; static checks alone cannot accept the RC.
 
-This is a schema/SQL review, not proof the migration executes. MySQL ALTER statements
-implicitly commit; a transaction followed by ROLLBACK is not a safe migration dry run.
-There is no assumed general MySQL `--dry-run` or `EXPLAIN ALTER TABLE` validation.
-If executable engine verification is later authorized, use an explicitly disposable
-isolated schema/server with schema-only definitions and minimal synthetic fixtures,
-never the live database or full data dump. Verify rejection of NULL/duplicate owners,
-preserved unrelated preferences and idempotent writes there; clean up only owned resources.
+Runtime check (existing RestAssured login→admin smoke test, then manual testing; no new tests, no news-settings automation) waits for T10 and T12 and requires separate approval. Deployment also requires separate approval.
+T11 includes no working/live migration or RC restore; any rollout needs distinct explicit authorization. The existing `04-db-migration-runbook.md` remains rollout reference, not authority to bypass these gates.
 
-### V2 - Backend compile-only validation
-
-Use each touched module's existing Maven wrapper/tool from its own directory, not a
-presumed root reactor. The command template is `./mvnw -DskipTests compile`; use
-`./mvnw -DskipTests test-compile` to compile test sources without executing them.
-Confirm the selected lifecycle/plugins do not start Quarkus dev mode, services,
-containers or test resources; any necessary existing disable option must be verified
-before use. Capture the actual command exit status and diagnostics in session files.
-
-### V3 - iOS compile checking without an app run
-
-Reuse [alert-controller plan section 3.1](../SwiftUI_migration/speckit.migration.alertcontrollers.implementation-plan.md#31-compile-checking-without-building-the-app):
-
-- **G1:** per-file `swiftc -parse` for changed app-target Swift sources.
-- **G2:** whole-app `swiftc -typecheck -swift-version 5` with the simulator SDK,
-  compatible simulator target (the reference uses `arm64-apple-ios15.0-simulator`),
-  `SwiftLoginScreen/SwiftLoginScreen-Bridging-Header.h`, and `-I`/`-F` paths to
-  existing DerivedData `Debug-iphonesimulator` dependency products.
-- Derive the source list from the actual app target Sources phase in
-  `SwiftCinemas.xcodeproj/project.pbxproj`, using the reference extraction method.
-  Verify current phase/settings rather than assuming historical source counts.
-  Do not feed a blind `find '*.swift'` list: non-target files and duplicate basenames
-  produce misleading errors. Register any new source files in the target.
-- Capture compiler exit status independently of diagnostic filtering; a `tee`/`grep`
-  pipeline must not turn compiler failure into success. Retain baseline/after diagnostics
-  where available and classify pre-existing versus introduced failures.
-- Missing compatible dependency products block G2. Do not install/rebuild automatically:
-  request authorization for one `xcodebuild ... build` if needed to restore products.
-  That is a build only, never `test`, app launch or simulator boot.
-
-Typechecking validates source types and signatures, not linking, resources, signing,
-network behaviour or database correctness. Use a separately authorized final full build
-if linking/resource changes require it. Historical alert-refactor timings and coverage
-claims are not guarantees for this feature.
-
-### V4 - File-based dry-run review
-
-Review final scoped diffs, target-source membership, endpoint/event contracts and generated
-SQL without applying migrations or contacting live endpoints. Trace fixture scenarios:
-fresh device membership plus exact `yes` delivers; `no` preserves the open socket but
-suppresses screening news; lookup failure is explicit and fail-closed; other preferences,
-legacy event decoding and non-news/seat traffic remain unaffected. Record proposed
-operations, prerequisites and unresolved decisions. This does not prove runtime behaviour.
-
-### Deferred behavioural validation
-
-After explicit runtime-validation authorization, run the smallest existing tests first:
-gate/parser/preference/event tests, touched-module suites, iOS decoder/menu tests and
-live-stack scenarios in Tasks T15c. Check add/update/delete, failed mutations,
-unsubscribe/resubscribe on the same socket, session removal/user switching, multiple
-devices, preserved traffic and the five-second observed target. Required testing,
-security and performance gates remain pending until this evidence exists.
-
-## Risks and mitigations
+## 8. Risks
 
 | Risk | Mitigation |
 |---|---|
-| Device-id impersonation | Accepted trust model; keep it documented (D2 limits list exposure only) |
-| Stale or partial session list with more than one dalogin replica | D3: single-replica assumption is documented and must be re-checked before scaling |
-| Duplicate or NULL `news_settings` rows | Fail closed plus logging; reconciliation under D4 |
-| Fire-and-forget publish loss | Best-effort is documented; no outbox, by scope |
-| iOS breaks on the JSON payload | Coordinated release; the decoder ignores unknown messages |
-| Hidden seat senders on mbooks WS | Search in P4 before suppressing; keep the endpoint |
-| Per-event lookup latency | One list fetch per event, not per socket; short timeout means skip delivery |
-
-## Open decisions (reported)
-
-- D1 endpoint route and auth.
-- D2 internal credential.
-- D3 timeout, fresh per-event lookup, and the single-replica acceptance.
-- D4 migration and reconciliation approval.
-- Pending CHECK / DEFAULT approval.
-- Account-deletion policy (out of scope).
+| Existing duplicate/NULL owners, orphan FKs or invalid preferences block RC acceptance | File inspection or separate disposable source import; explicit owner-approved reconciliation decision, no silent cleanup or live writes. |
+| The admin lookup adds latency per event | One call per record, not per device. |
+| `DAO.updateScreen` swallows commit failures | Make failure visible to `VenueController`, and publish `updated` only on success. |
+| MySQL DDL commits implicitly; dump schema directives can target the wrong DB | Disposable isolated import only; no transaction rollback dry-run claim, no restore over working/live schemas. Reverse DDL is intermediate rollout reference, not an RC dependency. |
+| Full dual-schema source coverage or a safe isolated SQL harness is not yet evidenced | User confirmation resolves working-dump identity and event presence, not exhaustive coverage. Preserve the exact `login_`/`book` split and reconcile the separate canonical `book.sql` evidence with the confirmed source; an isolated harness remains required for SQL acceptance. |
+| The T00 refactor changes a response (e.g. `profilePicture` missing when set, or appearing as `null` when unset; a lost `User`/`Device` header) | T10 diff review against the preservation list. T11 RestAssured login→admin smoke covers `/user/` through dalogin; `profilePicture` is checked manually. |

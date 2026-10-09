@@ -21,7 +21,6 @@ Labels used in the diagrams:
   storage and exact lowercase `newsScreening='yes'`/`'no'` are decided by user correction (2026-10-03).
   Owner NOT NULL/UNIQUE are now user-approved required target constraints, not optional proposals;
   their deployment still requires planning. Preference-column NOT NULL/default/CHECK remain pending.
-- **[undecided]**: an option that planning must choose (see "Planning decisions").
 
 ## Evidence baseline (current state)
 
@@ -46,27 +45,28 @@ Labels used in the diagrams:
 flowchart LR
     subgraph IOS["iOS app - SwiftCinemas"]
         MENU["MenuVC - iOS menu screen<br/>[existing UIKit screen]<br/>+ screen-news on/off control [proposed]"]
-        PREFCLIENT["Subscription API client<br/>[proposed, via cookie-backed sharedCustomSession]"]
+        PREFCLIENT["BackendServices getNewsScreen / putNewsScreen<br/>[planned] GET/PUT /login/admin/newsSettings/screen<br/>{enabled: bool}"]
         DEVICE["currentDeviceId [existing]<br/>identifierForVendor uuidString<br/>login parameter deviceId [existing]"]
         WSM["WebSocketManager<br/>[existing, owned by AppDelegate]<br/>+ existing deviceid on connect/reconnect [required, not implemented]<br/>+ created/updated/deleted handling [proposed]"]
         ADMIN["AdminVC / AdminUpdateVC<br/>[existing admin flows]"]
     end
 
     PROXY["Apache proxy<br/>[existing ProxyPass incl. WebSocket routes]<br/>forwards session cookie for preference API, deviceid for socket"]
-    AUTH["mbook endpoint authentication<br/>[existing session context]<br/>preference API only; not used for socket identity"]
-    SIMPLE["simple-web-api = simple-service-webapp-quarkus<br/>GET /simple-service-webapp/webapi/myresource/admin [existing]<br/>service authorization [required, not established]"]
-    ACTIVE["dalogin GET /login/activeSessions [existing]<br/>ServletContext activeUsers [existing source]<br/>sessionId, user, deviceId, creationTime; id = list index<br/>no status field; service protection/freshness [required planning]"]
+    DALOGIN["dalogin AdminServlet [existing, extended]<br/>GET/PUT /login/admin/newsSettings/screen<br/>existing AuthFilter /admin/*; session/token/activation checks<br/>user from HttpSession; adds user, token2, TIME_ headers"]
+    AUTH["mbook CookieFilter + CiphertextFilter [existing, path extended]<br/>preference API only; not used for socket identity"]
+    SIMPLE["simple-web-api = simple-service-webapp-quarkus<br/>GET /simple-service-webapp/webapi/myresource/admin [existing]<br/>endpoint authorization out of scope"]
+    ACTIVE["dalogin GET /login/activeSessions [existing]<br/>ServletContext activeUsers [existing source]<br/>sessionId, user, deviceId, creationTime; id = list index<br/>in-memory, no DB query; fresh per event"]
 
     subgraph MBOOKS["mbooks-quarkus"]
         VC["VenueController + DAO<br/>add / update / delete screen<br/>[existing]"]
         PUB["Screen-news publisher<br/>[existing for add only]<br/>update + delete [proposed]<br/>after successful commit only"]
-        MBWS["/mbooks-1/ws WebSocketServer<br/>seat traffic [existing, unchanged]<br/>screen news: suppress OR same gate [undecided]"]
+        MBWS["/mbooks-1/ws WebSocketServer<br/>seat traffic [existing, unchanged]<br/>screen-news broadcast removed [planned]"]
     end
 
     KAFKA[["Kafka topic ios-movies-notifications2<br/>[existing event channel]"]]
 
     subgraph MBOOK["mbook-quarkus - account data and NewsSettings; not dalogin active-session source"]
-        PREFAPI["New authenticated persistence endpoint REQUIRED<br/>+ MenuVC reads REQUIRED<br/>[proposed implementation; path/method/payload TBD]"]
+        PREFAPI["NewsSettingsController [planned]<br/>GET/PUT /mbook-1/rest/news-settings/screen<br/>{enabled: bool}"]
         SUBSVC["Screen-news subscription service<br/>[proposed]"]
         NS[("login_.news_settings [existing shared table]<br/>owner NOT NULL + UNIQUE [approved required, not deployed]<br/>at most one row per account; every row owned<br/>newsScreening: exact yes = on, no = off [decided]<br/>missing row = off; invalid value = error<br/>future category columns preserved")]
         LISTENER["KafkaMoviesListener<br/>[existing consumer]"]
@@ -79,16 +79,17 @@ flowchart LR
 
     MENU -->|"load state / toggle"| PREFCLIENT
     PREFCLIENT -->|"read / write own preference"| PROXY
-    PROXY --> PREFAPI
-    PREFAPI -->|"user from session, never from client ID or body"| AUTH
+    PROXY --> DALOGIN
+    DALOGIN -->|"user, token2, TIME_, Ciphertext, XSRF cookie"| AUTH
+    AUTH --> PREFAPI
     PREFAPI --> SUBSVC
     SUBSVC <-->|"read column / ensure row / set only newsScreening yes or no"| NS
 
     WSM -->|"connect/reconnect + existing deviceid"| PROXY
-    DEVICE -->|"reuse existing deviceid; transport TBD"| WSM
+    DEVICE -->|"reuse existing deviceid; ?deviceId= query"| WSM
     PROXY --> WSS
     WSS -->|"server-side membership lookup [required integration]"| SIMPLE
-    SIMPLE -->|"existing Cookie-forwarding proxy; internal service auth TBD"| ACTIVE
+    SIMPLE -->|"existing proxy; auth out of scope"| ACTIVE
     ACTIVE -->|"match deviceId to one authenticated user; resolve logins.id"| REG
     WSS -->|"register / remove on close"| REG
 
@@ -120,7 +121,7 @@ Key rules shown above:
   user/deviceId), conflicting users, or missing/non-unique account => no delivery with explicit
   logging. No arbitrary match or stale-cache authorization.
   Admin session metadata stays server-side; no list returned to iOS, no unchecked browser/admin
-  credential reuse. Internal service authorization of the list is a separate planning concern.
+  credential reuse. Authorization of the admin list is out of scope (user-directed 2026-10-04).
   Disconnect removes registration; logout/expiry/removal/replacement invalidate it. Each reconnect
   repeats the lookup, and each event rechecks fresh membership before delivery.
   Same-device user switch cannot retain the old account's identity or preference. The local map
@@ -173,7 +174,9 @@ sequenceDiagram
     participant M as MenuVC [existing + proposed control]
     participant C as Subscription API client [proposed]
     participant P as Apache proxy [existing]
-    participant A as mbook subscription endpoint [proposed]
+    participant L as dalogin AdminServlet [existing, extended]
+    participant R as mbook account-profile API [existing]
+    participant A as mbook /rest/news-settings/screen [planned]
     participant S as Subscription service [proposed]
     participant DB as login_.news_settings [shared row, layout decided]
 
@@ -181,18 +184,28 @@ sequenceDiagram
     M->>M: Show control as loading and disabled
     M->>C: Load screen-news preference
     C->>P: Authenticated read with session cookie
-    P->>A: Forward request and session context
+    P->>L: GET /login/admin/newsSettings/screen
+    Note over L: Existing /admin/* AuthFilter and performTask unchanged<br/>No added session/token/token2/activation-null guards<br/>Only the active handler selects the new settings call
     alt No valid session
-        A-->>C: Not authenticated
+        L-->>C: Rejected by AuthFilter
         C-->>M: Signed-out result
         M->>M: Keep control disabled, show signed-out state, no change attempted
-    else Valid session
+    else Valid session, activation S
+        L->>L: Existing handleActivationRequired / prepareActivationRequired
+        L->>R: Existing callServiceAndRespond / callGetData
+        R-->>L: Account-profile body
+        L-->>C: 300, Response: S, X-Token, account-profile body
+        C-->>M: Existing activation response handling, not ScreenNews
+        M->>M: Keep control disabled; no settings call or mutation
+    else Valid session, active handler
+        L->>A: GET with user, token2, TIME_ from session
         A->>S: Read preference for session user
         S->>DB: Read newsScreening for session user
         alt Lookup succeeds with canonical value or missing row
             DB-->>S: Exact yes, exact no, or missing row
             S-->>A: Enabled = exact yes, no or missing row = false
-            A-->>C: Current server state
+            A-->>L: 200 {enabled}
+            L-->>C: 200 {enabled}
             C-->>M: Current server state
             M->>M: Show server state and enable control
         else Lookup or value/integrity validation fails
@@ -208,25 +221,38 @@ sequenceDiagram
     M->>M: Show pending state and block repeat taps
     M->>C: Save requested state
     C->>P: Authenticated write with session cookie
-    P->>A: Forward request and session context
-    A->>S: Save requested state for session user
-    Note over A,S: Require valid session and canonical input<br/>Existing invalid/duplicate data needs explicit review, not silent repair
-    alt Subscribe
-        S->>DB: Ensure shared row and set only newsScreening to yes
-    else Unsubscribe
-        S->>DB: Ensure shared row and set only newsScreening to no
-    end
-    Note over S,DB: Serialize on parent login, idempotent with no duplicates<br/>Retain row and all unrelated columns
-    alt Save committed
-        DB-->>S: Transaction committed
-        S-->>A: Persisted state
-        A-->>C: Persisted state
-        C-->>M: Success with persisted state
-        M->>M: Show persisted state as confirmed
-    else Save failed, timed out, or session invalid
-        A-->>C: Error or no response
-        C-->>M: Failure
-        M->>M: Revert to last confirmed state and show error<br/>Reload after ambiguous commit/timeout
+    P->>L: PUT /login/admin/newsSettings/screen {enabled}
+    alt No valid session
+        L-->>C: Existing AuthFilter rejection
+        C-->>M: Failure; no preference change
+    else Activation S
+        L->>L: Existing handleActivationRequired / prepareActivationRequired
+        L->>R: Existing account-profile GET, not settings PUT
+        R-->>L: Account-profile body
+        L-->>C: 300, Response: S, X-Token, account-profile body
+        C-->>M: Existing activation response handling; no success decoding
+        M->>M: Revert pending toggle; no preference mutation
+    else Active handler
+        L->>A: PUT {enabled} with user, token2, TIME_ from existing attributes
+        A->>S: Save requested state for session user
+        Note over A,S: Require valid session and canonical input<br/>Existing invalid/duplicate data needs explicit review, not silent repair
+        alt Subscribe
+            S->>DB: Ensure shared row and set only newsScreening to yes
+        else Unsubscribe
+            S->>DB: Ensure shared row and set only newsScreening to no
+        end
+        Note over S,DB: Serialize on parent login, idempotent with no duplicates<br/>Retain row and all unrelated columns
+        alt Save committed
+            DB-->>S: Transaction committed
+            S-->>A: Persisted state
+            A-->>C: Persisted state
+            C-->>M: Success with persisted state
+            M->>M: Show persisted state as confirmed
+        else Save failed, timed out, or session invalid
+            A-->>C: Error or no response
+            C-->>M: Failure
+            M->>M: Revert to last confirmed state and show error<br/>Reload after ambiguous commit/timeout
+        end
     end
 ```
 
@@ -247,8 +273,8 @@ sequenceDiagram
 
     participant SA as simple-web-api admin facade [existing route]
     participant AS as dalogin activeSessions / activeUsers [existing source]
-    W->>WS: Connect/reconnect with existing deviceid (transport TBD, no socket session credential required)
-    WS->>SA: Server-side GET admin [internal service auth required, separate concern]
+    W->>WS: Connect/reconnect /mbook-1/ws?deviceId=currentDeviceId()
+    WS->>SA: Server-side GET admin [auth out of scope]
     SA->>AS: Existing GET /login/activeSessions proxy (currently Cookie forwarding only)
     AS-->>SA: Array of authenticated users: id, sessionId, user, deviceId, creationTime (no status)
     SA-->>WS: Session metadata or error, never forwarded to iOS
@@ -273,7 +299,7 @@ sequenceDiagram
         V->>K: Publish created, updated, or deleted event after commit
         K->>D: Consume event
         K-->>MB: Existing consumer
-        Note over MB: Suppress screen news or apply the same gate, undecided. Seat traffic unchanged
+        Note over MB: Screen-news broadcast removed. Seat traffic unchanged
         D->>R: Get open connections
         loop Each open connection
             D->>SA: Fresh active-session membership lookup before delivery
@@ -296,40 +322,14 @@ sequenceDiagram
     end
 ```
 
-## Planning decisions (not decided here)
+## Decisions (resolved; details in the plan)
 
-1. **Required new authenticated mbook persistence endpoint and MenuVC reads**: ownership and
-   persistence requirement are decided; implementation, path, method, payload, read-resource shape
-   and CID registration remain planning. Limited to caller's server-resolved preference; no
-   endpoint signature/deployed API is claimed. No contract-index edit required until identified.
-2. **Hardening and lifecycle rollout**: shared `login_.news_settings` and exact lowercase
-   `newsScreening='yes'`/`'no'` are **decided**, not alternatives awaiting storage selection.
-   The dump currently permits duplicate/NULL user keys and nullable free text. Plan preflight,
-   explicitly reviewed reconciliation and deployment of the **USER-APPROVED REQUIRED**
-   `logins_id NOT NULL` + `UNIQUE (logins_id)` target; do not treat these as optional design choices.
-   Preference-column `newsScreening NOT NULL DEFAULT 'no'` and CHECK remain pending approval.
-   Never auto-opt-in, blanket-backfill, silently normalize unknown data, delete ownerless/duplicate
-   rows, or arbitrarily merge shared preferences. Verify the exact MySQL version for proposed enforced CHECK support and
-   use byte-exact validation despite case-insensitive/trailing-space comparisons. The linked schema
-   documents a not-executed illustrative owner-only ALTER and proposed parent-lock serialization.
-   Keep the signed INT, id PK, existing FK/index compatibility and FK action unchanged;
-   account-deletion/retention policy still needs planning.
-3. **Client ID source resolved**: reuse existing deviceid, no new generation/persistence scheme.
-   Choose transport and validation using currentDeviceId/login semantics; unavailable ID is not
-   replaced with a new identifier. No news before validation completes.
-4. **Required internal service authorization and membership freshness**: protect simple-web-api's
-   admin facade and downstream dalogin source for narrowly authorized server-side use; this is not
-   a WebSocket caller-session requirement (user-directed 2026-10-04: membership is sufficient
-   identity). Specify per-event freshness/invalidation, no-delivery error handling, reconnect,
-   logout/expiry/removal, same-device user switch and complete coverage of ServletContext-local maps
-   across replicas. A stale cache or creationTime is insufficient. Security review records the
-   accepted membership-only trust assumption and its residual risk.
-5. **Reliable post-commit publication** for add, update, and delete (for example, a transactional
-   outbox or a post-commit hook). Delete must keep enough identifiers for FR-009.
-6. **`/mbooks-1/ws` screen news**: suppress it or apply the same gate (FR-012). Seat traffic is unchanged.
-7. **Multiple replicas**: how each replica sees current subscription state and its own connection
-   registry. The spec requires current-state filtering. Caching and invalidation design is deferred,
-   and no global invalidation mechanism is assumed.
-8. **Message schema and FR-010 compatibility** with the existing `AddMovie` fields.
-9. **iOS UI detail**: the control type and placement inside `MenuVC`, plus accessibility labels.
-   `@web-engineer` and AngularJS are not involved because web opt-in is out of scope.
+1. **Subscription API**: iOS → existing dalogin `AdminServlet`, extended for `GET`/`PUT /login/admin/newsSettings/screen` → mbook `GET`/`PUT /mbook-1/rest/news-settings/screen`, payload `{"enabled":bool}`. Existing AuthFilter `/admin/*` coverage, `performTask` and session/token/activation checks remain unchanged, with no added null guards. Only the active handler branches to `callNewsSettingsAndRespond` using its existing attributes. Activation `"S"` reuses unchanged `handleActivationRequired`/`prepareActivationRequired` and account-profile call, returning legacy 300, `Response: S`, `X-Token` and account-profile body without a settings call or mutation. That body is not `ScreenNews`; iOS uses existing activation response handling. Existing `/admin` behaviour is unchanged. The mbook filters cover the settings path and retain their unrelated 403 responses. Gateway flow is in plan §3.1; downstream status codes are in §3.2.
+2. **Schema**: `news_settings.logins_id INT NOT NULL` + `UNIQUE (logins_id)`. No other schema change (no CHECK/DEFAULT on `newsScreening`).
+3. **Client ID**: `?deviceId=currentDeviceId()` on every connect and reconnect.
+4. **Active users**: the simple-web-api admin list (dalogin in-memory) is queried once per event. Authorization of that endpoint is out of scope. A new login on a device is reflected by the next lookup.
+5. **Publication**: mbooks publishes `created`/`updated`/`deleted` after a successful commit on the existing topic. No outbox.
+6. **`/mbooks-1/ws`**: the screen-news broadcast is removed; seat traffic is unchanged.
+7. **Message**: the existing `AddMovie` fields plus `eventType` and `category:"screening"`.
+8. **iOS UI**: a `UISwitch` "Screen news" in `MenuVC`.
+9. **Not covered**: multi-replica registry coverage and account-deletion policy.
