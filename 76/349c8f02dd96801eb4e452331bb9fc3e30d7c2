@@ -1,0 +1,51 @@
+".ai/agents/definitions/Cinemas iOS Engineer.agent.md"
+  s_2872dea1e6356f::t_104be74119c4f6 3,10-12
+.ai/retrieval/instructions.md
+  s_2872dea1e6356f::t_4a0d864ad0cdfc 101
+.gitignore
+  h_d154d11af00b83 27-29
+.ai/skills/README.md
+  s_2872dea1e6356f::t_4a0d864ad0cdfc 19
+.ai/agents/AGENTS.md
+  s_2872dea1e6356f::t_104be74119c4f6 23
+.ai/skills/skills-github.md
+  s_2872dea1e6356f::t_4a0d864ad0cdfc 330,332,334-344,349,351-355,361-363
+.ai/agents/agents-role.yaml
+  s_2872dea1e6356f::t_104be74119c4f6 285,352,354-357,380-382,567,594,675,684-685
+.ai/skills/appium/SKILL.md
+  s_2872dea1e6356f::t_e1d3753c232fd9 55-56
+  s_2872dea1e6356f::t_6034a18b0243bd 1-51,53-54,57-72,74-87
+  s_1ecba5b1204745::t_229d9a33e97a72 52
+  s_2872dea1e6356f::t_d6d4757766912d 73
+".ai/agents/definitions/Cinemas Testing Engineer.agent.md"
+  s_2872dea1e6356f::t_104be74119c4f6 15-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "76349c8f02dd96801eb4e452331bb9fc3e30d7c2",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_1ecba5b1204745": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1792242561161",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_2872dea1e6356f": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "8da2c9d3-90eb-4fd9-88f6-30ece6f202d5",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
