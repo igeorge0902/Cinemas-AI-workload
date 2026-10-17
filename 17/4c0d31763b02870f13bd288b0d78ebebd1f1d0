@@ -1,0 +1,100 @@
+.ai/retrieval/endpoints/endpoint-contract-analysis.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-65,68-132
+.ai/specs/legacy-specify/features/SwiftUI_migration/speckit.migration.alertcontrollers.implementation-plan.md
+  s_02bc3f0846c209::t_c1c6b4aa5196da 4
+  s_665cd05e72128d::t_6d8757b97555fb 5-68
+  s_02bc3f0846c209::t_48693f0e62670e 1-2,69-139,146-180,185-203,205,592,594-600,602-603,607,609-617,619-620,622-631
+  s_8fdd2a3c4643ab::t_daaa225b0e1f63 3,140-145,204,206-218,220-238,240-254,257-427,430-437,439,441-442,444,446-447,454,456-469,483-484,489-496,498,500-501,504-510,514,517-521,524-528,530-531,534-536,540-561,565-591,605,618
+  s_8fdd2a3c4643ab::t_5a202281892b46 181-184
+  s_8fdd2a3c4643ab::t_95bfd37ef6ab49 219,255-256,470-472,474,478
+  s_8fdd2a3c4643ab::t_9b0076fd7b628e 562-564
+.ai/specs/legacy-specify/features/SwiftUI_migration/speckit.migration.alertcontrollers.tasks.md
+  s_8fdd2a3c4643ab::t_daaa225b0e1f63 3,55-56,97,102
+  s_02bc3f0846c209::t_0adadf0127f9ff 4
+  s_665cd05e72128d::t_6d8757b97555fb 5-13,19-20,29,31,33,35-38,40-42,47-48,50-51,53-54,67,69,71,81-82,84,94-96,99,106-108,110-114,116,119-122
+  s_02bc3f0846c209::t_0504335ee86487 1-2,14-18,21-28,30,32,34,39,43-46,49,52,57-64,68,70,72-80,83,85-93,98,100-101,103-105,109,115,117-118,123-154
+  s_8fdd2a3c4643ab::t_79889c773c0c52 65-66
+.ai/agents/AGENTS.md
+  s_e51a3905f66d37::t_e71b3fc8436279 1-149,154-162
+  s_e51a3905f66d37::t_f6bdae25ab443f 150-153
+".ai/agents/definitions/Cinemas Backend Engineer.agent.md"
+  s_e51a3905f66d37::t_f92390ee7ba57e 12-18
+.ai/retrieval/references/CONTRACTS_INDEX.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 3-5,19-21,27,29-40,47-48
+.ai/retrieval/endpoints/endpoint-dependency-map.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-80
+.ai/retrieval/references/REFERENCE.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-45
+".ai/agents/definitions/Cinemas iOS Engineer.agent.md"
+  s_e51a3905f66d37::t_0e075c8ff29012 11-18
+.ai/specs/legacy-specify/features/SwiftUI_migration/speckit.migration.alertcontrollers.specify.md
+  s_8fdd2a3c4643ab::t_daaa225b0e1f63 1-2,5-6,25-151,157-171
+  s_665cd05e72128d::t_6d8757b97555fb 3-4,7-24,152-156
+.ai/retrieval/gaps/ios-backend-gaps-quick-reference.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-60
+.ai/retrieval/instructions.md
+  s_e51a3905f66d37::t_2eadaaf77aad34 1-85,88-90,93-122
+.ai/constitution/constitution.md
+  s_e51a3905f66d37::t_2eadaaf77aad34 1-111
+.ai/retrieval/references/design-spec.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-38
+.ai/retrieval/endpoints/endpoint-analysis-EXECUTIVE-SUMMARY.md
+  s_e51a3905f66d37::t_a44c090d2e8c5a 1-29
+.ai/specs/legacy-specify/features/SwiftUI_migration/README_DATAMANAGERS.md
+  s_8fdd2a3c4643ab::t_daaa225b0e1f63 14
+.gitignore
+  s_8c8c83709d7751::t_be2896b51f3029 22-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "174c0d31763b02870f13bd288b0d78ebebd1f1d0",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_02bc3f0846c209": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "bce70ea7-b591-4012-8b21-81caaca20a51",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_665cd05e72128d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "34926b2b-f3ab-41da-8653-9c1e7790a655",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_8c8c83709d7751": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d8b2f70b-bb33-4211-9477-5d213957f978",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_8fdd2a3c4643ab": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "915452a7-bc99-4900-b743-c854c433dd6d",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_e51a3905f66d37": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a64859a0-1119-4769-b792-f468fb6ebfbb",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
