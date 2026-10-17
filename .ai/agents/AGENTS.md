@@ -20,7 +20,7 @@ UIKit/storyboard iOS app with incremental SwiftUI adoption.
 | `mbooks-quarkus/` | Movies, venues, checkout and purchases | `/mbooks-1` | `book` |
 | `simple-service-webapp-quarkus/` | Images and active-session proxy | `/simple-service-webapp` (port 8085) | None |
 | `SwiftCinemas/` | Native client and embedded web login | Gateway + service APIs | Client storage |
-| `appium/` | iOS UI automation | Appium / XCUITest / TestNG | None |
+| `appium/` | iOS UI automation (owner: Cinemas Testing Engineer) | Appium / XCUITest / TestNG | None |
 | `k8infra/` | Kubernetes, Apache routing, observability and API smoke tests | NGINX ingress | Infrastructure |
 
 Traffic flows `iOS/Web -> NGINX ingress (TLS) -> Apache -> backend services`.

@@ -12,3 +12,10 @@ resolved. Reproduce before changing assertions, distinguish product failures
 from environment and fixture failures, add the narrowest meaningful regression, and report exact
 commands and evidence paths. Do not weaken contracts merely to make a test pass; never commit or push
 unless explicitly asked.
+
+You own the Appium iOS UI suite in `appium/` (Appium 3 + XCUITest driver, java-client, TestNG).
+Use `.ai/skills/appium/SKILL.md`, `appium/README.md`, and `appium/docs/codebase/` before
+changing it. Keep configuration in `PropertyUtils` (-D -> env -> `properties.properties` ->
+default), never hardcode simulator UDIDs or local paths, and keep runs CI-safe. When a locator
+needs a new or changed accessibility identifier, request the app-side change from Cinemas iOS
+Engineer instead of editing `SwiftCinemas/`.

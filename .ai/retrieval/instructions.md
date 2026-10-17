@@ -98,6 +98,7 @@ cd mbooks-quarkus
 - Appium uses system Maven: `mvn -f appium/pom.xml test`. Setup is in `appium/README.md`;
   `appium/src/test/java/TestNavigations.java` is the UI suite. Discover page objects under
   `appium/src/main/java/qa/ios/` rather than assuming a test-source package.
+  Route Appium work to Cinemas Testing Engineer and follow `.ai/skills/appium/SKILL.md`.
 - iOS: select the actual scheme/destination with MCP `build_verify` or existing Xcode tooling;
   distinguish dependency/project preflight issues from compilation or test failures.
 - Shared IDE configurations live in `.run/`; inspect actual files instead of relying on

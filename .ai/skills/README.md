@@ -16,5 +16,6 @@
 - `html-prototype-uikit-redesign` - Implement UIKit parity from `/Users/gyorgy.gaspar/work/cinemas/cinemas/.ai/specs/legacy-specify/features/SwiftUIFeatures/prototypes` using Speckit-driven gap analysis and admin/adminupdate-tested layout patterns.
 - `swift-rest-contract-tests` - Build deterministic XCTest service contract tests for `MbooksService`/`LoginGatewayService` with mocked default mode and opt-in live mode.
 - `swift-datamanager-integration` - Apply API response to DataManager integration patterns to reduce global state and keep service/data boundaries stable.
+- `appium` - Maintain and run the Appium XCUITest iOS UI suite in `appium/` (property resolution, simulator/app selection, CI smoke workflow); owned by Cinemas Testing Engineer.
 - `api-smoke-restassured` - Run and maintain minimal Java RestAssured smoke tests in `k8infra/api-smoke-restassured` as the primary backend smoke path.
 - `quarkus-local-test-mysql` - Run Quarkus `@QuarkusTest` suites locally against the Oracle `/usr/local/mysql` install, prompting the user when MySQL is down and working around the local 8080/8081 port and proxy pitfalls.

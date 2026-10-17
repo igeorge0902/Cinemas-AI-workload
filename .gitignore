@@ -24,3 +24,6 @@
 !scripts/
 !scripts/dev-backends.sh
 !scripts/README.md
+/mbook-quarkus/.mvn/
+/.idea/
+/.dev-logs/

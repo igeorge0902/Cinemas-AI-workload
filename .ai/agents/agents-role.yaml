@@ -282,7 +282,7 @@ agents:
       - task: fix mobile-specific auth/session issues
         trigger: incident
         priority: high
-      - task: add ios unit/ui tests
+      - task: add XCTest unit/ui tests inside SwiftCinemas (Appium suites belong to testing-engineer)
         trigger: intent_match
         priority: medium
 
@@ -349,7 +349,12 @@ agents:
       - unit-testing
       - integration-testing
       - e2e-testing
+      - ios-ui-automation
     vocabulary:
+      - appium
+      - xcuitest
+      - simulator
+      - testng
       - test-case
       - assertion
       - mock
@@ -370,6 +375,9 @@ agents:
         trigger: incident
         priority: high
       - task: report coverage gaps and risk areas
+        trigger: intent_match
+        priority: medium
+      - task: create, run, and maintain Appium XCUITest iOS UI suites, simulator config, and CI smoke runs in appium/
         trigger: intent_match
         priority: medium
 
@@ -556,6 +564,7 @@ umbrellaRouting:
     - Backend API contract work precedes dependent web or iOS integration changes.
     - Deployment and observability changes follow service validation unless the deployment itself is the incident.
     - Testing Engineer verifies changed behavior after implementation; it does not replace the owning implementation specialist.
+    - Black-box iOS UI automation in appium/ (Appium, XCUITest driver, TestNG, simulator and CI smoke config) routes to Cinemas Testing Engineer; Cinemas iOS Engineer owns app-side changes such as accessibility identifiers and XCTest suites inside SwiftCinemas.
     - Security review is read-only first; route remediation to the owning implementation specialist after findings are established.
     - Independent specialists may run in parallel; dependent stages run in order.
     - Assign each stage a tier from modelTiers; use fast only within its criteria and protected-area rules, including the narrow schema-documentation exception.
@@ -582,7 +591,7 @@ umbrellaRouting:
       triggers: [web-ui, web-routing, web-integration, web-accessibility]
     - name: Cinemas Testing Engineer
       roles: [testing-engineer]
-      triggers: [test-automation, regression-test, flaky-test, coverage-analysis]
+      triggers: [test-automation, appium-ios, regression-test, flaky-test, coverage-analysis]
     - name: Cinemas Security Reviewer
       roles: [security-specialist]
       triggers: [security-review, auth-security, dependency-security, secret-handling]
@@ -663,7 +672,7 @@ triggerRouting:
     - {trigger: ios-ui, agent: ios-dev, intent: build or repair UIKit or SwiftUI screens and navigation}
     - {trigger: ios-networking, agent: ios-dev, intent: change APIClient Endpoint service wrappers or decoding}
     - {trigger: ios-session, agent: ios-dev, intent: change iOS authentication session headers or keychain behavior}
-    - {trigger: ios-test, agent: ios-dev, intent: add iOS unit UI or networking tests}
+    - {trigger: ios-test, agent: ios-dev, intent: add XCTest unit UI or networking tests inside SwiftCinemas}
     - {trigger: database-schema, agent: database-dev, intent: change MySQL schema migrations triggers or stored procedures}
     - {trigger: database-query, agent: database-dev, intent: create diagnose or optimize SQL queries and indexes}
     - {trigger: database-integrity, agent: database-dev, intent: validate relational constraints transactions or data consistency}
@@ -672,7 +681,8 @@ triggerRouting:
     - {trigger: web-routing, agent: frontend-dev, intent: change browser routes navigation or SPA behavior}
     - {trigger: web-integration, agent: frontend-dev, intent: integrate the web UI with backend endpoints and contracts}
     - {trigger: web-accessibility, agent: frontend-dev, intent: improve frontend accessibility forms or responsive behavior}
-    - {trigger: test-automation, agent: testing-engineer, intent: create or maintain Appium API integration or end-to-end suites}
+    - {trigger: test-automation, agent: testing-engineer, intent: create or maintain API integration or end-to-end suites}
+    - {trigger: appium-ios, agent: testing-engineer, intent: create run or maintain Appium XCUITest iOS UI suites simulator config or CI smoke runs in appium/}
     - {trigger: regression-test, agent: testing-engineer, intent: reproduce a defect and add a regression test}
     - {trigger: flaky-test, agent: testing-engineer, intent: diagnose and stabilize nondeterministic tests}
     - {trigger: coverage-analysis, agent: testing-engineer, intent: assess test coverage gaps and release risk}

@@ -327,46 +327,40 @@ mvn test \
 - Keep heavy service-level logic tests inside each Java service only when needed.
 
 ### 10. Appium iOS Test: Page Object + Test Case
-**When:** Adding new iOS UI automation tests.
+**When:** Adding new iOS UI automation tests. Owner: Cinemas Testing Engineer. Full guide: `.ai/skills/appium/SKILL.md`.
 
-**Page Object (in `qa/ios/pages/MyPage.java`):**
+**Locator (in `qa/ios/page/PageObjects.java`):**
 ```java
-public class MyPage {
-    private RemoteWebDriver driver;
-    private static final String BUTTON_ID = "MY_BUTTON_ID";
-    
-    public MyPage(RemoteWebDriver driver) {
-        this.driver = driver;
-    }
-    
-    public void clickMyButton() {
-        WebElement button = driver.findElement(MobileBy.id(BUTTON_ID));
-        button.click();
-    }
-    
-    public String getResultText() {
-        return driver.findElement(MobileBy.id("RESULT_ID")).getText();
+public static WebElement myButton() {
+    return driver.findElement(AppiumBy.accessibilityId("My Button"));
+}
+```
+
+**Navigation step (in `qa/ios/navigation/MyFlow.java`):**
+```java
+public class MyFlow {
+    public static MyFlow tapMyButton() {
+        PageObjects.myButton().click();
+        return new MyFlow();
     }
 }
 ```
 
-**Test Case (in `qa/ios/test/TestMyFeature.java`):**
+**Test (in `src/test/java/TestNavigations.java` or a new class extending `TestBase`):**
 ```java
-public class TestMyFeature extends BaseTest {
-    @Test(priority = 1)
-    public void testMyFeature() {
-        MyPage page = new MyPage(driver);
-        page.clickMyButton();
-        
-        String result = page.getResultText();
-        Assert.assertEquals(result, "Expected Value");
+@Listeners({TestListeners.class, CaptureScreenshotOnFailureListener.class, TestMethodListener.class, LoggingListener.class})
+public class TestMyFlow extends TestBase {
+    @Test
+    public void myFlow() {
+        MyFlow.tapMyButton();
     }
 }
 ```
 
 **Files:**
-- `appium/src/main/java/qa/ios/pages/` — page objects
-- `appium/src/test/java/qa/ios/test/` — test cases
+- `appium/src/main/java/qa/ios/page/` — locators (prefer `AppiumBy.accessibilityId`)
+- `appium/src/main/java/qa/ios/navigation/` — reusable flow steps
+- `appium/src/test/java/` — TestNG test classes; register new classes in `appium/testng.xml`
 
 ### 11. iOS Service Call Refactoring
 **When:** Adding/updating iOS API calls, centralizing networking logic, migrating to async/await.
