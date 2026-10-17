@@ -11,7 +11,7 @@ This directory contains comprehensive specifications and skill guides for migrat
    - Covers three operational modes (standard, admin, map)
    - Global state dependencies and migration strategy
 
-2. **`speckit.migration.alertcontrollers.specify`**
+2. **`speckit.migration.alertcontrollers.specify.md`**
    - Feature spec: Standardize alerts and WebSocket integration
    - Consolidates alert helpers from scattered VCs
    - Adds typed alert actions and WebSocket message publishing
@@ -199,4 +199,3 @@ Each phase includes:
 ## Questions?
 
 Refer to the inline comments in `skills.datamanager-api-integration.swift` for common patterns, or check the specific API endpoint section in `api-to-datamanager-mapping.md`.
-

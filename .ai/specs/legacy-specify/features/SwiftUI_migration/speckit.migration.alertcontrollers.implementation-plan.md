@@ -1,605 +1,631 @@
-# Implementation Plan — Alert Presentation Refactor (iOS)
+# Implementation Plan — UIKit Alert Presentation Migration
 
-Source spec: `speckit.migration.alertcontrollers.specify` (REQ-ALERT-1 … REQ-ALERT-7)
+**Specification:** [Alert-controller specification](speckit.migration.alertcontrollers.specify.md)
+**Task checklist:** [Alert-controller tasks](speckit.migration.alertcontrollers.tasks.md)
+**Status:** Application implementation explicitly approved and completed for REQ-ALERT-1..9.
+Scoped static gates passed; manual regressions are not run.
 
-**Scope:** alert *presentation* only, **UIKit only**, executed as a **single-pass refactor**.
+## Approved execution record — 2026-10-17
 
-In scope
-- `UIViewController.presentAlert` / `presentAlertWithFunction` extraction and typing
-- `UIAlertController.popUp` in `Helpers.swift` — an alert controller serving as an alert dialog
-- the 3 remaining `UIAlertView` dialogs in `VenuesDetailsVC`
-- all existing `presentAlert` call sites, including registration (`SignupVC`)
+**Scope override:** The user approved application edits and stated “you should target only
+the files in this task” and “that is also about the compile. you are cleared to proceed”.
+This supersedes the whole-module preflight/typecheck and dependency-readiness requirements
+in the original workflow and §3 recipe below; the recipe is retained as historical planning
+context and was **not executed**. No delegation, dependency investigation/restoration,
+whole-target compilation, Xcode build, or WebSocket checks were performed.
 
-Out of scope
-- **SwiftUI — no SwiftUI work at all.** **REQ-ALERT-4 (`AlertItem` + `.alert(item:)`) is
-  descoped by decision**: the app stays on UIKit. The one SwiftUI screen under
-  `SwiftLoginScreen/VenuesMigration/` is not given an alert binding and is not touched. If a
-  SwiftUI alert is ever needed, `AlertAction` from S1 is already reusable and an `AlertItem` can
-  be added then.
-- **WebSocket** requirements of the same spec (REQ-WS-1 … REQ-WS-9) — separate follow-up
-- **Popovers**: `PopOver.swift`, `PopOverDates.swift`, `UIPopoverPresentationController` wiring.
-  `PopOver.swift:142` contains a `presentAlert` *call site* — it stays source-compatible and is
-  not edited.
-- **Ad-hoc multi-action / action-sheet `UIAlertController`** in `MapViewController.swift:299,318`,
-  `AttendeesVC.swift:69,189`, `iOSCalenderVC.swift:106` — not touched, not reshaped.
-- **No new unit tests.** Validation is build + manual regression.
+**Readiness:** The user's reported successful Carthage/Braintree build and app run is the
+accepted T1 baseline, not an independently repeated build/run. Scoped Git inspection found
+the nested `SwiftCinemas` project file already modified, and these three working docs
+already modified/untracked. Exact task-file snapshots were retained under
+`/var/folders/0m/dgl6bg054pv5yd27y3_l4bg00000gp/T/alerts-task-baseline-_4jj7qqs`
+before edits; existing changes were preserved.
 
-Validation baseline: **`swiftc -typecheck`, not `xcodebuild`** — see §3.1. A full `xcodebuild` run
-takes minutes; the typecheck gate is ~18s and catches every error class this refactor can produce.
+**Implementation:** One coherent app edit batch added the typed action and compatible
+presenter, moved the original activation body unchanged into the confirmation handler,
+migrated both Menu call sites without altering aggregation/dismissal, replaced Home's popup
+(approved Close → OK), removed only the redundant Helpers extension, and replaced exactly
+three venue dialogs without changing guards/messages/else paths. No contracts changed.
+No test or dependency file was added or edited.
 
----
+**Actual final checks:**
 
-## 1. As-found state (verified in code, 2026-09-26)
+- Refreshed the SwiftCinemas MCP cache after the batch. Its build-verification actions are
+  target-wide, not task-file compiler checks, so they were not invoked.
+- `xcrun --sdk iphonesimulator --show-sdk-path` exited 0, selecting the installed
+  `iPhoneSimulator27.0.sdk`. No dependency or DerivedData search was performed.
+- `xcrun --sdk iphonesimulator swiftc -frontend -parse -swift-version 6 -sdk "$SDK"
+  -target arm64-apple-ios17.6-simulator <six-task-Swift-files>` exited **0**.
+  The files were HomeVC, MenuVC, Helpers, VenuesDetailsVC, Alerts/AlertAction, and
+  Alerts/AlertPresenter under `SwiftCinemas/SwiftLoginScreen/`. This is **syntax only**.
+- `xcrun --sdk iphonesimulator swiftc -typecheck -swift-version 6 -sdk "$SDK"
+  -target arm64-apple-ios17.6-simulator
+  SwiftCinemas/SwiftLoginScreen/Alerts/AlertAction.swift` exited **0**. An initial
+  enum-only invocation without explicit SDK/target exited 1 (simulator sysroot/macOS
+  target mismatch); the corrected invocation above passed with no source change.
+  Only the standalone enum was typechecked, not the presenter/controllers or module.
+- `plutil -convert json -o - <project.pbxproj>` plus Python baseline assertions verified
+  app target `EA62FD4F1989F6AC00469896`, classic Sources phase
+  `EA62FD4C1989F6AC00469896`, and parent group `EA62FD521989F6AC00469896`.
+  New build refs `AC1700012026101700000001` / `...0002` resolve through file refs
+  `...0003` / `...0004` and Alerts group `...0005` to the exact new on-disk paths,
+  each once and app-only. All pre-existing PBX objects are unchanged except the approved
+  group/Sources arrays; test membership, build settings and dependencies are unchanged.
+- Python scoped source/baseline assertions passed: one default-compatible helper, two
+  typed Menu paths, unchanged activation body within OK, three exact venue replacements,
+  unchanged unrelated helpers, no legacy string helper/dispatch, popup, or `UIAlertView`
+  in the six scoped Swift files. No whole-app inventory is claimed.
+- Reviewed the complete seven-file application diff against the retained dirty baseline,
+  not merely HEAD; only approved edits were present. Scoped
+  `git -C SwiftCinemas diff --check -- <five-existing-app-files>` exited **0**.
 
-The spec's inventory is out of date. Actual state:
+**Limits / not run:** Presenter/controller and whole-module typechecks, builds and automated
+runtime tests were not run; no dependency work was attempted to enable them. All manual
+scenarios in the specification/T7 remain unchecked: direct/pending activation once and only
+on confirmation, missing-user/error behavior, ordinary Menu/logout, Home empty basket, all
+three venue guards, and representative existing alert flows. Static source comparison is
+not runtime proof. No safe supported runtime harness was established within this scope.
+No commit or push was performed.
 
-| Item | Spec claim | Verified |
-|---|---|---|
-| `presentAlert` / `presentAlertWithFunction` definition | `HomeVC.swift` | `HomeVC.swift:429-455` (`extension UIViewController`) |
-| `presentAlert` call sites | "20" | **36 references across 11 files** |
-| `presentAlertWithFunction` call sites | MenuVC only | `MenuVC.swift:62` only — confirmed |
-| `UIAlertView` (deprecated) | none expected | **3**: `VenuesDetailsVC.swift:146, 244, 307` |
-| Second alert helper | not mentioned | `Helpers.swift:6-16` `UIAlertController.popUp(title:message:)`, one caller: `HomeVC.swift:113` |
-| Xcode project membership | manual target edit | **Manual `project.pbxproj` edit IS required.** The `fileSystemSynchronizedGroups` entry (`project.pbxproj:569-571`) belongs to the **`SwiftCinemasTests`** target only. The app target `SwiftCinemas` uses a classic `Sources` build phase (`EA62FD4C1989F6AC00469896`, 72 Swift files) — new files must be added to it or they are silently not compiled. |
-| Dead files not in the target | not mentioned | `File.swift`, `CustomURLRequest.swift`, `Networking/SecureStore.swift` are on disk but absent from the Sources phase and **do not typecheck**. Any file-list-by-`find` tooling must exclude them. |
+## 1. Scope and design
 
-Call-site distribution of `presentAlert*`:
+Implement only the UIKit requirements in the specification:
 
-| File | Refs | Action in this refactor |
-|---|---|---|
-| `MenuVC.swift` | 5 (1 is `presentAlertWithFunction`) | **edit** (S4) |
-| `AdminUpdateVC.swift` | 5 | none — compile-verify |
-| `SignupVC.swift` | 5 (registration) | none — compile-verify |
-| `BasketVC.swift` | 4 | none — compile-verify |
-| `LoginVC.swift` | 4 | none — compile-verify |
-| `TicketsVC.swift` | 4 | none — compile-verify |
-| `VenuesDetailsVC.swift` | 3 | none, but **+3 `UIAlertView` edits** (S6) |
-| `AdminVC.swift` | 2 | none — compile-verify |
-| `HomeVC.swift` | 2 (the definitions) | **delete extension** (S3) |
-| `PopOver.swift` | 1 | none — out of scope, compile-verify |
-| `PurchasesVC.swift` | 1 | none — compile-verify |
+- Add `SwiftCinemas/SwiftLoginScreen/Alerts/AlertAction.swift` and
+  `SwiftCinemas/SwiftLoginScreen/Alerts/AlertPresenter.swift`.
+- Move the `UIViewController` alert helpers out of `HomeVC.swift`; replace the
+  string-dispatched activation helper with `AlertAction`.
+- Update `MenuVC`'s direct and pending-alert activation paths.
+- Replace `HomeVC`'s empty-basket `UIAlertController.popUp` use and remove the helper.
+- Replace the three `UIAlertView` dialogs in `VenuesDetailsVC`.
+- Add the two source files to the app target as confirmed by the preflight project-file
+  inspection.
 
-### Defects to fix as part of the refactor
+Do not implement `AlertItem`, SwiftUI alert binding, WebSocket publishing, seat-map updates,
+toast/notification handling, or reconnect changes. Do not touch backend contracts,
+`AppServices` wiring, `AppDelegate`, networking layers, checkout, URLs, headers, or payloads.
+Existing action sheets, popovers, and bespoke alert flows remain outside this refactor.
 
-- **D1 — `MenuVC` presents two alerts.** `MenuVC.swift:55-67`: the
-  `.activationRequired(voucherActive: false)` branch calls `presentAlertWithFunction(...)` and then
-  *falls through* past the `switch` into `presentAlert(...)`. The second present is issued while the
-  first alert is on screen and UIKit drops it. Fixed in S4.
-- **D2 — `presentAlertWithFunction` mixes presentation with business logic**: it reads
-  `UserDefaults["USERNAME"]` and calls `AuthDataManager.shared.activateCurrentDevice` inline
-  (`HomeVC.swift:436-454`), swallowing errors with `print`. Moves behind `AlertAction` in S1.
-- **D3 — `UIAlertController.popUp` leaks/loses its window.** It builds a local `UIWindow`, makes it
-  key, and never retains it, so the alert can vanish immediately. Removed in S5.
+### Behavior and architecture constraints
 
----
+- Preserve `presentAlert(withTitle:message:)` source compatibility by making the new action
+  parameter default to `.none`. The default path remains a UIKit `.alert` with its current
+  title/message and **OK** default action.
+- Use a typed action (`.none`, `.resendActivation`, `.custom`) instead of a function-name
+  string. The activation action runs only after confirmation.
+- Preserve the current `UserDefaults["USERNAME"]` lookup and call to
+  `AuthDataManager.shared.activateCurrentDevice(user:)`. Use its existing async/await
+  operation on the main actor; do not duplicate activation networking or bypass the
+  existing injected data-manager/AppServices path.
+- Preserve `MenuVC.presentMenuError`'s existing message combination and alert replacement
+  flow. The current implementation does not justify the old plan's unconditional
+  double-alert claim; do not add or assume that behavior.
+- Preserve the three date-guard conditions and their current alert title/message.
+- Replace the `HomeVC` popup with the shared presenter. The **Close** to **OK** button-label
+  change is an explicit, accepted consistency change; preserve the empty-basket message.
+- No new third-party package or dependency.
 
-## 2. Target design
+## 2. Implementation workflow
 
-```
-SwiftLoginScreen/Alerts/
-├── AlertAction.swift       // enum AlertAction
-└── AlertPresenter.swift    // extension UIViewController + top-most presentation
-```
+The eventual code change is one coherent edit batch, not an edit-and-validate loop. Do not
+run application builds, parse/typecheck, tests, or repeated inventories between individual
+edits. Use MCP-assisted targeted inspection/editing only within the approved paths. If an
+unexpected mismatch appears, inspect that point narrowly; restart preflight only if it
+materially changes the baseline or assumptions.
 
-- `presentAlert(withTitle:message:action:)` with `action: AlertAction = .none` keeps every existing
-  two-argument call site source-compatible (REQ-ALERT-3, REQ-ALERT-5).
-- `AlertAction.resendActivation` owns the activation side effect; no `"sendEmail"` string survives
-  (REQ-ALERT-2, REQ-ALERT-6).
-- UIKit-only: `UIKit` + `UIAlertController`, no `import SwiftUI`, no Podfile change (REQ-ALERT-7).
-- No `AlertItem` / `.alert(item:)` — REQ-ALERT-4 is descoped.
+### Gate 0 — implementation authorization
 
----
+This deliverable is documentation only. Stop here until the user separately approves
+application implementation. Commit or push is never implied.
 
-## 3. Single-pass execution workflow
+### Gate 1 — preflight before any app-source edit
 
-One pass, one commit-sized change. Steps S1→S7 run in order; nothing is deferred to a second
-sweep. To avoid holding call-site inventories in context, **write and re-read scratch files**
-instead of re-grepping or memorising:
+Capture and retain a baseline for the planned paths before changing source:
 
-```bash
-WORK=/tmp/alert-refactor            # or the session artifacts dir; NOT the repo
-mkdir -p "$WORK"
-cd SwiftCinemas/SwiftLoginScreen
+1. Record the working-tree status and scoped diff. Preserve existing user-owned and
+   unrelated changes; do not reset or stash them. Include only this feature's explicitly
+   approved files in any implementation diff.
+2. Inventory the relevant alert declarations, call sites, all activation-helper uses,
+   `UIAlertView` uses, `popUp` declarations/callers, and their current messages and
+   conditions. Avoid relying on old counts, line numbers, or copied inventories.
+3. Resolve the real Xcode app target and its source-membership model from
+   `SwiftCinemas.xcodeproj/project.pbxproj`. Record the target/configuration, resolved
+   PBX object IDs and repo-relative paths for the affected files, and verify there are no
+   missing or duplicate path/name resolutions. Confirm whether app membership is a classic
+   Sources phase or a synchronized group; do not infer it from the test target. A two-file
+   source-count increase alone is not proof of correct membership.
+4. Capture the selected target's effective Swift version, SDK, deployment target, bridging
+   header, module/framework search paths, and required dependency availability. Do not use
+   a guessed source list or select an arbitrary/latest DerivedData directory.
+5. Capture baseline `swiftc -typecheck` diagnostics for the exact app-target Swift source
+   set with the real configuration, using the no-build recipe in §3. The recipe uses
+   `xcodebuild -showBuildSettings` only to read settings; it does not invoke an Xcode build,
+   resolve/update packages, or restore dependencies. Keep the compiler's exit status intact;
+   distinguish pre-existing diagnostics from any later regression. Do not call a missing
+   dependency a successful typecheck.
+6. Record the intended file-level change list and the manual regression cases from the
+   specification before editing.
 
-# S0 — capture the baseline inventory once, up front
-grep -rn "presentAlert" --include=*.swift .      > "$WORK/callsites-before.txt"
-grep -rn "UIAlertView" --include=*.swift .       > "$WORK/alertview-before.txt"
-grep -rn "popUp(" --include=*.swift .            > "$WORK/popup-before.txt"
-grep -rn "presentAlert\|UIAlertView\|popUp(" --include=*.swift . | wc -l \
-                                                 > "$WORK/count-before.txt"
-```
+If a required dependency or baseline diagnostic cannot be established, stop before edits.
+Request approval for any baseline/dependency restoration needed to unblock the work; do not
+silently build, replace, or modify project state.
 
-Then capture the **compile baseline** per §3.1 (`errors-before.txt`, `warnings-before.txt`,
-target source count) before editing anything.
+### Gate 2 — coherent source-edit batch
 
-At S7 the same commands are re-run into `*-after.txt` and diffed. Do **not** commit `$WORK`.
+1. **Add shared types and presenter; move the existing extension atomically.** Create
+   `AlertAction.swift` and `AlertPresenter.swift`, remove the old extension from `HomeVC.swift`,
+   and register both files in the app target using the resolved project structure from
+   Gate 1. Pair removal and addition in the same batch to avoid duplicate declarations.
+2. **Migrate activation.** Replace every `presentAlertWithFunction` use in `MenuVC` with the
+   typed action. Preserve both the direct activation-required alert and the pending-alert
+   dismissal/upgrade path, including combined error text and no-overlap behavior.
+3. **Remove the duplicate popup helper.** Replace the one `HomeVC` empty-basket call with the
+   shared helper, then remove `UIAlertController.popUp` from `Helpers.swift`.
+4. **Migrate deprecated dialogs.** Replace the three `UIAlertView` blocks in
+   `VenuesDetailsVC` using the exact messages and guard conditions captured in Gate 1.
+5. Keep unrelated call sites source-compatible. Do not opportunistically reformat or
+   refactor other alert flows.
 
-### 3.1 Compile checking without building the app
+### Gate 3 — consolidated final verification
 
-**Do not run `xcodebuild` for iteration.** A full build takes minutes. Three cheaper gates, all
-verified on this machine (Xcode 26.1 / Swift 6.2.1, 2026-09-26):
+Run once after the coherent batch is complete:
 
-| Gate | Command | Time | Catches |
-|---|---|---|---|
-| G1 syntax | `swiftc -parse`, per file, parallel | **~1.6s** | syntax errors, malformed edits |
-| G2 typecheck | `swiftc -typecheck`, whole module | **~18s** | **everything this refactor can break**: duplicate `presentAlert` declarations, wrong signatures, broken call sites, unresolved `AlertAction`, deprecation warnings |
-| G3 full build | `xcodebuild` | minutes | linking, resources, codesign — **only once, at the very end, and optional** |
+1. **Syntax:** parse every changed Swift file using the selected app target's Swift toolchain
+   and SDK.
+2. **Exact target membership:** resolve each new PBX build/file reference and group path to
+   its on-disk file; verify the two new files are members of the app target, and that no
+   referenced source is missing or ambiguously resolved. Check for unintended target
+   membership changes.
+3. **Whole-module typecheck:** typecheck the exact app-target source set using the actual
+   target configuration captured in Gate 1 (Swift version, SDK/deployment target, bridging
+   header, and available module/framework paths). Compare final diagnostics against the
+   saved baseline, preserve and report the compiler process exit status, and do not hide it
+   behind a pipeline. If dependencies or the exact configuration are unavailable, mark
+   this gate **blocked**, not passed.
+4. **Scoped inventory and diff:** confirm the old function-string API and `UIAlertView` are
+   absent from the app-target source set, the popup helper is removed, ordinary two-argument
+   calls remain compatible, and only intended files changed. Review the complete scoped
+   diff against the captured baseline.
+5. **Manual regression:** run and record every scenario in the specification, including
+   activation once/only after confirmation, the pending-alert upgrade, ordinary Menu
+   errors/logout, Home empty basket, all three date guards, and representative login,
+   signup, basket/checkout, purchases, and tickets flows. Record named evidence for each
+   scenario. If a manual check is not run, leave its checkbox unchecked and label it
+   **not run**.
 
-G2 is the real gate. Measured result on the untouched tree: **0 errors, 85 warnings, 18.1s.**
+`swiftc -typecheck` is not proof of linking, resources, signing, or runtime behavior. Do not
+claim those outcomes from a typecheck. This documentation-only task runs none of these
+application gates.
 
-#### Prerequisite: the file list must come from the target, not from `find`
+If a gate fails, make only a bounded correction within the approved scope and rerun the
+consolidated final gate. Do not reset/stash the worktree, use detached/nohup polling, or
+overwrite unrelated edits.
 
-`find . -name '*.swift'` is wrong here — it picks up `File.swift`, `CustomURLRequest.swift` and
-`Networking/SecureStore.swift`, which are **not in the app target and do not typecheck** (8
-pre-existing errors), plus it trips the duplicate-basename check
-(`Networking/SecureStore.swift` vs `DataManagers/SecureStore.swift`).
+## 3. No-build compile-check recipe
 
-Write this once into `$WORK/target-sources.py` (verified: resolves all 72 target files):
+This is a **compiler typecheck, not a build**: it parses and typechecks the app target's
+Swift compilation unit without producing an app, object files, or a linked executable.
+Run it once before app-source edits and once after the coherent edit batch. The Python
+driver below is self-contained, uses only Python 3 and the Xcode command-line tools already
+required by the project, resolves source paths from the selected target's PBX Sources phase
+(not basenames or a hand-maintained list), and stores the complete source list, build
+settings, diagnostics, and compiler exit code under an explicit evidence directory.
 
-```python
-#!/usr/bin/env python3
-"""Swift files in the SwiftCinemas app target's Sources build phase, as on-disk paths.
-Run from SwiftCinemas/."""
-import os, re, sys
+The checked-in project was inspected for this plan: target `SwiftCinemas`
+(`EA62FD4F1989F6AC00469896`) has one classic Sources phase
+(`EA62FD4C1989F6AC00469896`); the test target uses a synchronized group, but the app target
+does not. The app target currently declares Swift 6.0, iOS 17.6, and
+`SwiftLoginScreen/SwiftLoginScreen-Bridging-Header.h` in its project configuration. These
+are inspection notes, not values to hard-code: the driver re-reads the selected
+configuration each time and fails if it cannot resolve the target/source model. The
+classic phase is explicit, so both new files must appear as sources in that phase after
+registration. If the project changes to a synchronized app group, stop and revise the
+resolver before using this recipe.
 
-PBX = "SwiftCinemas.xcodeproj/project.pbxproj"
-SOURCES_PHASE = "EA62FD4C1989F6AC00469896"  # SwiftCinemas app target
-ROOT = "SwiftLoginScreen"
-# Basenames that exist more than once on disk; value = the path that is in the target.
-AMBIGUOUS = {"SecureStore.swift": "SwiftLoginScreen/DataManagers/SecureStore.swift"}
+Choose a known, explicit artifact directory and (if needed) a previously populated
+`EXISTING_PRODUCTS_DIR` from the exact app target/configuration/SDK. Do not glob DerivedData,
+choose the newest directory, build dependencies, or silently restore packages. Do not set
+`EXISTING_PRODUCTS_DIR` to a product directory from another target/configuration. If
+required modules cannot be imported from the existing checked-in frameworks and explicitly
+selected products, report the typecheck as **blocked**.
 
-src = open(PBX).read()
-phase = re.search(rf"{SOURCES_PHASE} /\* Sources \*/ = \{{.*?\n\t\t\}};", src, re.S).group(0)
-wanted = {n for _, n in re.findall(r"([0-9A-F]{24}) /\* (.+?) in Sources \*/", phase)
-          if n.endswith(".swift")}
+Run this from the repository root. Set `SWIFT_ARCH` to an architecture present in the
+selected target's resolved `ARCHS` (for example `arm64` only when the settings output
+confirms it). Set `EXISTING_PRODUCTS_DIR` only when that exact existing directory is
+needed. Run the same driver with `ALERT_CHECK_STAGE=baseline` before edits and
+`ALERT_CHECK_STAGE=final` after edits; set `VERIFY_ALERT_SOURCES=1` for the final run.
 
-on_disk = {}
-for dirpath, _, files in os.walk(ROOT):
-    for f in files:
-        if f.endswith(".swift"):
-            on_disk.setdefault(f, []).append(os.path.join(dirpath, f))
-
-resolved, problems = [], []
-for name in sorted(wanted):
-    paths = on_disk.get(name, [])
-    if len(paths) == 1:
-        resolved.append(paths[0])
-    elif name in AMBIGUOUS:
-        resolved.append(AMBIGUOUS[name])
-    else:
-        problems.append(f"{'missing' if not paths else 'ambiguous'}: {name} {paths}")
-
-if problems:
-    print("\n".join(problems), file=sys.stderr)
-    sys.exit(1)
-print("\n".join(resolved))
-```
-
-This doubles as the **pbxproj guard**: after S3 adds `Alerts/AlertAction.swift` and
-`Alerts/AlertPresenter.swift` to the Sources phase, the script must report **74** files. If it
-still reports 72, the pbxproj edit was missed and the new code is not being compiled.
-
-#### G1 — syntax gate (~1.6s)
-
-```bash
-cd SwiftCinemas/SwiftLoginScreen
-SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
-find . -name '*.swift' | xargs -P 8 -n 1 -I{} \
-  swiftc -parse -sdk "$SDK" -target arm64-apple-ios15.0-simulator {} \
-  2>&1 | tee "$WORK/parse.log" | grep 'error:'
-```
-
-Run after every file edit. Per-file (`-P 8 -n 1`) avoids the duplicate-basename failure that
-whole-module `-parse` hits.
-
-#### G2 — typecheck gate (~18s) — the real check
-
-```bash
+```sh
 cd SwiftCinemas
-python3 "$WORK/target-sources.py" > "$WORK/srcs.txt" || exit 1
-wc -l < "$WORK/srcs.txt"        # 72 before S3, 74 after
+ALERT_CHECK_STAGE=baseline \
+ALERT_CHECK_DIR=/tmp/alertcontrollers-evidence \
+SWIFT_ARCH=arm64 \
+python3 - <<'PY'
+import json
+import os
+import pathlib
+import shlex
+import subprocess
+import sys
 
-DD=$(ls -dt ~/Library/Developer/Xcode/DerivedData/SwiftCinemas-*/Build/Products/Debug-iphonesimulator | head -1)
-SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+project_root = pathlib.Path.cwd().resolve()
+project = project_root / "SwiftCinemas.xcodeproj"
+pbxproj = project / "project.pbxproj"
+scheme_target = "SwiftCinemas"
+configuration = os.environ.get("ALERT_CONFIGURATION", "Debug")
+sdk_name = os.environ.get("ALERT_SDK", "iphonesimulator")
+stage = os.environ["ALERT_CHECK_STAGE"]
+evidence = pathlib.Path(os.environ["ALERT_CHECK_DIR"]).expanduser().resolve()
+evidence.mkdir(parents=True, exist_ok=True)
 
-swiftc -typecheck -swift-version 5 \
-  -sdk "$SDK" -target arm64-apple-ios15.0-simulator \
-  -import-objc-header SwiftLoginScreen/SwiftLoginScreen-Bridging-Header.h \
-  $(for f in "$DD"/*/; do echo "-I $f -F $f"; done) \
-  $(cat "$WORK/srcs.txt") 2>&1 | tee "$WORK/typecheck.log"
+def run_capture(args):
+    return subprocess.run(args, check=True, text=True, capture_output=True)
 
-grep 'error:'   "$WORK/typecheck.log" | grep -v '^ ' | sort -u > "$WORK/errors.txt"
-grep 'warning:' "$WORK/typecheck.log" | grep -v '^ ' | sort -u > "$WORK/warnings.txt"
-wc -l "$WORK/errors.txt" "$WORK/warnings.txt"
+# Configuration lookup only. This is not xcodebuild build/test/archive and automatic
+# package resolution is disabled; no dependency restore is requested.
+settings_result = run_capture([
+    "xcodebuild", "-project", str(project), "-target", scheme_target,
+    "-configuration", configuration, "-sdk", sdk_name,
+    "-showBuildSettings", "-json", "-disableAutomaticPackageResolution",
+])
+(evidence / f"{stage}.build-settings.json").write_text(settings_result.stdout)
+records = json.loads(settings_result.stdout)
+records = [r for r in records if r.get("target") == scheme_target]
+if len(records) != 1:
+    raise SystemExit(f"Expected one {scheme_target} settings record, got {len(records)}")
+settings = records[0]["buildSettings"]
+
+# Parse the OpenStep project file using macOS plutil, then walk PBX groups by ID so
+# identically named files in different directories cannot silently alias.
+project_json = json.loads(run_capture([
+    "plutil", "-convert", "json", "-o", "-", str(pbxproj)
+]).stdout)
+objects = project_json["objects"]
+targets = [
+    (oid, obj) for oid, obj in objects.items()
+    if obj.get("isa") == "PBXNativeTarget" and obj.get("name") == scheme_target
+]
+if len(targets) != 1:
+    raise SystemExit(f"Expected one PBXNativeTarget named {scheme_target}, got {len(targets)}")
+target_id, target = targets[0]
+if target.get("fileSystemSynchronizedGroups"):
+    raise SystemExit("App target now has synchronized source groups; update this resolver first")
+source_phases = [
+    objects[oid] for oid in target.get("buildPhases", [])
+    if objects.get(oid, {}).get("isa") == "PBXSourcesBuildPhase"
+]
+if len(source_phases) != 1:
+    raise SystemExit(f"Expected one explicit app Sources phase, got {len(source_phases)}")
+phases = [
+    (oid, obj) for oid, obj in objects.items()
+    if obj.get("isa") == "PBXProject"
+]
+main_groups = {obj.get("mainGroup") for _, obj in phases}
+if len(main_groups) != 1:
+    raise SystemExit("Could not uniquely resolve PBXProject.mainGroup")
+resolved_refs = {}
+
+def walk(group_id, parent_dir):
+    group = objects[group_id]
+    group_dir = parent_dir
+    group_path = group.get("path")
+    group_tree = group.get("sourceTree", "<group>")
+    if group_path:
+        if group_tree == "<group>":
+            group_dir = parent_dir / group_path
+        elif group_tree == "SOURCE_ROOT":
+            group_dir = project_root / group_path
+        elif group_tree == "<absolute>":
+            group_dir = pathlib.Path(group_path)
+        else:
+            raise SystemExit(f"Unsupported group sourceTree {group_tree}: {group_path}")
+    for child_id in group.get("children", []):
+        child = objects.get(child_id, {})
+        isa = child.get("isa")
+        if isa in ("PBXGroup", "PBXVariantGroup"):
+            walk(child_id, group_dir)
+        elif isa == "PBXFileReference":
+            name = child.get("path") or child.get("name")
+            if not name:
+                continue
+            tree = child.get("sourceTree", "<group>")
+            if tree == "<group>":
+                path = group_dir / name
+            elif tree == "SOURCE_ROOT":
+                path = project_root / name
+            elif tree == "<absolute>":
+                path = pathlib.Path(name)
+            else:
+                path = None
+            if path is not None:
+                resolved_refs[child_id] = path.resolve()
+
+walk(next(iter(main_groups)), project_root)
+swift_sources = []
+for build_file_id in source_phases[0].get("files", []):
+    build_file = objects.get(build_file_id, {})
+    ref_id = build_file.get("fileRef")
+    ref = objects.get(ref_id, {})
+    if pathlib.PurePosixPath(ref.get("path", ref.get("name", ""))).suffix != ".swift":
+        continue
+    source = resolved_refs.get(ref_id)
+    if source is None:
+        raise SystemExit(f"Swift source ref {ref_id} has no resolvable group path")
+    if not source.is_file():
+        raise SystemExit(f"Missing target Swift source: {source}")
+    swift_sources.append(source)
+if not swift_sources or len(swift_sources) != len(set(swift_sources)):
+    raise SystemExit("Target Swift source list is empty or has duplicate resolved paths")
+if os.environ.get("VERIFY_ALERT_SOURCES") == "1":
+    expected = {
+        project_root / "SwiftLoginScreen/Alerts/AlertAction.swift",
+        project_root / "SwiftLoginScreen/Alerts/AlertPresenter.swift",
+    }
+    absent = expected - set(swift_sources)
+    if absent:
+        raise SystemExit(f"New alert source(s) not members of app target: {sorted(absent)}")
+
+def required(key):
+    value = settings.get(key)
+    if not value or "$(" in value:
+        raise SystemExit(f"Missing or unresolved target build setting {key}: {value!r}")
+    return value
+
+swift_version = required("SWIFT_VERSION").split(".", 1)[0]
+deployment = required("IPHONEOS_DEPLOYMENT_TARGET")
+architectures = required("ARCHS").split()
+arch = os.environ.get("SWIFT_ARCH")
+if not arch or arch not in architectures:
+    raise SystemExit(f"Set SWIFT_ARCH to one of the resolved ARCHS: {architectures}")
+sdk = run_capture(["xcrun", "--sdk", sdk_name, "--show-sdk-path"]).stdout.strip()
+cmd = [
+    "xcrun", "--sdk", sdk_name, "swiftc", "-typecheck",
+    "-swift-version", swift_version, "-sdk", sdk,
+    "-target", f"{arch}-apple-ios{deployment}-simulator",
+    "-module-cache-path", str(evidence / f"{stage}.module-cache"),
+]
+bridging = settings.get("SWIFT_OBJC_BRIDGING_HEADER", "")
+if bridging:
+    bridge_path = pathlib.Path(bridging)
+    if not bridge_path.is_absolute():
+        bridge_path = project_root / bridge_path
+    if not bridge_path.is_file():
+        raise SystemExit(f"Missing target bridging header: {bridge_path}")
+    cmd += ["-import-objc-header", str(bridge_path)]
+for key, flag in (("SWIFT_INCLUDE_PATHS", "-I"), ("FRAMEWORK_SEARCH_PATHS", "-F")):
+    for item in shlex.split(settings.get(key, "")):
+        if item == "$(inherited)" or "$(" in item:
+            continue
+        path = pathlib.Path(item)
+        if path.exists():
+            cmd += [flag, str(path)]
+for condition in shlex.split(settings.get("SWIFT_ACTIVE_COMPILATION_CONDITIONS", "")):
+    if condition != "$(inherited)" and "$(" not in condition:
+        cmd += ["-D", condition]
+cmd += shlex.split(settings.get("OTHER_SWIFT_FLAGS", ""))
+products = os.environ.get("EXISTING_PRODUCTS_DIR")
+if products:
+    products_path = pathlib.Path(products).expanduser().resolve()
+    if not products_path.is_dir():
+        raise SystemExit(f"Explicit EXISTING_PRODUCTS_DIR does not exist: {products_path}")
+    cmd += ["-I", str(products_path), "-F", str(products_path)]
+cmd += [str(source) for source in swift_sources]
+(evidence / f"{stage}.swift-sources.txt").write_text(
+    "\n".join(str(source) for source in swift_sources) + "\n"
+)
+(evidence / f"{stage}.swiftc-command.json").write_text(json.dumps(cmd, indent=2) + "\n")
+result = subprocess.run(cmd, text=True, capture_output=True)
+(evidence / f"{stage}.swiftc-diagnostics.txt").write_text(
+    result.stdout + result.stderr
+)
+(evidence / f"{stage}.swiftc-exit-status.txt").write_text(f"{result.returncode}\n")
+print(f"Target={scheme_target} PBXTarget={target_id}; Swift sources={len(swift_sources)}")
+print(f"swiftc -typecheck exit={result.returncode}; evidence={evidence}")
+print(result.stdout, end="")
+print(result.stderr, end="", file=sys.stderr)
+sys.exit(result.returncode)
+PY
 ```
 
-Notes, all empirically determined:
-- `-swift-version 5` — the app target is `SWIFT_VERSION = 5.0`; the default Swift 6 mode reports
-  spurious concurrency errors.
-- `-import-objc-header` — the bridging header is required (AFNetworking etc.).
-- `-I`/`-F` into the existing **DerivedData** `Debug-iphonesimulator` products supplies the Pods
-  modules (`Realm`, `Braintree`, `Firebase*`, `CryptoSwift`, …). Without it every `import` of a
-  pod fails. This reuses a previous build's products — no rebuild.
-- iphonesimulator SDK is used because DerivedData holds simulator slices; device SDK would
-  require a device-slice build.
+The code block's `SWIFT_ARCH=arm64` is an example, not an assertion about the runner; use
+only an architecture confirmed in that run's `ARCHS`. If actual target settings contain
+additional required flags/paths that this compact driver does not represent, extend it
+from the captured settings before relying on the result. Review baseline diagnostics before
+editing. A failed baseline, missing module, unresolved setting, or mismatch between source
+membership and files on disk blocks the compiler gate; do not turn it into a pass by
+omitting sources or invoking `xcodebuild build`. A successful `swiftc -typecheck` does not
+prove linking, resources, signing, or runtime behavior.
 
-**Prerequisite:** DerivedData must already contain a `Debug-iphonesimulator` products dir. If it
-is missing or was cleaned, one full `xcodebuild` run is needed to repopulate it — see §3.2.
+## 4. Concrete change examples and bounded handoffs
 
-**Proven to catch the main S3 hazard.** Injecting a second
-`extension UIViewController { func presentAlert(withTitle:message:) }` yields:
-```
-error: invalid redeclaration of 'presentAlert(withTitle:message:)'
-```
+Examples below are anchored to the inspected source, for implementation planning only. They
+are not app edits and do not delegate protected activation/authentication work.
 
-**Baseline to diff against.** Capture before touching any code, so S7 compares like for like:
-```bash
-cp "$WORK/errors.txt"   "$WORK/errors-before.txt"     # expect 0 lines
-cp "$WORK/warnings.txt" "$WORK/warnings-before.txt"   # expect 85 lines, 9 UIAlertView-related
-```
-The 9 `UIAlertView` deprecation warnings at `VenuesDetailsVC.swift:146,244,307` must be **gone**
-after S6 — that is the machine-checkable proof for that step.
+### Shared alert API shape
 
-### 3.2 If a full `xcodebuild` is unavoidable
-
-Only if DerivedData is empty, or as one optional final confirmation. Never block on it
-interactively — run it detached, tail the log, and poll:
-
-```bash
-cd SwiftCinemas
-nohup xcodebuild -workspace SwiftCinemas.xcworkspace -scheme SwiftCinemas \
-  -configuration Debug -destination 'generic/platform=iOS simulator' \
-  -derivedDataPath ~/Library/Developer/Xcode/DerivedData/SwiftCinemas-build \
-  build > "$WORK/build.log" 2>&1 &
-echo $! > "$WORK/build.pid"
-```
-
-Poll instead of waiting:
-```bash
-tail -n 40 "$WORK/build.log"
-grep -E 'error:|BUILD (SUCCEEDED|FAILED)' "$WORK/build.log" | tail -20
-kill -0 "$(cat "$WORK/build.pid")" 2>/dev/null && echo RUNNING || echo DONE
-```
-
-Keep working on unrelated steps between polls. Stop with `kill "$(cat "$WORK/build.pid")"` if it
-is no longer needed. `$WORK/build.log` is never committed.
-
----
-
-## 4. Steps
-
-### S1 — `Alerts/AlertAction.swift` (new)
-
-Requirements: REQ-ALERT-2, REQ-ALERT-7. Fixes D2.
+The current ordinary helper is a `.alert` with an **OK** default action. The typed shape
+and call pattern for the extracted presenter are:
 
 ```swift
-// AlertAction.swift
-import UIKit
-
-/// Typed replacement for the former `function: String` parameter ("sendEmail").
 enum AlertAction {
     case none
     case resendActivation
     case custom(() -> Void)
+}
 
-    /// Side effect to run when the user confirms. `nil` == plain dismiss.
-    @MainActor
-    var handler: (() -> Void)? {
-        switch self {
-        case .none:
-            return nil
-
-        case .resendActivation:
-            return {
-                guard let user = UserDefaults.standard.string(forKey: "USERNAME") else {
-                    NSLog("AlertAction.resendActivation: no USERNAME in UserDefaults")
-                    return
-                }
+extension UIViewController {
+    func presentAlert(
+        withTitle title: String,
+        message: String,
+        action: AlertAction = .none
+    ) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let ok = UIAlertAction(title: "OK", style: .default) { _ in
+            switch action {
+            case .none:
+                break
+            case let .custom(handler):
+                handler()
+            case .resendActivation:
+                // Owner-managed authentication behavior: retain the existing lookup,
+                // missing-user behavior, async call, and error handling.
+                let storedUser = UserDefaults.standard.value(forKey: "USERNAME")
                 Task { @MainActor in
+                    guard let user = storedUser as? String else { return }
                     do {
                         try await AuthDataManager.shared.activateCurrentDevice(user: user)
                     } catch {
-                        NSLog("AlertAction.resendActivation failed: %@", error.localizedDescription)
+                        print(error)
                     }
                 }
             }
-
-        case let .custom(block):
-            return block
         }
+        alert.addAction(ok)
+        present(alert, animated: true)
     }
 }
 ```
 
-Done when: compiles; the activation side effect exists in exactly one place; no `"sendEmail"`
-literal anywhere (`grep -rn '"sendEmail"' .` is empty).
+The `.resendActivation` implementation remains owner-managed because it is authentication
+behavior, not mechanical alert plumbing. Its existing behavior is: read
+`UserDefaults.standard.value(forKey: "USERNAME")`, silently return if it is not a `String`,
+then use `Task { @MainActor in ... }` and
+`try await AuthDataManager.shared.activateCurrentDevice(user:)`, preserving its current
+error handling. Do not introduce a new request, bypass AppServices-backed services, or alter
+URLs, headers, checkout fields, or session semantics. The actual existing manager and
+async/await operation are reused unchanged.
 
----
+### Call-site replacements grounded in the current files
 
-### S3 — `Alerts/AlertPresenter.swift` (new) + remove the extension from `HomeVC.swift`
-
-Requirements: REQ-ALERT-1, REQ-ALERT-3, REQ-ALERT-5. These two edits **must land together** —
-otherwise the `UIViewController` extension is declared twice and nothing compiles.
+In `MenuVC.presentMenuError`, keep the existing concatenation and dismiss-before-replace
+sequence; change only the helper invocation. The current pending-alert branch is:
 
 ```swift
-// AlertPresenter.swift
-import UIKit
-
-extension UIViewController {
-
-    /// Default `.none` reproduces the previous HomeVC behaviour exactly:
-    /// single "OK" action, `.default` style, `.alert` presentation.
-    func presentAlert(withTitle title: String,
-                      message: String,
-                      action: AlertAction = .none) {
-        let alert = UIAlertController(title: title,
-                                      message: message,
-                                      preferredStyle: .alert)
-        let handler = action.handler
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in handler?() })
-
-        // Presenting on a controller that is already presenting is silently dropped by UIKit
-        // (this is what hid MenuVC's second alert). Always present from the top-most controller.
-        AlertPresenter.topMostViewController(from: self)?.present(alert, animated: true)
-    }
-}
-
-enum AlertPresenter {
-
-    /// Entry point for non-`UIViewController` contexts, replacing
-    /// `UIAlertController.popUp` and its detached `UIWindow`.
-    @MainActor
-    static func present(title: String, message: String, action: AlertAction = .none) {
-        keyWindowRoot()?.presentAlert(withTitle: title, message: message, action: action)
-    }
-
-    static func topMostViewController(from controller: UIViewController?) -> UIViewController? {
-        var current = controller
-        while let presented = current?.presentedViewController {
-            current = presented
-        }
-        return current
-    }
-
-    private static func keyWindowRoot() -> UIViewController? {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)?
-            .rootViewController
-    }
+let combinedMessage = message
+alert.dismiss(animated: false) { [weak self] in
+    self?.presentAlertWithFunction(
+        withTitle: "Warning!",
+        message: combinedMessage,
+        function: "sendEmail"
+    )
 }
 ```
 
-`HomeVC.swift` — delete the whole trailing block:
+Replace only the call with:
 
 ```swift
-// DELETE HomeVC.swift:429-455
-extension UIViewController {
-    func presentAlert(withTitle title: String, message: String) { ... }
-    func presentAlertWithFunction(withTitle title: String, message: String, function: String) { ... }
+self?.presentAlert(
+    withTitle: "Warning!",
+    message: combinedMessage,
+    action: .resendActivation
+)
+```
+
+Likewise, the direct activation-required branch changes from
+`presentAlertWithFunction(withTitle: "Warning!", message: message, function: "sendEmail")`
+to `presentAlert(withTitle: "Warning!", message: message, action: .resendActivation)`.
+Do not remove the prior `existing + "\n" + message` aggregation or change the
+`alert.title != "Warning!"` upgrade guard.
+
+`HomeVC.basket(_:)` currently presents the empty-basket warning through a temporary
+alert-level `UIWindow` and labels its action **Close**. Replace only that call:
+
+```swift
+guard !BasketDataManager.shared.basketItemsBySeatId.isEmpty else {
+    presentAlert(withTitle: "Warning!", message: "No free seat(s) to be reserved!")
+    return
 }
 ```
 
-**Also register both new files in the app target's `Sources` build phase** — the app target does
-**not** use a synchronized group (see §1). Add to `project.pbxproj`:
-- a `PBXFileReference` and `PBXBuildFile` for `Alerts/AlertAction.swift` and
-  `Alerts/AlertPresenter.swift`,
-- an `Alerts` `PBXGroup` (path `SwiftLoginScreen/Alerts`, `sourceTree = SOURCE_ROOT`, matching the
-  existing `DataManagers` group at `project.pbxproj:290-306`),
-- both `… in Sources` entries inside phase `EA62FD4C1989F6AC00469896`.
+Delete `UIAlertController.popUp` from `Helpers.swift`, but retain its unrelated `String`
+and `Date` extensions. The planned **Close** → **OK** text change is explicitly accepted.
+For each of the three `VenuesDetailsVC` guards, replace the `UIAlertView` construction with
+the same `presentAlert(withTitle: "Warning!", message: "Select dates first!")`; leave the
+surrounding `selectedScreeningDateId == nil` condition and `else` path untouched.
 
-Easiest safe route: add the files via Xcode's UI (target checkbox ticked) rather than hand-editing.
+### Quick Engineer handoff boundaries
 
-Done when: `grep -n "extension UIViewController" HomeVC.swift` is empty,
-`grep -rn "presentAlertWithFunction" .` is empty after S4, and
-`python3 "$WORK/target-sources.py" | wc -l` reports **74** (was 72).
+These are bounded handoff templates for a later, separately approved implementation. The
+owner runs one coherent edit batch, not one validation cycle per handoff; Quick Engineers
+must not run builds, tests, or inter-task inventories. The owning iOS engineer retains all
+activation/auth/session behavior, the two `MenuVC` activation call sites, integration,
+final review, and the final consolidated gate.
 
----
+1. **Mechanical extraction (Quick Engineer):** In
+   `SwiftCinemas/SwiftLoginScreen/HomeVC.swift`, move only the existing ordinary
+   `UIViewController.presentAlert(withTitle:message:)` implementation into
+   `SwiftCinemas/SwiftLoginScreen/Alerts/AlertPresenter.swift`; add
+   `AlertAction.swift` with `.none`, `.resendActivation`, and `.custom(() -> Void)`, and
+   give the presenter `action: AlertAction = .none`. Keep `.alert`, title/message, **OK**,
+   default style, animation, and all two-argument call sites. Do not implement the protected
+   `.resendActivation` body, touch `MenuVC`, AppServices/auth/networking, or make other
+   changes. This is a non-merge-ready slice: the owning iOS engineer must complete and review
+   the action branch in the same coherent batch before final validation. Return the exact
+   changed-file list and confirm no other API/call-site changes.
+2. **Mechanical legacy-dialog cleanup (Quick Engineer):** In
+   `HomeVC.basket(_:)`, replace only the empty-basket `UIAlertController.popUp` invocation
+   with the shared two-argument helper and preserve the exact warning text/early return.
+   In `Helpers.swift`, remove only `UIAlertController.popUp`; retain `String` and `Date`
+   extensions. In `VenuesDetailsVC.swift`, replace only the three `UIAlertView` blocks with
+   the shared helper, preserving all three nil guards, exact **Warning!** /
+   **Select dates first!** text, and continuing `else` branches. No auth, MenuVC, date logic,
+   checkout, networking, or project edits. Return only the bounded file changes.
+3. **Project-file registration (Quick Engineer, only if the owner requests this mechanical
+   subtask):** In `SwiftCinemas/SwiftCinemas.xcodeproj/project.pbxproj`, register
+   `SwiftLoginScreen/Alerts/AlertAction.swift` and
+   `SwiftLoginScreen/Alerts/AlertPresenter.swift` in the app target `SwiftCinemas`, using
+   the verified classic Sources phase `EA62FD4C1989F6AC00469896` and the
+   `SwiftLoginScreen` PBX group `EA62FD521989F6AC00469896`. Add two unique
+   `PBXFileReference` objects under a new `Alerts` group, two matching `PBXBuildFile`
+   objects, the `Alerts` group child to `SwiftLoginScreen`, and both build-file IDs to the
+   app Sources phase. Do not modify the test target's synchronized group, frameworks,
+   build settings, resources, or any other target membership. Return the four new object
+   IDs and the exact membership entries for owner review.
 
-### S4 — `MenuVC.swift` activation path (edit) — REQ-ALERT-6, fixes D1
+All handoffs require separate implementation authorization. A Quick Engineer must stop and
+return a blocker rather than expand scope or alter auth/session contracts. The owner
+integrates/reviews the coherent result and runs only the planned baseline and final
+verification gates.
 
-Before (`MenuVC.swift:57-73`) — two alerts on the activation branch:
+## 5. File scope
 
-```swift
-} catch let err as AppError {
-    let title: String
-    switch err {
-    case .activationRequired(voucherActive: false):
-        title = "Warning!"
-        self.presentAlertWithFunction(withTitle: title, message: ErrorHandler.message(for: err), function: "sendEmail")
-    default:
-        title = "No valid session!"
-    }
-    self.presentAlert(withTitle: title, message: ErrorHandler.message(for: err))   // ← also runs for the activation case
-}
-```
-
-After — exactly one alert per branch:
-
-```swift
-} catch let err as AppError {
-    switch err {
-    case .activationRequired(voucherActive: false):
-        self.presentAlert(withTitle: "Warning!",
-                          message: ErrorHandler.message(for: err),
-                          action: .resendActivation)
-    default:
-        self.presentAlert(withTitle: "No valid session!",
-                          message: ErrorHandler.message(for: err))
-    }
-}
-```
-
-The remaining `MenuVC` alerts (`:70` network error, `:235` logout success, `:239` logout failure)
-are unchanged.
-
-Done when: no `presentAlertWithFunction` remains; activation-required shows one alert whose OK
-triggers activation.
-
----
-
-### S5 — `Helpers.swift` `popUp` → `AlertPresenter` (edit) — fixes D3
-
-Single caller. `HomeVC.swift:111-115`:
-
-```swift
-@IBAction func basket(_: UIButton) {
-    guard !BasketDataManager.shared.basketItemsBySeatId.isEmpty else {
--       UIAlertController.popUp(title: "Warning!", message: "No free seat(s) to be reserved!")
-+       presentAlert(withTitle: "Warning!", message: "No free seat(s) to be reserved!")
-        return
-    }
-```
-
-Then delete `Helpers.swift:6-16` (`extension UIAlertController { static func popUp… }`) entirely.
-The other `Helpers.swift` extensions (`String.formatDate`, `Date`, …) stay untouched.
-Any future non-VC caller uses `AlertPresenter.present(title:message:)` from S3.
-
-> Note the button title changes from "Close" to "OK", matching every other alert in the app.
-
-Done when: `grep -rn "popUp(" --include=*.swift .` is empty.
-
----
-
-### S6 — `VenuesDetailsVC.swift` — remove the 3 `UIAlertView` dialogs (edit)
-
-Spec success criterion: *"No UIAlertView usage exists anywhere in the codebase."*
-Identical block at lines **146**, **244** and **307**:
-
-```swift
--   let alertView = UIAlertView()
--
--   alertView.title = "Warning!"
--   alertView.message = "Select dates first!"
--   alertView.delegate = self
--   alertView.addButton(withTitle: "OK")
--   alertView.show()
-+   presentAlert(withTitle: "Warning!", message: "Select dates first!")
-```
-
-> Line 146's message is `"Select dates first!"` — copy each title/message verbatim from
-> `$WORK/alertview-before.txt` rather than assuming all three are identical.
-
-`VenuesDetailsVC` declares no `UIAlertViewDelegate` conformance (line 8), so only the
-`alertView.delegate = self` assignments disappear — no protocol conformance to remove.
-
-Done when: `grep -rn "UIAlertView" --include=*.swift .` is empty and
-`grep -c UIAlertView "$WORK/warnings.txt"` is 0 (was 9) after the G2 typecheck gate.
-
----
-
-### S7 — Validate
-
-**S7a — Compile check (no app build)**
-
-Run the G2 typecheck gate from §3.1 and diff against the captured baseline:
-
-```bash
-diff "$WORK/errors-before.txt"   "$WORK/errors.txt"      # must stay at 0 errors
-diff "$WORK/warnings-before.txt" "$WORK/warnings.txt"    # only expected removals
-grep -c UIAlertView "$WORK/warnings.txt"                 # must be 0 (was 9)
-python3 "$WORK/target-sources.py" | wc -l                # must be 74 (was 72)
-```
-
-Pass criteria:
-- `$WORK/errors.txt` is empty;
-- the only warning-diff entries are **removals** — the 9 `UIAlertView` deprecations from
-  `VenuesDetailsVC.swift:146,244,307`; no warnings added;
-- the target source count is 74, proving S3's pbxproj registration landed.
-
-If a *call site* fails to typecheck, fix the presenter signature — never the call site
-(REQ-ALERT-5).
-
-No `xcodebuild` run is required for this refactor. It touches no resources, storyboards, build
-phases beyond the two Sources entries, or dependencies, so the typecheck gate is sufficient. Run a
-full build per §3.2 only if you want one final confirmation — detached, logged and polled.
-
-**S7b — Inventory diff**
-```bash
-cd SwiftCinemas/SwiftLoginScreen
-grep -rn "presentAlert" --include=*.swift . > "$WORK/callsites-after.txt"
-diff "$WORK/callsites-before.txt" "$WORK/callsites-after.txt" > "$WORK/callsites.diff"
-grep -rn "UIAlertView\|popUp(\|presentAlertWithFunction\|\"sendEmail\"" --include=*.swift . \
-  > "$WORK/legacy-after.txt"   # MUST be empty
-```
-`callsites.diff` must show changes only in `MenuVC.swift`, `HomeVC.swift` and
-`VenuesDetailsVC.swift` (the last as *additions*).
-
-**S7c — Manual regression** (no automated coverage exists for these flows; no tests are added)
-
-| Flow | Expected |
+| Path | Planned action |
 |---|---|
-| MenuVC — activation required | **one** alert; OK triggers device activation |
-| MenuVC — session error / network error | one alert each, unchanged text |
-| MenuVC — logout success / failure | unchanged |
-| HomeVC — basket with empty basket (S5) | "No free seat(s) to be reserved!", OK button |
-| VenuesDetailsVC — seat tap, `selectCalendar`, `selectCalendar_` without a date (S6) | "Select dates first!" alert appears and dismisses |
-| SignupVC — registration: missing fields, password mismatch, server error, connection failure | unchanged |
-| LoginVC — sign-in failure paths | unchanged |
-| BasketVC — empty basket, payment success, booking failed, payment error | unchanged |
-| AdminVC / AdminUpdateVC — duplicate id, add/update/delete | unchanged |
-| PurchasesVC delete, TicketsVC share/delete guards | unchanged |
-| PopOver — reserve with empty basket | unchanged (out of scope) |
+| `SwiftCinemas/SwiftLoginScreen/Alerts/AlertAction.swift` | Add typed action enum. |
+| `SwiftCinemas/SwiftLoginScreen/Alerts/AlertPresenter.swift` | Add shared UIKit alert helper. |
+| `SwiftCinemas/SwiftLoginScreen/HomeVC.swift` | Remove old extension; replace empty-basket popup call. |
+| `SwiftCinemas/SwiftLoginScreen/MenuVC.swift` | Replace string callback at all activation-alert paths. |
+| `SwiftCinemas/SwiftLoginScreen/Helpers.swift` | Remove `UIAlertController.popUp`; keep unrelated extensions. |
+| `SwiftCinemas/SwiftLoginScreen/VenuesDetailsVC.swift` | Migrate three deprecated dialogs. |
+| `SwiftCinemas/SwiftCinemas.xcodeproj/project.pbxproj` | Register the two new files only if required by the verified target model. |
 
-**S7d — Spec reconciliation**
-Update `speckit.migration.alertcontrollers.specify`: "20 existing call sites" → 36; mark
-REQ-ALERT-4 and its "`AlertItem` usable in any SwiftUI view" success criterion as **descoped
-(UIKit-only decision)**; note the WebSocket half (REQ-WS-*) is tracked separately.
+No `AppDelegate.swift`, `AppServices`, WebSocket, seat-map, URL/header, checkout, backend,
+test, or dependency file is in scope.
 
-**S7e — Cleanup**
-Remove `$WORK` once S7a–S7d pass. It must never be committed.
+## 6. Risks and handling
 
----
-
-## 5. Order and coupling
-
-```
-S0 (inventory + compile baseline)
- └─> S1 ─> S3 (+ HomeVC extension deletion + pbxproj, same change)
-              ├─> S4  MenuVC
-              ├─> S5  popUp
-              └─> S6  UIAlertView
-                   └─> S7 typecheck + diff + manual
-```
-
-Run the **G1 syntax gate (~1.6s) after every file edit**; run the **G2 typecheck gate (~18s) once
-after S6**, when the tree is expected to be consistent. Running G2 between S3 and S6 is fine but
-will report transient errors — that is expected in a single pass.
-
-S3, the `HomeVC` deletion and the pbxproj registration are atomic. S4/S5/S6 are independent of each
-other and are all part of the same single pass — the tree is only expected to typecheck clean at
-the end of S6.
-
----
-
-## 6. Risks
-
-| Risk | Mitigation |
+| Risk | Handling |
 |---|---|
-| **New files not added to the app target's `Sources` phase** → code silently not compiled, refactor appears to work | S3 pbxproj step; `target-sources.py` count must go 72 → 74 (S7a) |
-| Duplicate `UIViewController.presentAlert` declarations mid-pass | S3 pairs the new file with the `HomeVC` deletion in one edit; G2 typecheck reports `invalid redeclaration` (verified) |
-| Feeding dead files (`File.swift`, `CustomURLRequest.swift`, `Networking/SecureStore.swift`) to `swiftc` → 8 phantom errors | File list comes from the pbxproj Sources phase, never from `find` (§3.1) |
-| DerivedData cleaned → G2 cannot resolve Pods modules | Detected immediately as `no such module 'Realm'`; repopulate with one detached build per §3.2 |
-| Behaviour drift in the default path (button title/style) | S3 reproduces `HomeVC.swift:430-434` exactly |
-| `VenuesDetailsVC` relied on `UIAlertView`'s implicit window-level presentation | top-most presentation in S3 covers the popover-presented cases; S7c exercises all three |
-| Wrong title/message copied in S6 | Values taken from `$WORK/alertview-before.txt`, not memory |
-| `popUp`'s "Close" button label change | Accepted and documented in S5 |
-| Scope creep into SwiftUI / popovers / action sheets / WebSocket | Explicitly excluded in §Scope; no `import SwiftUI` in the new files; `VenuesMigration/`, `MapViewController`, `AttendeesVC`, `iOSCalenderVC`, `PopOver*` untouched |
+| App target does not compile a new alert file | Resolve project target membership first; verify exact PBX references, paths, and target inclusion after edits. |
+| Duplicate `UIViewController` helper or temporary incomplete batch | Add new helper and remove old declaration as one paired change; validate only after the complete batch. |
+| Activation action changes behavior or fires more than once | Preserve the username guard, confirmation timing, `AuthDataManager` async path, and both `MenuVC` alert flows; manually verify exactly one activation. |
+| Concurrent errors cause an overlapping or lost activation alert | Preserve current message combination and dismiss-then-upgrade behavior; exercise it manually. |
+| Message or trigger condition changes in venue/date guards | Capture and compare each literal and condition during preflight; verify all three paths manually. |
+| Existing unrelated work is included or overwritten | Record baseline status, restrict edits/diff to approved paths, and never reset/stash. |
+| Compiler prerequisites are unavailable | Block the gate and report the missing prerequisite; do not substitute an incomplete file list or call it a pass. |
+| Spec or implementation reveals a new behavior decision | Stop and record the specific blocker for user resolution; do not silently redesign. |
 
----
+## 7. Requirement traceability
 
-## 7. Traceability
-
-| Requirement | Step |
+| Requirement | Planned step / evidence |
 |---|---|
-| REQ-ALERT-1 Move helpers out of `HomeVC.swift` | S3 |
-| REQ-ALERT-2 Typed `AlertAction` | S1 |
-| REQ-ALERT-3 Default-parameter signature | S3 |
-| REQ-ALERT-4 SwiftUI `AlertItem` | **descoped — UIKit-only decision, 2026-09-26** |
-| REQ-ALERT-5 Existing call sites compile unchanged | S7a, S7b |
-| REQ-ALERT-6 `MenuVC` uses `.resendActivation` | S4 |
-| REQ-ALERT-7 No new dependency | S1, S3 (UIKit only, no Podfile change) |
-| Success criterion — no `UIAlertView` | S6 |
-| Success criterion — "AlertItem usable in any SwiftUI view" | **descoped with REQ-ALERT-4** |
-| Success criterion — no regressions | S7c |
+| REQ-ALERT-1 | Gate 2.1; helper moved and original extension removed. |
+| REQ-ALERT-2 | Gate 2.1 and 2.2; typed action replaces string dispatcher. |
+| REQ-ALERT-3 | Gate 2.1 and Gate 3; default argument and unchanged two-argument call sites typecheck. |
+| REQ-ALERT-4 | Gate 3; compare default alert style, button, text, and dismissal behavior. |
+| REQ-ALERT-5 | Gate 2.2 and manual activation-once scenario. |
+| REQ-ALERT-6 | Gate 2.2 and pending-alert/message-aggregation regression. |
+| REQ-ALERT-7 | Gate 2.3 and Home empty-basket regression. |
+| REQ-ALERT-8 | Gate 2.4, scoped search, and all three date-guard regressions. |
+| REQ-ALERT-9 | Gate 1/3 scoped contract review; no auth, networking, URL, header, checkout, or dependency edits. |
+| REQ-WS-1 … REQ-WS-9 | Deferred; no tasks or edits in this implementation plan. |

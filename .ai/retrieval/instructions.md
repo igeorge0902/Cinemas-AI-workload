@@ -1,222 +1,122 @@
-# Copilot Instructions for Cinemas Project
+# Cinemas operational playbook
 
-## Document scope
-- This file is the **operational playbook**: where to edit, what to check first, and common pitfalls.
-- Keep architecture and immutable contracts in `.ai/agents/AGENTS.md`.
-- Keep copy-paste coding templates in `.ai/skills/skills-github.md`.
-- Keep Speckit constitutional rules in `.ai/constitution/constitution.md`.
+## Start here
 
-## Overview
-This is a **multi-service Quarkus-based cinema booking system** with an iOS client, web UI, and Kubernetes infrastructure. The project consists of four backend services, a MySQL database, and a comprehensive test suite using Appium for iOS automation.
+- Read `.ai/agents/AGENTS.md` for current architecture/contracts and
+  `.ai/constitution/constitution.md` for durable safeguards.
+- Use `.ai/agents/agents-role.yaml` for specialist ownership and tiers. Canonical agent
+  definitions are in `.ai/agents/definitions/`; `.github/agents/` contains discovery symlinks.
+  Explicit `/speckit.*` requests retain their lifecycle.
+- Source/configuration wins over historical plans and generated docs. Do not rely on old
+  controller line numbers, SDK versions, completed roadmaps or examples without checking.
+- Work only in the affected module and preserve unrelated edits. Nested modules may have
+  their own Git repositories; inspect the correct repository before Git operations.
+  Never commit or push unless explicitly asked.
 
-## Key Tech Stack
-- **Runtime:** Java 17, Quarkus 3.19.4
-- **Frontend:** AngularJS 1.x (Film-Review SPA), iOS (SwiftCinemas)
-- **Backend Services:** Quarkus services (dalogin, mbook, mbooks, simple-service-webapp)
-- **Database:** MySQL 8, Kafka, Zookeeper
-- **Observability:** Prometheus, Grafana, Tempo (OpenTelemetry)
-- **Infrastructure:** Kubernetes (Minikube locally), Docker, Apache reverse proxy
-- **Testing:** Appium 3, TestNG, Python pytest
+## Prefer domain MCP tools
 
-## Critical Files & Directories
+- **Backend:** use `cinemas-backend` before generic searches for module/endpoint discovery,
+  type/entity descriptions, services, request/response models, mappers, injection,
+  persistence/configuration and source reads. Narrow by module and symbol/path.
+  `reload` refreshes cached analysis after edits.
+- **iOS:** use `swiftcinemas` for views/storyboards, references, networking, actor/DI wiring,
+  configuration and source reads. Use `reload` after edits; `build_verify` supports preflight,
+  scheme listing, build and test actions. Preflight is not an executed build/test.
+- If an MCP is unavailable or lacks coverage, state the limitation and use repository tools.
+  Heuristic reports are leads to verify, not proof. Retain focused executable validation.
+- During application modernization, show Assess/Plan/Execute in the **Modernization Workflow**
+  canvas and refresh it after Modernize CLI commands change repository artifacts.
 
-### Backend Services
-| Service | Port | Root Path | Database | Primary File |
-|---------|------|-----------|----------|--------------|
-| `dalogin-quarkus` | 8080 | `/login` | `login_` | `CheckOut.java`, `HelloWorld.java` |
-| `mbook-quarkus` | 8888 | `/mbook-1` | `login_` | `UserController.java` |
-| `mbooks-quarkus` | 8080 | `/mbooks-1` | `book` | `BookController.java` |
-| `simple-service-webapp` | 8085 | `/simple-service-webapp` | N/A | `ImageResource.java` |
+## Where to edit
 
-### Documentation (Reference Before Editing)
-- **Speckit Constitution:** `.ai/constitution/constitution.md` (AI agent project context - **primary reference**)
-- **Architecture & Design:** `.ai/agents/AGENTS.md` (comprehensive system overview)
-- **Implementation Patterns:** `.ai/skills/skills-github.md` (copy-paste templates for backend/frontend/iOS/testing)
-- **Local Deployment:** `k8infra/README-k8s-local.md` (step-by-step runbook)
-- **System HTML Docs:** `docs/system-documentation.html`, `docs/appium-test-documentation.html`
-- **iOS Client Docs:** `SwiftCinemas/swiftcinemas-documentation.html`
+Java paths in this table are relative to each module's `src/main/java/`.
 
-### Database
-- `mysql_8/login.sql` — `login_` schema (users, devices, sessions, vouchers)
-- `mysql_8/book.sql` — `book` schema (movies, venues, screens, tickets, purchases)
-- Both are **self-contained** with triggers, stored procedures, and all fixes included
+| Concern | Starting points |
+|---------|-----------------|
+| Login/session gateway | `dalogin-quarkus`: `com/dalogin/servlets/HelloWorld.java`, `filters/`, `crypto/CryptoService.java`, `persistence/` |
+| Gateway request/response and forwarding | `dalogin-quarkus`: `com/dalogin/servlets/requestrecord/`, `servlets/responsemap/`, `client/ServiceClient.java`, `client/filter/RequestFilter.java` |
+| Accounts, news, subscriptions | `mbook-quarkus`: `com/jeet/rest/AccountController.java`, `NewsController.java`, `NewsSettingsController.java`, then `service/` and `db/DAO.java` |
+| Catalog, venues and seating | `mbooks-quarkus`: `com/jeet/rest/MovieController.java`, `VenueController.java`, then `service/` and `db/DAO.java` |
+| Checkout and purchases | `mbooks-quarkus`: `com/jeet/rest/CheckoutController.java`, `PurchaseController.java`, `service/CheckoutService.java`, `service/booking/` |
+| REST boundary mapping | mbook/mbooks: `com/jeet/rest/requestbean/`, `responserecord/`, `responsemapper/`, `ApiResponseFactory.java` |
+| Images and active-session proxy | `simple-service-webapp-quarkus`: `com/example/rest/ImageResource.java` |
+| Event delivery | mbook/mbooks: `com/jeet/broadcasting/`; mbook's `ActiveSessionResolver` resolves device ownership |
 
-## When Working on Different Areas
+### iOS and web
 
-### Payment/Booking Flow
-Start in `mbooks-quarkus/src/main/java/com/jeet/rest/BookController.java` (1170 lines):
-- Line 1–300: Movie browsing, venue selection, dates/seats
-- Line 300–600: Seat reservation (`bookTickets()`, pessimistic locking)
-- Line 600–1170: Braintree payment flow (`clientToken()`, `fullcheckout2()`, rollback logic)
-- Supporting classes: `service/PaymentService.java`, `booking/TicketService.java`, `db/DAO.java`
+iOS paths are relative to `SwiftCinemas/SwiftLoginScreen/`.
 
-**Payment Workflow (iOS + Web):**
-```
-GET /login/CheckOut → GET /mbooks-1/rest/book/payment/clientToken
-POST /login/CheckOut → POST /mbooks-1/rest/book/payment/fullcheckout2
-  ↓
-[Pessimistic lock seats] → [Create Purchase] → [Braintree transaction]
-  ↓ (failure) → Rollback: delete tickets+purchase, free seats
-  ↓ (success) → Return tickets + updated seat map
-```
+- **Composition/navigation:** `AppDelegate.swift`, `Networking/BackendServices.swift`
+  (`AppServices`, services and injection helpers), storyboard controllers.
+- **Transport/contracts:** `Networking/APIClient.swift`, `Endpoint.swift`, `HeaderProvider.swift`,
+  `URLManager.swift`, and `DataManagers/`. URL helpers produce relative service paths.
+- **Session bridging:** `WebViewController.swift`, `DataManagers/AuthDataManager.swift`,
+  `MenuVC.swift`. Preserve shared cookies and secure/defaults session cleanup on logout.
+- **SwiftUI venues:** `VenuesMigration/VenuesMigration.swift`; preserve storyboard return
+  navigation and service injection.
+- **Checkout:** `BasketVC.swift` (Braintree SwiftUI `CardFields`), checkout/basket data managers.
+- **Screen news:** `MenuVC.swift` and gateway service methods; events use
+  `BroadCasting/Websocket.swift`. Incoming events currently log rather than update UI.
+- **Web SPA:** `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/`.
+  `app.js` owns controllers, plain hash routing and HMAC interception; templates own screens.
 
-### iOS Service Calls (SwiftCinemas Refactoring)
-iOS client refactored to use modern async/await + centralized networking layer:
-- `SwiftLoginScreen/Networking/APIClient.swift` — Main HTTP client (async/await, error handling, response caching)
-- `SwiftLoginScreen/Networking/Endpoint.swift` — Request builder (path, method, query, body, cache key, absolute URL support)
-- `SwiftLoginScreen/Networking/BackendServices.swift` — Service wrappers:
-  - `MbooksService` — `/mbooks-1/rest/book` endpoints (movies, venues, seats, payment, admin)
-  - `LoginGatewayService` — `/login` proxy servlets (login, checkout, purchases, activation)
-  - `ImageResourceService` — Image downloads (absolute URL, optional caching)
-  - `RapidMovieDatabaseService` — External IMDb API (RapidAPI)
-- `SwiftLoginScreen/Networking/HeaderProvider.swift` — Protocol + implementations:
-  - `SessionHeaderProvider` — Session headers (X-Token, Ciphertext, X-Device)
-  - `HMACLoginHeaderProvider` — HMAC-SHA512 login headers (X-HMAC-HASH, X-MICRO-TIME)
-  - `MinimalGETHeaderProvider` — No auth headers (for public/image requests)
-  - `RapidMovieDatabaseHeaderProvider` — RapidAPI keys
-- `SwiftLoginScreen/Networking/URLManager.swift` — Centralized URL configuration (baseHost, paths, builders)
-- `SwiftLoginScreen/Networking/AppError.swift` — Standard error types (networkFailure, httpError, authRequired, decodingFailed)
-- **Service injection pattern:** `AppDelegate` creates `AppServices` container → injected via `UIViewController` extension protocols (`HasAPIClient`, `HasAppServices`)
+## Change checks
 
-### Authentication & Session Management
-Start in `dalogin-quarkus/src/main/java/com/dalogin/`:
-- `filters/` — `CookieFilter.java`, `CiphertextFilter.java`, `AuthFilter.java`, `ActiveVoucherFilter.java`
-- `servlets/HelloWorld.java` — HMAC login, password hashing
-- `client/ServiceClient.java` — header injection for downstream services
-- **Key headers:** `X-Token`, `Ciphertext`, `uuid`, `TIME_`, `XSRF-TOKEN`, `X-HMAC-HASH`, `X-Device`
-- **Keep these header names exactly** — iOS client depends on them (see `HeaderProvider` implementations in iOS)
+- Preserve auth headers/cookies, response casing/status behavior and service roots listed in
+  `AGENTS.md`. Compare backend changes with both `BackendServices.swift` and web consumers.
+- Checkout remains form-encoded through `/login/CheckOut`; `seatsToBeReserved` is a JSON
+  string containing screening IDs and dash-separated seat numbers, not seat IDs.
+  Confirm outgoing body/Content-Type before investigating payment SDK compatibility.
+- Persistence differs: dalogin uses injected `DataSource` managers, mbook uses managed
+  `Session`/`@Transactional`, mbooks uses manual sessions/transactions in its CDI DAO.
+  Preserve caller-owned connection boundaries and lock seats before availability checks.
+- Reservation commits precede external payment; verify compensating cancellation on failure.
+  Do not extend transaction/lock lifetime or change cache policy as an incidental fix.
+- For persistence changes, inspect entity fetch/cascade annotations and Hibernate config.
+  Do not assume every read is unsynchronized, entities are all DTO-mapped, or cache regions
+  are explicitly evicted after every mutation.
+- Screen-news settings use `/login/admin/newsSettings/screen` -> mbook news-settings;
+  the session owns the user. WebSocket connections need a nonblank `deviceId`.
+- UI work must preserve selected context, segues, service injection, actor isolation,
+  nonblocking loading and existing error surfaces unless behavior changes are requested.
 
-### Film-Review Booking UI (Web)
-Edit in `dalogin-quarkus/src/main/resources/META-INF/resources/film-review/`:
-- `app.js` — AngularJS controllers, HMAC interceptor, login/auth state (683 lines)
-- `templates/movies.html`, `venues.html`, `dates.html`, `checkout.html`, `purchases.html`
-- `index.html` — SPA shell, Braintree SDK (JS 1.44.1), CSS inline
-- **DO NOT change HTTP header names or checkout parameter names** — backend contracts are hardcoded
+## Focused validation
 
-### iOS Tests (Appium)
-Edit in `appium/src/test/java/`:
-- `qa.ios.pages/` — Page Object classes for UI elements
-- `qa.ios.test/TestNavigations.java` — Main test suite (Movies → Category → Venues → Seats → Checkout)
-- `qa.ios.util/CreateXml.java` — Swing GUI for building TestNG suites
-- Run via `.run/appium - mvn test` or `.run/appium - java direct (testng)` configs
-
-### Database Queries & DAO
-`mbooks-quarkus/src/main/java/com/jeet/db/DAO.java`:
-- Uses **session-per-call** (not spring-data)
-- Read methods: NOT `synchronized`
-- Write methods: `synchronized`
-- Uses **Hibernate L2 cache** — invalidate when mutating entities
-- **DO NOT** change entity `FetchType` or `CascadeType` without reading the "Hibernate entity relationships" section in AGENTS.md
-
-### Kubernetes & Deployment
-Edit `k8infra/quarkus-backend.yaml` for local K8s manifests:
-- Services: dalogin, mbook, mbooks, simple-service-webapp
-- Infrastructure: MySQL, Kafka, Zookeeper, Apache, Prometheus, Tempo, Grafana
-- All services export traces to Tempo; Prometheus scrapes metrics
-- **Important:** WebSocket `ProxyPass` routes must come **before** HTTP routes in Apache config
-
-## Hardcoded Values (Client-Visible Contracts)
-
-**DO NOT change without coordinating iOS client updates:**
-
-- Header names: `X-Token`, `uuid`, `token2`, `Ciphertext`, `TIME_`, `XSRF-TOKEN`, `X-HMAC-HASH`, `X-Device`
-- HMAC algorithm: SHA-512 (same iOS ↔ Web)
-- Checkout payload: `payment_method_nonce`, `orderId`, `seatsToBeReserved` (JSON with `seat` = numbers, not IDs)
-- iOS base URL: `URLManager.baseHost` = `milo.crabdance.com` (can be overridden locally in `URLManager.swift`)
-- Braintree SDK versions: JS 1.44.1, iOS 5.26.0, Java 3.36.0 (all use same Sandbox gateway)
-
-## Run Configurations (IntelliJ `.run/` directory)
-
-| Config | Type | What It Does |
-|--------|------|--------------|
-| `dalogin - package` | Maven | Builds dalogin JAR |
-| `mbooks - quarkus:dev` | Maven | Runs mbooks in dev mode (live reload) |
-| `appium - mvn test` | Maven | Runs iOS UI tests via Surefire |
-| `appium - java direct (testng)` | Shell | Direct TestNG (bypasses exec-maven-plugin) |
-| `appium - CreateXml GUI` | Shell | Launches Swing GUI for building test suites |
-| `ALL - package (skip tests)` | Shell | Builds all 4 backend services |
-| `k8s - test-login.py` | Python | Runs API smoke tests |
-
-**All Maven configs use:** `myGeneralSettings` → `userSettingsFile` pointing to `k8infra/settings-local.xml` (proxy bypass).
-
-## Common Edits Checklist
-
-### Adding a new API endpoint
-1. Create `@Path`, `@GET/@POST`, `@Produces/Consumes` in a `*Resource.java` class
-2. If authenticated: add `@Context HttpServletRequest request` + call `RequestFilter.getSessionUUID(request)`
-3. If using HMAC: add `@Context HttpHeaders headers` + verify `X-HMAC-HASH`
-4. **Inject headers via ServiceClient** if calling downstream (dalogin proxy servlets already do this)
-5. Return JSON: use `JSONObject` or DTO with Jackson (prefer DTO for new code)
-
-### Fixing a bug in seat availability
-1. **Read:** `DAO.getSeatsForScreening(screeningDateId)` (NOT query-cached, always fresh)
-2. **Check:** `seat.isReserved` — values are string `"0"` or `"1"` (not boolean)
-3. **Lock:** `PESSIMISTIC_WRITE` before checking (in `DAO.bookTickets()`)
-4. **Invalidate cache:** After update, call `cache.evict()` on the Seat/Screen entities
-
-### Adding a new test
-1. **Unit tests:** `@QuarkusTest` + `@Inject` for CDI beans (mbook-quarkus has examples)
-2. **Integration tests:** Testcontainers for MySQL if needed
-3. **E2E tests:** Python API tests in `k8infra/` (no dependencies, stdlib-only)
-4. **iOS UI tests:** Appium via `appium/` module
-
-## Gotchas & Common Mistakes
-
-1. **String comparison:** Use `.equals()`, not `==` — several filters had this bug
-2. **Null cookies:** Always null-check `request.getCookies()` before iterating
-3. **Seat numbers vs IDs:** Checkout uses `seat` = numbers (e.g., `"A1-B2-"`), not IDs
-4. **HMAC token missing:** Web UI needs `/book/movies/paging` endpoint to get `APIKEY` header (or mark browse endpoints as public in interceptor)
-5. **Circular entity references:** JSON serialization breaks with bidirectional `EAGER` relationships — manually assemble JSON or use `@JsonIgnore`
-6. **WebSocket upgrade fails:** Make sure WebSocket `ProxyPass` comes **before** HTTP routes in Apache config
-7. **L2 cache stale reads:** After mutating entities, invalidate cache regions (`movies`, `venues`, `location`, `ticket`)
-8. **iOS URLs hardcoded:** Check `URLManager.swift` before changing any API paths
-
-## Quick Deploy Commands
-
-Use `k8infra/README-k8s-local.md` as the canonical deployment/runbook source.
-Keep this file lightweight and avoid duplicating the full command catalog.
-
-Minimal reminder flow:
+Use the smallest existing command that covers the change. From the repository root, for example:
 
 ```bash
-# 1) Build modules
-./mvnw -s k8infra/settings-local.xml package -DskipTests
-
-# 2) Build/load images (choose docker-env or podman workflow)
-# See: k8infra/README-k8s-local.md
-
-# 3) Apply manifests
-kubectl apply -f k8infra/quarkus-backend.yaml
-
-# 4) Keep ingress reachable for iOS/web
-sudo minikube tunnel
+# Replace the module and test selector with those relevant to the change.
+cd mbooks-quarkus
+./mvnw -s ../k8infra/settings-local.xml -Dtest=ApiResponseFactoryTest test
 ```
 
-## When You're Stuck
+- Backend modules have Maven wrappers; dev mode is `./mvnw quarkus:dev` inside the module.
+  Packaging with `-DskipTests` is not test evidence.
+- API smoke tests: `mvn -f k8infra/api-smoke-restassured/pom.xml test`; see that directory's
+  `README.md` for live overrides and `CHECKOUT_CONTRACT.md` for booking assertions.
+  Check skipped counts: an unavailable backend may skip tests.
+- Appium uses system Maven: `mvn -f appium/pom.xml test`. Setup is in `appium/README.md`;
+  `appium/src/test/java/TestNavigations.java` is the UI suite. Discover page objects under
+  `appium/src/main/java/qa/ios/` rather than assuming a test-source package.
+- iOS: select the actual scheme/destination with MCP `build_verify` or existing Xcode tooling;
+  distinguish dependency/project preflight issues from compilation or test failures.
+- Shared IDE configurations live in `.run/`; inspect actual files instead of relying on
+  a copied catalog. Reuse `k8infra/settings-local.xml` when Maven proxy bypass is needed.
+- When asked to run validation, use the requested services/configuration and execute first.
+  Investigate actual failures rather than pre-auditing unrelated code or starting extra services.
+  Do not install/restore dependencies unless manifests changed or validation reports them missing.
 
-1. **Can't find an entity or method?** → Search in AGENTS.md first
-2. **Payment failing on web but works on iOS?** → Check `POST /login/CheckOut` parameters + HMAC interceptor + Braintree SDK version
-3. **WebSocket not connecting?** → Check `sudo minikube tunnel` is running + WebSocket `ProxyPass` ordering in Apache
-4. **Tests failing?** → Run `appium - mvn test` or `k8s - test-login.py` configs; check MySQL is seeded
-5. **Session not found?** → Verify `AuthFilter` + `ActiveVoucherFilter` are registered in `web.xml`
+## Deployment and troubleshooting
 
-## Speckit AI Agent Setup
-
-This project uses **Speckit** (`.ai/specs/legacy-specify/` directory) to provide AI coding agents with project context via a structured constitution file.
-
-- **Constitution Location:** `.ai/constitution/constitution.md`
-- **AI Engine:** Claude (configured in `.ai/generated/init-options.json`)
-- **Configuration:** `.ai/generated/integration.json` (custom integrations)
-- **Status:** Ready — Speckit will auto-load constitution for all AI assistance requests
-
-The constitution contains:
-- Project identity & tech stack overview
-- Critical architecture decisions (dual schemas, pessimistic locking, payment workflow)
-- Hardcoded client contracts (header names, API endpoint signatures, Braintree SDK versions)
-- File navigation map & key code patterns
-- Common failure modes & troubleshooting
-- Quick deployment & testing commands
-
----
-
-**Always reference Speckit constitution (`.ai/constitution/constitution.md`) or AGENTS.md before editing architecture/entity relationships.** If in doubt, ask or read the system-documentation.html.
+- `k8infra/README-k8s-local.md` is the setup/deployment runbook;
+  `k8infra/quarkus-backend.yaml` owns routing, volumes and observability configuration.
+  Do not deploy as a side effect of a code/documentation edit.
+- WebSocket Apache `ProxyPass` rules must precede parent HTTP routes. Check device identity
+  and active-user/subscription resolution as well as upgrade/network reachability.
+- For local iOS connectivity, follow the runbook's hostname, ingress and tunnel setup.
+  Do not copy old port-forward/firewall workarounds into normal operation.
+- Preserve the `login_`/`book` split and MySQL case handling. Never reset PVCs or import/repair
+  database state as incidental troubleshooting.
+- Application OpenTelemetry/Tempo and Prometheus/Grafana remain separate from disabled
+  agent-routing telemetry. Preserve routing records; do not generate manifests or cost tables.
+- Avoid copying secrets into output, examples or source. Use supported configuration overrides.

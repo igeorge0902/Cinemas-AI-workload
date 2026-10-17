@@ -19,3 +19,8 @@
 # GitHub discovers canonical agent definitions through symlinks here.
 !.github/agents/
 !.github/agents/**
+
+# Local developer launchers
+!scripts/
+!scripts/dev-backends.sh
+!scripts/README.md
