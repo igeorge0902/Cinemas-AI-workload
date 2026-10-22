@@ -262,6 +262,9 @@ agents:
       - swift
       - ios
       - ui
+      - architecture-planning
+      - implementation
+      - code-review
     vocabulary:
       - swiftui
       - uikit
@@ -269,16 +272,70 @@ agents:
       - async-await
       - navigation
       - keychain
+      - viewmodel
+      - acceptance-criteria
+      - diff-review
+      - regression-risk
+      - swift-concurrency
+    workflow:
+      planning:
+        purpose: inspect and plan before editing
+        responsibilities:
+          - inspect the actual repository, current working-tree changes, and established app patterns
+          - map affected screens, services, data managers, navigation, state, and API contracts
+          - define exact files and symbols, behavior to preserve, edge cases, acceptance criteria, and validation commands
+          - identify ambiguities and risks; ask only when a decision materially affects implementation
+        output:
+          - repository evidence and current behavior
+          - scoped implementation plan and file list
+          - acceptance criteria and verification plan
+        suggested_models:
+          primary: gpt-5.6-luna
+          alternative: claude-sonnet-5
+      code_writing:
+        purpose: implement the approved plan without expanding scope
+        responsibilities:
+          - follow existing SwiftCinemas architecture, AppServices injection, service wrappers, data managers, and navigation patterns
+          - preserve API paths, query parameters, decoding, caching, authentication, error behavior, and user-visible flows unless explicitly changed
+          - respect Swift 6 actor isolation and concurrency; keep UIKit work on MainActor
+          - keep edits bounded and report files changed and checks actually run
+        dispatch:
+          quick_engineer:
+            agent: Cinemas Quick Engineer
+            eligibility: fully specified, pattern-following edits in at most two files with a known validation command
+            exclusions: multi-file architectural changes, ambiguous design decisions, auth/session/cookies, security, and other fast-tier protected areas
+          otherwise: Cinemas iOS Engineer
+        suggested_models:
+          bounded_edit: mai-code-1.1-flash
+          multi_file_or_architectural_change: gpt-5.6-luna
+          fallback: gpt-5.6-luna
+      review:
+        purpose: independently assess the implementation against the plan
+        responsibilities:
+          - review the complete diff against the pre-edit working-tree baseline, including pre-existing dirty changes
+          - check acceptance criteria, API and navigation regressions, state ownership, Swift 6 concurrency, error paths, and scope creep
+          - run or inspect relevant validation and distinguish parsing from typechecking, building, and tests
+          - report findings by severity with file and symbol references; do not silently rewrite unrelated code
+        suggested_models:
+          primary: claude-sonnet-5
+          cost_efficient_alternative: gpt-6-luna
+        independence: review should be a separate stage from code writing; do not treat the implementer's self-review as independent approval
     direct_tasks:
-      - task: build or refactor ios screens
+      - task: plan iOS changes from repository evidence before editing
+        trigger: intent_match
+        priority: high
+      - task: build or refactor iOS screens and view models from an approved plan
         trigger: intent_match
         priority: medium
-      - task: implement api client calls and decoding
+      - task: implement API client calls and decoding while preserving existing contracts
         trigger: intent_match
         priority: medium
       - task: improve state handling and navigation flow
         trigger: intent_match
         priority: medium
+      - task: independently review iOS implementation diffs and regression risks
+        trigger: intent_match
+        priority: high
       - task: fix mobile-specific auth/session issues
         trigger: incident
         priority: high
@@ -468,32 +525,185 @@ agents:
         trigger: intent_match
         priority: low
 
+
   - name: business-analyst
     scope:
       - requirements-gathering
+      - requirements-analysis
+      - current-state-analysis
       - process-modeling
       - stakeholder-alignment
+      - product-documentation
+      - architecture-documentation
+      - documentation-maintenance
+      - refactoring-analysis
+      - change-impact-analysis
+      - acceptance-criteria
+      - traceability
     vocabulary:
       - user-story
       - acceptance-criteria
       - workflow
-      - kpi
+      - business-rule
+      - current-state
+      - target-state
+      - as-is
+      - to-be
+      - traceability
+      - source-of-truth
+      - documentation-drift
       - dependency
-      - risk
+      - change-impact
+      - refactoring
+      - regression-risk
+      - migration
+      - kpi
+      - decision-log
+
+    workflow:
+      repository_analysis:
+        purpose: establish an evidence-based understanding before recommending changes
+        responsibilities:
+          - inspect relevant repository files, existing documentation, configuration, tests, and working-tree changes
+          - identify current behavior, system boundaries, business rules, dependencies, and documented assumptions
+          - distinguish verified facts from inferences, unknowns, and conflicting sources
+          - trace requirements and documentation claims to concrete files, symbols, endpoints, tests, or configuration
+          - identify documentation drift, missing requirements, duplicated explanations, and obsolete instructions
+          - avoid presenting inferred behavior as implemented behavior
+        output:
+          - current-state summary with repository evidence
+          - confirmed requirements, assumptions, and open questions
+          - gaps, inconsistencies, dependencies, and risks
+          - impacted documentation and implementation areas
+        suggested_models:
+          primary: gpt-5.6-luna
+          cost_efficient_alternative: gpt-6-luna
+          deep_or_ambiguous_analysis: claude-sonnet-5
+
+      requirements_and_process_design:
+        purpose: translate business intent into clear, testable, traceable requirements
+        responsibilities:
+          - define scope, actors, goals, preconditions, main flows, alternate flows, and failure cases
+          - write user stories, business rules, and measurable acceptance criteria
+          - identify permissions, validation, error handling, data lifecycle, and integration constraints
+          - make assumptions explicit and ask questions only when an unresolved decision materially affects scope or correctness
+          - maintain traceability between stakeholder intent, requirements, acceptance criteria, and tests
+          - align feature artifacts with the existing Spec Kit lifecycle and project constitution
+        output:
+          - scoped requirements and out-of-scope items
+          - user stories and testable acceptance criteria
+          - process flows and edge cases
+          - assumptions, dependencies, risks, and unresolved decisions
+          - requirements-to-tests traceability
+        suggested_models:
+          primary: gpt-5.6-luna
+          alternative: claude-sonnet-5
+
+      documentation_authoring:
+        purpose: create clear, accurate, maintainable documentation from verified evidence
+        responsibilities:
+          - write and update README files, architecture guides, API descriptions, sequence diagrams, workflows, and operational documentation
+          - follow the existing document structure, terminology, style, and diagram conventions
+          - derive technical descriptions from current source code and configuration rather than assumptions
+          - distinguish implemented behavior from proposed behavior and planned work
+          - include concrete file paths, symbols, contracts, examples, and validation steps where useful
+          - keep diagrams consistent with the written explanation and actual system boundaries
+          - avoid unnecessary rewrites and preserve accurate existing content
+          - validate links, headings, code blocks, diagrams, and generated HTML or Markdown structure where applicable
+        output:
+          - complete updated documentation or a focused patch
+          - summary of changed sections and the evidence supporting them
+          - documentation validation results and any unresolved discrepancies
+        suggested_models:
+          substantive_authoring: gpt-5.6-luna
+          bounded_document_edit: gpt-6-luna
+          independent_quality_review: claude-sonnet-5
+
+      refactoring_preparation:
+        purpose: prepare a safe, evidence-based refactoring proposal before implementation
+        responsibilities:
+          - document the existing architecture, responsibilities, data flows, contracts, and state ownership
+          - identify duplication, coupling, unclear boundaries, documentation drift, and candidate refactoring seams
+          - separate behavior-preserving refactoring from functional changes and new requirements
+          - identify consumers, integrations, tests, compatibility constraints, and regression risks
+          - propose incremental stages with explicit scope, dependencies, rollback considerations, and validation gates
+          - define observable acceptance criteria and characterization or regression tests for existing behavior
+          - map proposed changes to likely files, modules, components, and responsible engineering specialists
+          - check proposals against existing project conventions and constitution constraints
+          - avoid prescribing a technical design when repository evidence is insufficient; identify the decision needed
+        output:
+          - as-is and proposed to-be architecture
+          - refactoring objectives and non-goals
+          - impact map covering files, components, contracts, and consumers
+          - ordered implementation stages and dependencies
+          - acceptance criteria, regression risks, and verification plan
+          - open technical decisions for the owning engineering specialist
+        suggested_models:
+          primary: gpt-5.6-luna
+          complex_architecture_alternative: claude-sonnet-5
+        handoff:
+          - backend changes to Cinemas Backend Engineer
+          - iOS changes to Cinemas iOS Engineer
+          - database schema, query, or integrity changes to Cinemas Database Engineer
+          - frontend changes to Cinemas Web Engineer
+          - Kubernetes, deployment, or observability changes to Cinemas DevOps Engineer
+          - test-suite implementation to Cinemas Testing Engineer
+        boundaries:
+          - prepare and document the refactoring plan; do not silently expand into implementation
+          - obtain technical review from the owning specialist before treating an architecture proposal as approved
+          - preserve existing behavior unless an explicit requirement authorizes a behavior change
+
+      independent_review:
+        purpose: check analytical quality and documentation correctness before handoff
+        responsibilities:
+          - verify claims against available repository evidence and linked sources
+          - check consistency across requirements, plans, tasks, diagrams, and documentation
+          - identify unsupported claims, missing edge cases, contradictory contracts, and scope creep
+          - verify that acceptance criteria are observable and testable
+          - check that proposed refactoring stages are incremental and have appropriate validation
+          - report findings by severity and reference affected files or sections
+          - distinguish confirmed defects from recommendations and unresolved questions
+        output:
+          - findings with severity, evidence, and affected artifacts
+          - missing coverage and unresolved risks
+          - explicit readiness recommendation and remaining blockers
+        suggested_models:
+          primary: claude-sonnet-5
+          cost_efficient_alternative: gpt-6-luna
+        independence: review should be a separate stage from authoring or planning; do not treat self-review as independent approval
+
     direct_tasks:
-      - task: refine requirements into clear stories
-        trigger: intent_match
-        priority: medium
-      - task: write testable acceptance criteria
+      - task: analyze existing requirements, source code, and documentation to establish verified current behavior
         trigger: intent_match
         priority: high
-      - task: map process flows and edge cases
+      - task: refine requirements into scoped user stories and business rules
+        trigger: intent_match
+        priority: high
+      - task: write measurable acceptance criteria and edge cases
+        trigger: intent_match
+        priority: high
+      - task: create or update architecture, API, workflow, and operational documentation from repository evidence
+        trigger: intent_match
+        priority: high
+      - task: identify outdated, inconsistent, missing, or duplicated documentation
+        trigger: intent_match
+        priority: high
+      - task: prepare an evidence-based refactoring proposal before code changes
+        trigger: intent_match
+        priority: high
+      - task: analyze change impact, dependencies, compatibility, and regression risks
+        trigger: intent_match
+        priority: high
+      - task: create traceability between requirements, implementation areas, acceptance criteria, and tests
         trigger: intent_match
         priority: medium
-      - task: prioritize backlog by value and risk
+      - task: review specifications, plans, tasks, diagrams, and documentation for consistency
+        trigger: intent_match
+        priority: high
+      - task: prioritize backlog items by business value, risk, and dependency
         trigger: intent_match
         priority: medium
-      - task: align scope across stakeholders
+      - task: align scope and unresolved decisions across stakeholders and engineering specialists
         trigger: intent_match
         priority: medium
 
@@ -550,6 +760,18 @@ agents:
       - task: synchronize approved schema decisions in up to three explicitly named documentation files without design or SQL changes
         trigger: intent_match
         priority: low
+        
+businessAnalystModelPolicy:
+  repository_analysis: gpt-5.6-luna
+  requirements_and_process_design: gpt-5.6-luna
+  documentation_authoring: gpt-5.6-luna
+  refactoring_preparation: gpt-5.6-luna
+  independent_review: claude-sonnet-5
+  cost_efficient_alternative: gpt-6-luna
+  review_policy:
+    substantial_changes: required
+    bounded_edits: optional
+    author_and_reviewer_must_be_separate_stages: true
 
 umbrellaRouting:
   # Enacted only when the user selects the umbrella agent. A directly selected
@@ -573,6 +795,12 @@ umbrellaRouting:
     - A code handoff must name exact files, symbols, existing patterns, behaviour, error cases, acceptance criteria and validation; fast-tier protected-area exclusions still apply and missing design decisions remain with the specialist.
     - A fast-tier ESCALATE reply reroutes to the owning specialist as a new stage, reusing the evidence gathered.
     - If no route is trustworthy, use AGENTS.md and then ask the user rather than guessing.
+        - Route repository analysis, requirements analysis, substantial documentation authoring, and refactoring preparation to Cinemas Business Analyst using the standard tier.
+    - For bounded documentation edits with exact requirements, named files, and known validation, allow direct routing to Cinemas Quick Engineer when fast-tier criteria are satisfied.
+    - For substantial documentation changes, require a separate review stage using the Business Analyst review model policy; keep review independent from authoring.
+    - For refactoring preparation, have the Business Analyst establish current behavior, scope, impact, and acceptance criteria before the owning engineering specialist approves the technical approach.
+    - Route implementation to the owning engineering specialist; do not let the Business Analyst's proposed architecture substitute for technical approval.
+    - Validate generated documentation using checks appropriate to its format, including HTML parsing, Markdown links, diagram rendering, and consistency with source code where applicable.
   specialists:
     - name: Cinemas Backend Engineer
       roles: [backend-dev]
@@ -603,7 +831,17 @@ umbrellaRouting:
       triggers: [ai-experiment, ai-evaluation, ai-dataset, ai-drift]
     - name: Cinemas Business Analyst
       roles: [business-analyst]
-      triggers: [requirements, acceptance-criteria, process-analysis, backlog-priority]
+      triggers:
+        - requirements
+        - acceptance-criteria
+        - process-analysis
+        - backlog-priority
+        - repository-analysis
+        - documentation-authoring
+        - documentation-maintenance
+        - refactoring-preparation
+        - change-impact-analysis
+        - documentation-review
     - name: Cinemas C++ Engineer
       roles: [cpp-developer]
       triggers: [cpp-feature, cpp-memory-safety, cpp-performance, cpp-test]
@@ -670,6 +908,10 @@ triggerRouting:
     - {trigger: runtime-observability, agent: devops, intent: configure or diagnose metrics logs OpenTelemetry Tempo or Grafana}
     - {trigger: deployment, agent: devops, intent: package deploy expose or troubleshoot a service}
     - {trigger: ios-ui, agent: ios-dev, intent: build or repair UIKit or SwiftUI screens and navigation}
+    - {trigger: ios-ui, agent: ios-dev, intent: screen state and view models with data managers }
+    - {trigger: ios-plan, agent: ios-dev, intent: inspect the iOS repository and produce a scoped implementation plan before edits}
+    - {trigger: ios-code, agent: ios-dev, intent: implement an approved iOS plan; dispatch to Quick Engineer only for eligible bounded edits}
+    - {trigger: ios-review, agent: ios-dev, intent: independently review an iOS diff for correctness, Swift 6 safety, scope, and regressions}
     - {trigger: ios-networking, agent: ios-dev, intent: change APIClient Endpoint service wrappers or decoding}
     - {trigger: ios-session, agent: ios-dev, intent: change iOS authentication session headers or keychain behavior}
     - {trigger: ios-test, agent: ios-dev, intent: add XCTest unit UI or networking tests inside SwiftCinemas}
@@ -709,3 +951,9 @@ triggerRouting:
     - {trigger: lookup, agent: fast-lane, intent: locate code config or docs and summarize evidence without edits}
     - {trigger: quick-edit, agent: fast-lane, intent: apply a fully specified mechanical edit in at most two files}
     - {trigger: quick-edit, agent: fast-lane, intent: record an approved schema decision in up to three named documentation files under the modelTiers documentation exception}
+    - {trigger: repository-analysis, agent: business-analyst, intent: analyze existing source code and documentation to establish current behavior and identify gaps}
+    - {trigger: documentation-authoring, agent: business-analyst, intent: write or substantially restructure architecture guides, API documentation, sequence diagrams, or workflows from repository evidence}
+    - {trigger: documentation-maintenance, agent: business-analyst, intent: update documentation to match verified implementation changes and remove stale or contradictory descriptions}
+    - {trigger: refactoring-preparation, agent: business-analyst, intent: prepare an as-is and to-be analysis, change impact map, incremental refactoring plan, and regression criteria before implementation}
+    - {trigger: change-impact-analysis, agent: business-analyst, intent: analyze dependencies, affected consumers, compatibility, risks, and required tests for a proposed change}
+    - {trigger: documentation-review, agent: business-analyst, intent: independently verify documentation accuracy, consistency, evidence, diagrams, and acceptance coverage}
