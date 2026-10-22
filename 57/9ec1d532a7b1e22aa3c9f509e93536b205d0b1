@@ -1,0 +1,77 @@
+.ai/prompts/appium.maintenance.prompt.md
+  s_1ecba5b1204745::t_6ab7d1dbd9703b 1,5,7
+  s_1ecba5b1204745::t_729c437861bda1 8
+  s_1ecba5b1204745::t_7dfdb2d775e25d 6
+  s_1ecba5b1204745::t_7df5a741d596aa 3
+  s_1ecba5b1204745::t_ddba8e5a22edd4 2
+  s_1ecba5b1204745::t_a84c23ec78b58f 10-182
+  s_1ecba5b1204745::t_d60250f68df581 9
+  s_1ecba5b1204745::t_b667cc3c3a24bd 4
+.ai/skills/swift-mvvm-migration-planner/SKILL.md
+  s_cdf4e5c1f3edf7::t_fd519437133b45 89,91-147
+  h_d154d11af00b83 1-88,90,148-174
+.ai/retrieval/instructions.md
+  h_d154d11af00b83 103-104
+.ai/agents/agents-role.yaml
+  s_cdf4e5c1f3edf7::t_bb13ddc0913fbf 265-267,275-322,324-327,330,336-338,541,558,563,566,573,578-580,585,592,598-600,604,613,617,624,634,641-642,658,666,670-672,678,680-681,683-684,689-690,692-693,695-696,701-702,912-914
+  h_d154d11af00b83 911
+  s_cdf4e5c1f3edf7::t_5baaff646872fa 538-540
+  s_cdf4e5c1f3edf7::t_e2b330eefecb1e 542
+  s_cdf4e5c1f3edf7::t_67fba6a3e133cb 556-557
+  s_cdf4e5c1f3edf7::t_e55c0f0c5779c0 559-562
+  s_cdf4e5c1f3edf7::t_f114b7bce83b10 564-565
+  s_cdf4e5c1f3edf7::t_d63044e3a97e47 567-572
+  s_cdf4e5c1f3edf7::t_28f9985fac4925 574-577
+  s_cdf4e5c1f3edf7::t_df871a71bdf6dd 581-584
+  s_cdf4e5c1f3edf7::t_ae03addbc8cf46 586-591
+  s_cdf4e5c1f3edf7::t_ce6331d2eafa48 593-597
+  s_cdf4e5c1f3edf7::t_40611b8cabe457 601-603
+  s_cdf4e5c1f3edf7::t_b72bb70177ca2b 605-607,610-612
+  s_cdf4e5c1f3edf7::t_7371b1e7e51cc3 614-616
+  s_cdf4e5c1f3edf7::t_1e06f1f03b53c6 618-623
+  s_cdf4e5c1f3edf7::t_120bf438baaa51 625-627,631-633
+  s_cdf4e5c1f3edf7::t_d01d427be47e5b 635-640
+  s_cdf4e5c1f3edf7::t_55e40e1c796da3 643-645,655-657
+  s_cdf4e5c1f3edf7::t_626398157ce7fc 659-661,663-665
+  s_cdf4e5c1f3edf7::t_1a7eb268f95600 667-669
+  s_cdf4e5c1f3edf7::t_2d6e3a76259ae9 673-674
+  s_cdf4e5c1f3edf7::t_959a4700e76836 679
+  s_cdf4e5c1f3edf7::t_8bf0eeaa906d27 682
+  s_cdf4e5c1f3edf7::t_e9e8339dc778e5 685
+  s_cdf4e5c1f3edf7::t_12cef8b74e0030 688
+  s_cdf4e5c1f3edf7::t_da2237e547206d 691
+  s_cdf4e5c1f3edf7::t_26dc5832978b90 694
+  s_cdf4e5c1f3edf7::t_9378f02b53ffa8 697
+  s_cdf4e5c1f3edf7::t_eef08b18ef72d7 700
+  s_cdf4e5c1f3edf7::t_6016e9ce159d64 703
+  h_d154d11af00b83 528,532-533,536-537,547-554,608-609,628-630,646-654,662,676,706,763-774,798-803,834-844,954-959
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "579ec1d532a7b1e22aa3c9f509e93536b205d0b1",
+  "prompts": {},
+  "humans": {
+    "h_d154d11af00b83": {
+      "author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  },
+  "sessions": {
+    "s_1ecba5b1204745": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1792242561161",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    },
+    "s_cdf4e5c1f3edf7": {
+      "agent_id": {
+        "tool": "github-copilot-jetbrains",
+        "id": "1792328274564",
+        "model": "unknown"
+      },
+      "human_author": "GASPAR, GYORGY <gyorgy.gaspar@lhsystems.com>"
+    }
+  }
+}
